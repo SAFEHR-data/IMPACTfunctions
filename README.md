@@ -34,6 +34,7 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(arrow)
 library(cli)
+library(dplyr)
 library(IMPACTfunctions)
 
 load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",

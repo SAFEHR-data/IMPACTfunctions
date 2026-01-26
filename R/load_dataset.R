@@ -7,7 +7,6 @@
 #'
 #'
 #' @param folder_path Path to the folder containing the parquet files to be loaded
-#' @param metadata_path If a metadata file has been provided then this is the path to it. FEATURE NOT YET BUILT
 #' @param prefix A string to remove from the start of the parquet file names
 #' @param suffix A string to remove from the end of the parquet file names, this should include the '.parquet'
 #' @param dictionary_check Check the dataset being loaded against the IMPACT dictionary to ensure data completeness
@@ -25,7 +24,6 @@
 #'             verbose = TRUE)}
 load_dataset <- function(
     folder_path ,
-    metadata_path,
     prefix,
     suffix = ".parquet",
     dictionary_check = TRUE,
@@ -80,13 +78,6 @@ load_dataset <- function(
     assign(names[i], df, envir = globalenv())
   }
 
-  # Stage 4 - Load metadata if file provided
-
-  if(missing(metadata_path)){
-    #No metadata provided
-    cli::cli_abort("METADATA function not yet build. \nPlease remove {.arg metadata_path} from function and try again.")
-    assign("dataset_metadata", metadata, envir = globalenv())
-  }
 
   if(verbose){cli::cli_alert_success("Dataset imported!")}
 

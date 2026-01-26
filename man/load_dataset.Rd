@@ -6,9 +6,8 @@
 \usage{
 load_dataset(
   folder_path,
-  metadata_path,
   prefix,
-  suffix,
+  suffix = ".parquet",
   dictionary_check = TRUE,
   verbose = FALSE
 )
@@ -16,11 +15,9 @@ load_dataset(
 \arguments{
 \item{folder_path}{Path to the folder containing the parquet files to be loaded}
 
-\item{metadata_path}{If a metadata file has been provided then this is the path to it. FEATURE NOT YET BUILT}
-
 \item{prefix}{A string to remove from the start of the parquet file names}
 
-\item{suffix}{A string to remove from the end of the parquet file names}
+\item{suffix}{A string to remove from the end of the parquet file names, this should include the '.parquet'}
 
 \item{dictionary_check}{Check the dataset being loaded against the IMPACT dictionary to ensure data completeness}
 
