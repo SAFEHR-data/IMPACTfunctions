@@ -17,18 +17,19 @@
 #' @export
 #'
 #' @examples
-#' load_dataset(folder_path = "~/data/IMPACT/full_extract, prefix = "SCB_Periop_", suffix = "_20260122.parquet", dictionary_check = TRUE, verbose = FALSE))
-#'
-#'
+#' \dontrun{
+#' load_dataset(folder_path = "~/data/IMPACT/full_extract",
+#'             prefix = "SCB_Periop_",
+#'             suffix = "_20260122.parquet",
+#'             dictionary_check = TRUE,
+#'             verbose = TRUE)}
 load_dataset <- function(
-    folder_path = "~/data/dwhitake/data/IMPACT/20260122",
+    folder_path ,
     metadata_path,
-    prefix = "SCB_Periop_",
-    suffix = "_20260122.parquet",
+    prefix,
+    suffix,
     dictionary_check = TRUE,
     verbose = FALSE){
-
-  if(missing("data_set")){cli_abort("No data set given")}
 
   if(verbose){cli::cli_h1("Importing dataset")}
 
