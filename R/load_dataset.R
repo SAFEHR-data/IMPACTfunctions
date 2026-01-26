@@ -43,7 +43,7 @@ load_dataset <- function(
   # Stage 2 - Naming tables and check against dictionary
 
   #If suffix or prefix are supplied use these to strip chars from file names to generate names vector.
-  if(!missing(prefix & suffix)){
+  if(!missing(prefix) & !missing(suffix)){
     if(verbose){cli::cli_alert("Cleaning file names by removing the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}}")}
     names <- gsub(prefix, "",  gsub(suffix, "", files))
     }else if(!missing(prefix)){
