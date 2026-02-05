@@ -20,6 +20,7 @@
 #' @param enforce_complete_anaesthetic_chart Enforce that `anaesthesia_csn` is not `NA` to ensure there is a corresponding record
 #' @param dates_completed_cols A vector of character column names to ensure completeness for the `enforce_dates_complete`
 #' @param verbose Print output and numbers of patients removed at each step
+#' @param add_to_eligability_criteria If this filtering should be added to the `eligability_criteria` dataframe
 #'
 #' @return A arrow object that is a filtered subset of the origional `dataset`
 #' @export

@@ -18,7 +18,9 @@
 #' filtered_dataset %>% collect() %>% head()
 #'
 #' ## Using diagnostics to see which patients are being excluded
-#' list_of_datasets <- cohort_enforce_dates_ordered(dataset = Procedures,verbose = TRUE, diagnostics = TRUE)
+#' list_of_datasets <- cohort_enforce_dates_ordered(dataset = Procedures,
+#'       verbose = TRUE,
+#'      diagnostics = TRUE)
 #'
 #' # View the rows that are included
 #' list_of_datasets$included %>% collect() %>% head()

@@ -31,6 +31,8 @@ cohort_complete_admissions(
 
 \item{enforce_complete_anaesthetic_chart}{Enforce that \code{anaesthesia_csn} is not \code{NA} to ensure there is a corresponding record}
 
+\item{add_to_eligability_criteria}{If this filtering should be added to the \code{eligability_criteria} dataframe}
+
 \item{verbose}{Print output and numbers of patients removed at each step}
 }
 \value{
