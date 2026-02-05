@@ -1,0 +1,103 @@
+---
+title: "selecting_cohorts"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{selecting_cohorts}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(IMPACTfunctions)
+library(dplyr)
+```
+
+# Intro 
+
+Often when doing research or QI we will have a question that is focused on a specific patient population. This population definition can be vauge and wide or specific and narrow. We may want to to use the entire dataset (eg *"What is the prevalence of $x$ across all patients at UCLH"*) or be very specific (*"What is the prevalence of $y$ in patients undergoing $proc$ aged between 20 and 22 who have a PMH of $z$"*).
+
+In this vignette we will present some of the ways (and possible pitfalls) to make a study population. 
+
+## Summary of options:
+
+There are three levels of functions, starting with the top level:
+
+1) **Whole cohort functions** - These function apply a series of eligability criteria groups to filter down from the raw dataset to a final cohort. These are analogous to the whole CONSORT flow diagram. 
+
+Examples:
+- Whole dataset 
+- Cohorting by surgical procedure codes
+
+2) **Topic area functions** - These functions tackle a group of eligibility criteria, such as missing data or Date range selections. These can be considered a box on on the CONSORT flow diagram.
+
+Examples:
+- `cohort_complete_procedures()`
+- `cohort_date_range()`
+- `cohort_procedure_group()`
+
+3) **Single criteria functions** - These functions tackle a single eligibility criteria. For example in `cohort_complete_procedures()` we may want to check if there is a corresponding anaesthetic chart, if there is a discharge date and the datetime stamps are in the correct order. These can be considered a bullet point within the CONSORT flow diagram box. *These functions are prefixed with `cohort_enforce_...` to denote this.*
+
+Examples:
+- `cohort_enforce_anaesthetic_chart()`
+- `cohort_enforce_discharged()`
+
+#TL;DR
+
+To use the **whole dataset** clean the procedures with `cohort_whole_dataset()`. [LINK](# Whole dataset)
+To do surgical procedure case control use `cohort_procedures()`. [LINK](# Surgical Procedure)
+To see what eligibility criteria have been used, run `eligability_criteria %>% View()`
+
+# Whole cohort functions
+
+## Whole dataset
+
+We often want to use the whole data set to ask questions, Such as *"of all patients who have had surgery at UCLH, what is ..."*.
+
+We might be *tempted* in just using the `Procedures` table but there may be a few common pitfalls.
+
+We will present the following functions to cohort on a particular axis: `cohort_complete_admissions()` and `cohort_remove_reoperations()` and then demonstrate how they can be used in the function `cohort_whole_dataset()`. 
+
+
+# Topic area functions
+
+## `cohort_complete_admissions()` - Remove encounters with missing data.
+
+Depending on the dataset generation dates the dataset may contain patients who have been admitted but not discharge, if we calculate features such as `length_of_stay` or `discharge_medications` we will generate NA's that may skew our results. Thus we can use `cohort_complete_admissions()` to remove encounters with missing data over a series of criteria. 
+
+```{r}
+
+study_dataset <- cohort_complete_admissions(dataset=Procedures)
+
+```
+
+## Reoperations
+
+
+## Surgical Specialities 
+
+
+## Admission and discharge dates
+
+
+# Surgical Procedure
+
+
+
+# Specific patient/procedure list
+
+
+
+# A note on optimisation
+
+Generally when we filter dataframes we would ideally want to use the narrowest filter first to cut down the size of the dataframe to then iterate over for the subsequent filters. 
+
+When we are using arrow files, rather than calling the df into memory, filtering, then repeating, 
+
+

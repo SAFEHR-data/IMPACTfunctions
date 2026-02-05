@@ -1,0 +1,64 @@
+---
+title: "intro"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{intro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
+```
+
+# Open Dataset in R session:
+
+```{r}
+
+# Load real data
+# IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
+#             prefix = "SCB_Periop_",
+#             suffix ="_20260129.parquet",
+#             verbose = TRUE)
+
+#If you do not have a real dataset, load the synthetic dataset
+load_synthetic_dataset()
+
+```
+
+
+# Filter dataset to get study cohort
+
+## Use whole dataset as study cohort
+
+```{r}
+
+rm(eligibility_criteria)
+
+dataset <- cohort_complete_admissions(dataset = Procedures, verbose=TRUE)
+
+#Use the glimpse function to peer into the dataset
+dataset %>% glimpse()
+
+#Use the collect function to pull the dataset into memory as a dataframe
+dataset_df <- dataset %>% collect()
+```
+
+
+Examine the eligibility criteria used in the filtering
+```{r}
+#See the eligibility criteria that has been applied
+print(eligibility_criteria)
+
+```
+
+

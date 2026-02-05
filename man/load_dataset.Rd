@@ -15,7 +15,7 @@ load_dataset(
 \arguments{
 \item{folder_path}{Path to the folder containing the parquet files to be loaded}
 
-\item{prefix}{A string to remove from the start of the parquet file names}
+\item{prefix}{A string to remove from the start of the parquet file names. If you do not know the suffix, the function may suggest it for you.}
 
 \item{suffix}{A string to remove from the end of the parquet file names, this should include the '.parquet'}
 
