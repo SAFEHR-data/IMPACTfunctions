@@ -46,3 +46,7 @@ Demographics %>% glimpse()
 
 ```
 
+# Acknowledgments
+
+Package written using the [R packages book](https://r-pkgs.org/preface.html)
+

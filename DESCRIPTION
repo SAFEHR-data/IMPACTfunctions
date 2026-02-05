@@ -14,4 +14,10 @@ Depends:
 LazyData: true
 Imports: 
     arrow,
-    cli
+    cli,
+    dplyr,
+    stringr
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
