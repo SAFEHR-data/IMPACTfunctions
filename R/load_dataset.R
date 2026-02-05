@@ -98,3 +98,23 @@ load_dataset <- function(
   if(verbose){cli::cli_alert_success("Dataset imported!")}
 
 }
+
+
+#' Loading synthetic data
+#'
+#'  A function to check if there is Procedure tables in the environment, if not then it will read in the synthetic dataset.
+#'
+#'  This is used for testing of functions
+#'
+#' @return Procedures arrow table
+#' @export
+#'
+#' @examples
+#' load_synthetic_dataset()
+#'
+load_synthetic_dataset <- function() {
+  if(!exists("Procedures")){
+  path <- system.file("extdata", "procedures_synthetic.parquet", package = "IMPACTfunctions")
+  Procedures <<- arrow::read_parquet(path, as_data_frame = FALSE) # Returns Arrow Table
+  }
+}
