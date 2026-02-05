@@ -2,6 +2,7 @@
 # IMPACTfunctions
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of IMPACTfunctions is to help working with the IMPACT peri-operative dataset. 
