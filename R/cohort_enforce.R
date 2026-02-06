@@ -44,7 +44,7 @@ cohort_enforce_complete_anaesthetic_chart <- function(dataset,
                                                       diagnostics = FALSE){
 
   prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% filter(!is.na(anaesthesia_csn))
+  dataset_filtered <- dataset %>% dplyr::filter(!is.na(anaesthesia_csn))
   filtered <- prior - nrow(dataset_filtered)
 
   if(verbose){
@@ -54,14 +54,14 @@ cohort_enforce_complete_anaesthetic_chart <- function(dataset,
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
                              function_name = "cohort_enforce_complete_anaesthetic_chart()",
-                             function_filter = "filter(!is.na(anaesthesia_csn))",
+                             function_filter = "dplyr::filter(!is.na(anaesthesia_csn))",
                              n_prior = prior,
                              n_filtered = filtered)
   }
 
   if(diagnostics){
     return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
            )
   }else{
     return(dataset_filtered)
@@ -81,7 +81,7 @@ cohort_enforce_procedure_coded <- function(dataset,
 
 
   prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures))
+  dataset_filtered <- dataset %>% dplyr::filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures))
   filtered <- prior - nrow(dataset_filtered)
 
   if(verbose){
@@ -91,14 +91,14 @@ cohort_enforce_procedure_coded <- function(dataset,
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
                              function_name = "cohort_enforce_procedure_coded()",
-                             function_filter = "filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures)))",
+                             function_filter = "dplyr::filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures)))",
                              n_prior = prior,
                              n_filtered = filtered)
   }
 
   if(diagnostics){
     return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
     )
   }else{
     return(dataset_filtered)
@@ -120,7 +120,7 @@ cohort_enforce_dates_complete <- function(dataset,
 
 
   prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x)))
+  dataset_filtered <- dataset %>% dplyr::filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x)))
   filtered <- prior - nrow(dataset_filtered)
 
   if(verbose){
@@ -130,14 +130,14 @@ cohort_enforce_dates_complete <- function(dataset,
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
                              function_name = "cohort_enforce_dates_complete()",
-                             function_filter = "filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x))))",
+                             function_filter = "dplyr::filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x))))",
                              n_prior = prior,
                              n_filtered = filtered)
   }
 
   if(diagnostics){
     return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
     )
   }else{
     return(dataset_filtered)
@@ -161,7 +161,7 @@ cohort_enforce_dates_ordered <- function(dataset,
 
 
   prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% filter(admission_date < operation_date) %>% filter(operation_date < discharge_date)
+  dataset_filtered <- dataset %>% dplyr::filter(admission_date < operation_date) %>% dplyr::filter(operation_date < discharge_date)
   filtered <- prior - nrow(dataset_filtered)
 
   if(verbose){
@@ -171,14 +171,14 @@ cohort_enforce_dates_ordered <- function(dataset,
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
                              function_name = "cohort_enforce_dates_ordered()",
-                             function_filter = "filter(admission_date < operation_date) %>% filter(operation_date < discharge_date))",
+                             function_filter = "dplyr::filter(admission_date < operation_date) %>% dplyr::filter(operation_date < discharge_date))",
                              n_prior = prior,
                              n_filtered = filtered)
   }
 
   if(diagnostics){
     return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
     )
   }else{
     return(dataset_filtered)
@@ -201,7 +201,7 @@ cohort_enforce_discharged <- function(dataset,
 
 
   prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% filter(!is.na(discharge_date))
+  dataset_filtered <- dataset %>% dplyr::filter(!is.na(discharge_date))
   filtered <- prior - nrow(dataset_filtered)
 
 if(verbose){
@@ -211,14 +211,14 @@ if(verbose){
 if(add_to_eligability_criteria){
   eligibility_criteria_add(type = "Exclusion",
                            function_name = "cohort_enforce_discharged()",
-                           function_filter = "filter(!is.na(discharge_date))",
+                           function_filter = "dplyr::filter(!is.na(discharge_date))",
                            n_prior = prior,
                            n_filtered = filtered)
 }
 
   if(diagnostics){
     return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
     )
   }else{
     return(dataset_filtered)
