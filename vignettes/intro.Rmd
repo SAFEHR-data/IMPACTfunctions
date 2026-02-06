@@ -44,10 +44,12 @@ load_synthetic_dataset()
 
 rm(eligibility_criteria)
 
-dataset <- cohort_complete_admissions(dataset = Procedures, verbose=TRUE)
+dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
 
 #Use the glimpse function to peer into the dataset
 dataset %>% glimpse()
+
+dataset %>% cohort_enforce_opt_out(verbose=TRUE)
 
 #Use the collect function to pull the dataset into memory as a dataframe
 dataset_df <- dataset %>% collect()

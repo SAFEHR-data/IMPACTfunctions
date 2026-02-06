@@ -4,7 +4,7 @@
 \alias{cohort_enforce_family}
 \title{Eligibility criteria - enforcement level functions}
 \arguments{
-\item{dataset}{A arrow database binding}
+\item{procedures_table}{A arrow database binding to the procedures table}
 
 \item{add_to_eligability_criteria}{If we want to add this level of filtering to the \code{eligability_criteria} dataframe}
 
@@ -25,7 +25,7 @@ filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 filtered_dataset \%>\% collect() \%>\% head()
 
 ## Using diagnostics to see which patients are being excluded
-list_of_datasets <- cohort_enforce_dates_ordered(dataset = Procedures,
+list_of_datasets <- cohort_enforce_dates_ordered(procedures_table = Procedures,
       verbose = TRUE,
      diagnostics = TRUE)
 
@@ -40,6 +40,7 @@ Other cohort_enforce:
 \code{\link{cohort_enforce_dates_complete}()},
 \code{\link{cohort_enforce_dates_ordered}()},
 \code{\link{cohort_enforce_discharged}()},
+\code{\link{cohort_enforce_opt_out}()},
 \code{\link{cohort_enforce_procedure_coded}()}
 }
 \concept{cohort_enforce}

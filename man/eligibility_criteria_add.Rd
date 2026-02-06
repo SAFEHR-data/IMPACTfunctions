@@ -6,6 +6,7 @@
 \usage{
 eligibility_criteria_add(
   type,
+  text,
   function_name,
   function_filter,
   n_prior,
@@ -14,6 +15,8 @@ eligibility_criteria_add(
 }
 \arguments{
 \item{type}{If the row is an rule of inclusion or exclusion.}
+
+\item{text}{String description of the exclusion criteria.}
 
 \item{function_name}{The name of the \code{cohort_enforce_...} level function that did the filtering.}
 

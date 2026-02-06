@@ -11,6 +11,7 @@ eligibility_criteria_check <- function(){
   }else{
     #dataframe doesn't exist, initialise it
     eligibility_criteria <<- data.frame(type = character(),
+                                        text = character(),
                                         function_name = character(),
                                         function_filter = character(),
                                         n_prior = integer(),
@@ -28,6 +29,7 @@ eligibility_criteria_check <- function(){
 #' Add a new criteria to the `eligibility_criteria` dataframe
 #'
 #' @param type If the row is an rule of inclusion or exclusion.
+#' @param text String description of the exclusion criteria.
 #' @param function_name The name of the `cohort_enforce_...` level function that did the filtering.
 #' @param function_filter The specific line of code used.
 #' @param n_prior The number of procedure prior to applying the criterion.
@@ -39,6 +41,7 @@ eligibility_criteria_check <- function(){
 #' @examples
 #' # Not run
 eligibility_criteria_add <- function(type,
+                                     text,
                                      function_name,
                                      function_filter,
                                      n_prior,
@@ -47,6 +50,7 @@ eligibility_criteria_add <- function(type,
   eligibility_criteria_check()
 
   new_row = data.frame(type = type,
+                       text = text,
                        function_name = function_name,
                        function_filter = function_filter,
                        n_prior = n_prior,
