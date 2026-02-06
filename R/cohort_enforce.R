@@ -4,7 +4,7 @@
 #'
 #' Find a list of the possible functions in the **See Also** section below.
 #'
-#' @param dataset A arrow database binding
+#' @param procedures_table A arrow database binding to the procedures table
 #' @param add_to_eligability_criteria If we want to add this level of filtering to the `eligability_criteria` dataframe
 #' @param verbose Print outputs of the function
 #' @param diagnostics To check the eligibility criteria, `diagnostics=TRUE` will return the filtered data but also the excluded data
@@ -18,7 +18,7 @@
 #' filtered_dataset %>% collect() %>% head()
 #'
 #' ## Using diagnostics to see which patients are being excluded
-#' list_of_datasets <- cohort_enforce_dates_ordered(dataset = Procedures,
+#' list_of_datasets <- cohort_enforce_dates_ordered(procedures_table = Procedures,
 #'       verbose = TRUE,
 #'      diagnostics = TRUE)
 #'
@@ -38,14 +38,14 @@ NULL
 #' @family cohort_enforce
 #' @export
 #'
-cohort_enforce_complete_anaesthetic_chart <- function(dataset,
+cohort_enforce_complete_anaesthetic_chart <- function(procedures_table,
                                                       add_to_eligability_criteria=TRUE,
                                                       verbose = FALSE,
                                                       diagnostics = FALSE){
 
-  prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% dplyr::filter(!is.na(anaesthesia_csn))
-  filtered <- prior - nrow(dataset_filtered)
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(!is.na(anaesthesia_csn))
+  filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
     cli::cli_alert("Filtering out {.val {filtered}} due to missing anaesthetic chart entries")
@@ -53,6 +53,7 @@ cohort_enforce_complete_anaesthetic_chart <- function(dataset,
 
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
+                             text = "Procedures missing anaesthetic chart entry",
                              function_name = "cohort_enforce_complete_anaesthetic_chart()",
                              function_filter = "dplyr::filter(!is.na(anaesthesia_csn))",
                              n_prior = prior,
@@ -60,11 +61,11 @@ cohort_enforce_complete_anaesthetic_chart <- function(dataset,
   }
 
   if(diagnostics){
-    return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
            )
   }else{
-    return(dataset_filtered)
+    return(procedures_table_filtered)
   }
 
 }
@@ -74,15 +75,15 @@ cohort_enforce_complete_anaesthetic_chart <- function(dataset,
 #' @family cohort_enforce
 #' @export
 #'
-cohort_enforce_procedure_coded <- function(dataset,
+cohort_enforce_procedure_coded <- function(procedures_table,
                                            add_to_eligability_criteria=TRUE,
                                            verbose = FALSE,
                                            diagnostics = FALSE){
 
 
-  prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% dplyr::filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures))
-  filtered <- prior - nrow(dataset_filtered)
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures))
+  filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
     cli::cli_alert("Filtering out {.val {filtered}} due to procedure codeing not complete")
@@ -90,6 +91,7 @@ cohort_enforce_procedure_coded <- function(dataset,
 
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
+                             text = "Procedures without codeing information",
                              function_name = "cohort_enforce_procedure_coded()",
                              function_filter = "dplyr::filter(!is.na(primary_coded_procedure) & !is.na(combined_coded_opcs_procedures)))",
                              n_prior = prior,
@@ -97,11 +99,11 @@ cohort_enforce_procedure_coded <- function(dataset,
   }
 
   if(diagnostics){
-    return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
     )
   }else{
-    return(dataset_filtered)
+    return(procedures_table_filtered)
   }
 
 }
@@ -112,16 +114,16 @@ cohort_enforce_procedure_coded <- function(dataset,
 #' @family cohort_enforce
 #' @export
 #'
-cohort_enforce_dates_complete <- function(dataset,
+cohort_enforce_dates_complete <- function(procedures_table,
                                            dates_completed_cols = c("admission_date", "operation_date", "discharge_date"),
                                            add_to_eligability_criteria=TRUE,
                                            verbose = FALSE,
                                            diagnostics = FALSE){
 
 
-  prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% dplyr::filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x)))
-  filtered <- prior - nrow(dataset_filtered)
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x)))
+  filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
     cli::cli_alert("Filtering out {.val {filtered}} due to missing dates in one of {.vals {dates_completed_cols}} columns")
@@ -129,6 +131,7 @@ cohort_enforce_dates_complete <- function(dataset,
 
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
+                             text = "Procedures with incomplete timestamps for admission, operation or discharge",
                              function_name = "cohort_enforce_dates_complete()",
                              function_filter = "dplyr::filter(if_all(all_of(dates_completed_cols), ~ !is.na(.x))))",
                              n_prior = prior,
@@ -136,11 +139,11 @@ cohort_enforce_dates_complete <- function(dataset,
   }
 
   if(diagnostics){
-    return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
     )
   }else{
-    return(dataset_filtered)
+    return(procedures_table_filtered)
   }
 
 }
@@ -154,15 +157,15 @@ cohort_enforce_dates_complete <- function(dataset,
 #' @family cohort_enforce
 #' @export
 #'
-cohort_enforce_dates_ordered <- function(dataset,
+cohort_enforce_dates_ordered <- function(procedures_table,
                                           add_to_eligability_criteria=TRUE,
                                           verbose = FALSE,
                                           diagnostics = FALSE){
 
 
-  prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% dplyr::filter(admission_date < operation_date) %>% dplyr::filter(operation_date < discharge_date)
-  filtered <- prior - nrow(dataset_filtered)
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(admission_date < operation_date) %>% dplyr::filter(operation_date < discharge_date)
+  filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
     cli::cli_alert("Filtering out {.val {filtered}} due to the temoral order of admission datetime < operation datetime < discharge datetime")
@@ -170,6 +173,7 @@ cohort_enforce_dates_ordered <- function(dataset,
 
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Exclusion",
+                             text = "Procedures where timestamps for admission, operation and discharge are not sequential",
                              function_name = "cohort_enforce_dates_ordered()",
                              function_filter = "dplyr::filter(admission_date < operation_date) %>% dplyr::filter(operation_date < discharge_date))",
                              n_prior = prior,
@@ -177,11 +181,11 @@ cohort_enforce_dates_ordered <- function(dataset,
   }
 
   if(diagnostics){
-    return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
     )
   }else{
-    return(dataset_filtered)
+    return(procedures_table_filtered)
   }
 
 }
@@ -194,15 +198,15 @@ cohort_enforce_dates_ordered <- function(dataset,
 #' @family cohort_enforce
 #' @export
 #'
-cohort_enforce_discharged <- function(dataset,
+cohort_enforce_discharged <- function(procedures_table,
                                       add_to_eligability_criteria=TRUE,
                                       verbose = FALSE,
                                       diagnostics = FALSE){
 
 
-  prior <- nrow(dataset)
-  dataset_filtered <- dataset %>% dplyr::filter(!is.na(discharge_date))
-  filtered <- prior - nrow(dataset_filtered)
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(!is.na(discharge_date))
+  filtered <- prior - nrow(procedures_table_filtered)
 
 if(verbose){
   cli::cli_alert("Filtering out {.val {filtered}} due to missing discharge datetime")
@@ -210,6 +214,7 @@ if(verbose){
 
 if(add_to_eligability_criteria){
   eligibility_criteria_add(type = "Exclusion",
+                           text = "Patients not yet discharged or missing discharge dates",
                            function_name = "cohort_enforce_discharged()",
                            function_filter = "dplyr::filter(!is.na(discharge_date))",
                            n_prior = prior,
@@ -217,12 +222,67 @@ if(add_to_eligability_criteria){
 }
 
   if(diagnostics){
-    return(list("included" = dataset_filtered,
-                "excluded" =  dataset %>% dplyr::filter(!case_id %in% (dataset_filtered %>% pull(case_id))))
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
     )
   }else{
-    return(dataset_filtered)
+    return(procedures_table_filtered)
   }
 
 }
 
+#' Eligibility criteria: Remove patients who have triggered the Data opt-out
+#'
+#' The function removed patients flagged for data opt out. This is useful for generating research cohorts.
+#' See Data schema for exact details on how the flag is triggered.
+#'
+#' @param Demographics Demographics table
+#' @param remove_restricted If restricted (break the glass) patients should also be filtered out
+#' @inheritParams cohort_enforce_family
+#' @family cohort_enforce
+#' @export
+#'
+cohort_enforce_opt_out <- function(procedures_table,
+                                   demographics_table = Demographics,
+                                   remove_restricted = TRUE,
+                                   add_to_eligability_criteria=TRUE,
+                                   verbose = FALSE,
+                                   diagnostics = FALSE){
+
+
+  mrn_to_filter <- demographics_table %>% select(mrn,restricted_patient_flag, opt_out_flag)
+
+  if(remove_restricted){
+    # If remove_restricted = true then filter by OR
+    mrn_to_filter <- mrn_to_filter %>% collect() %>% filter(opt_out_flag == "1" | restricted_patient_flag == "1") %>% pull(mrn)
+  }else{
+    # If not then only filter by Opt out
+    mrn_to_filter <- mrn_to_filter %>% filter(opt_out_flag == "1") %>% pull(mrn)
+  }
+
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% dplyr::filter(!mrn %in% mrn_to_filter)
+  filtered <- prior - nrow(procedures_table_filtered)
+
+  if(verbose){
+    cli::cli_alert("Filtering out {.val {filtered}} due to missing discharge datetime")
+  }
+
+  if(add_to_eligability_criteria){
+    eligibility_criteria_add(type = "Exclusion",
+                             text = ifelse(remove_restricted, "Patients in the NHS National data opt out and restricted records", "Patients in the NHS National data opt out"),
+                             function_name = "cohort_enforce_opt_out()",
+                             function_filter = "dplyr::filter(!mrn %in% mrn_to_filter)",
+                             n_prior = prior,
+                             n_filtered = filtered)
+  }
+
+  if(diagnostics){
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+    )
+  }else{
+    return(procedures_table_filtered)
+  }
+
+}
