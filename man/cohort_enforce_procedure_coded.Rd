@@ -5,14 +5,14 @@
 \title{Eligibility criteria: Ensure OPSC codeing is complete}
 \usage{
 cohort_enforce_procedure_coded(
-  dataset,
+  procedures_table,
   add_to_eligability_criteria = TRUE,
   verbose = FALSE,
   diagnostics = FALSE
 )
 }
 \arguments{
-\item{dataset}{A arrow database binding}
+\item{procedures_table}{A arrow database binding to the procedures table}
 
 \item{add_to_eligability_criteria}{If we want to add this level of filtering to the \code{eligability_criteria} dataframe}
 
@@ -29,6 +29,7 @@ Other cohort_enforce:
 \code{\link{cohort_enforce_dates_complete}()},
 \code{\link{cohort_enforce_dates_ordered}()},
 \code{\link{cohort_enforce_discharged}()},
-\code{\link{cohort_enforce_family}}
+\code{\link{cohort_enforce_family}},
+\code{\link{cohort_enforce_opt_out}()}
 }
 \concept{cohort_enforce}

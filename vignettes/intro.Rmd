@@ -25,10 +25,10 @@ library(dplyr)
 ```{r}
 
 # Load real data
-# IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
-#             prefix = "SCB_Periop_",
-#             suffix ="_20260129.parquet",
-#             verbose = TRUE)
+IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
+             prefix = "SCB_Periop_",
+             suffix ="_20260129.parquet",
+             verbose = TRUE)
 
 #If you do not have a real dataset, load the synthetic dataset
 load_synthetic_dataset()
@@ -44,10 +44,30 @@ load_synthetic_dataset()
 
 rm(eligibility_criteria)
 
-dataset <- cohort_complete_admissions(dataset = Procedures, verbose=TRUE)
+dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
 
 #Use the glimpse function to peer into the dataset
 dataset %>% glimpse()
+```
+
+
+```{r}
+#Use single `cohort_enforce` statements
+dataset <- Procedures %>% cohort_enforce_opt_out(verbose=TRUE) 
+
+#Or chain together multiple enforce statements
+dataset <- Procedures %>% cohort_enforce_discharged(verbose=TRUE) %>%
+  cohort_enforce_procedure_coded(verbose=TRUE)
+
+#Use the help to see the family of cohort_enforce functions
+?cohort_enforce_family
+
+```
+
+
+```{r}
+
+
 
 #Use the collect function to pull the dataset into memory as a dataframe
 dataset_df <- dataset %>% collect()

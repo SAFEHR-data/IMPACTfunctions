@@ -73,7 +73,7 @@ Depending on the dataset generation dates the dataset may contain patients who h
 
 ```{r}
 
-study_dataset <- cohort_complete_admissions(dataset=Procedures)
+study_dataset <- cohort_complete_admissions(procedures_table = Procedures)
 
 ```
 

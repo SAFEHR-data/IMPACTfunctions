@@ -5,7 +5,7 @@
 \title{Cohorting: Ensure complete minimum dataset}
 \usage{
 cohort_complete_admissions(
-  dataset = Procedures,
+  procedures_table = Procedures,
   enforce_discharged = TRUE,
   enforce_dates_complete = TRUE,
   dates_completed_cols = c("admission_date", "operation_date", "discharge_date"),
@@ -17,7 +17,7 @@ cohort_complete_admissions(
 )
 }
 \arguments{
-\item{dataset}{The arrow object of dataframe for which to filter}
+\item{procedures_table}{A arrow database binding to the procedures table}
 
 \item{enforce_discharged}{Enforce that patient have a discharge date (to remove ongoing admissions)}
 
@@ -36,24 +36,24 @@ cohort_complete_admissions(
 \item{verbose}{Print output and numbers of patients removed at each step}
 }
 \value{
-A arrow object that is a filtered subset of the origional \code{dataset}
+A arrow object that is a filtered subset of the origional \code{procedures_table}
 }
 \description{
 Middle level contorting function to ensure minimum dataset is present.
 This function when run with the all enforcements turned on (default) will essentially run:
 }
 \details{
-\code{dataset \%>\% cohort_enforce_discharged() \%>\% cohort_enforce_dates_complete() \%>\% cohort_enforce_dates_ordered() \%>\% cohort_enforce_complete_anaesthetic_chart() \%>\% cohort_enforce_procedure_coded()}
+\code{Procedures \%>\% cohort_enforce_discharged() \%>\% cohort_enforce_dates_complete() \%>\% cohort_enforce_dates_ordered() \%>\% cohort_enforce_complete_anaesthetic_chart() \%>\% cohort_enforce_procedure_coded()}
 
 To drop one of these enforcement functions out turn the corresponding function off.
-To invegitate exactly which patietns are being removed at each step you can run each function with diagnostics set to TRUE
+To investigate exactly which patients are being removed at each step you can run each function with diagnostics set to TRUE
 
-\code{result <- dataset \%>\% cohort_enforce_complete_anaesthetic_chart(diagnostic=TRUE)}
+\code{result <- Procedures \%>\% cohort_enforce_complete_anaesthetic_chart(diagnostic=TRUE)}
 \code{result$excluded \%>\% collect() \%>\% View()}
 }
 \examples{
 library(dplyr)
-dataset <- cohort_complete_admissions(dataset = Procedures, verbose=TRUE)
+dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
 #Use the glimpse function to peer into the dataset
  glimpse(dataset)
 

@@ -5,7 +5,7 @@
 \title{Eligibility criteria: Ensure key dates complete}
 \usage{
 cohort_enforce_dates_complete(
-  dataset,
+  procedures_table,
   dates_completed_cols = c("admission_date", "operation_date", "discharge_date"),
   add_to_eligability_criteria = TRUE,
   verbose = FALSE,
@@ -13,7 +13,7 @@ cohort_enforce_dates_complete(
 )
 }
 \arguments{
-\item{dataset}{A arrow database binding}
+\item{procedures_table}{A arrow database binding to the procedures table}
 
 \item{dates_completed_cols}{The date columns which to ensure are complete. This defaults to the admission, operation and discharge date}
 
@@ -32,6 +32,7 @@ Other cohort_enforce:
 \code{\link{cohort_enforce_dates_ordered}()},
 \code{\link{cohort_enforce_discharged}()},
 \code{\link{cohort_enforce_family}},
+\code{\link{cohort_enforce_opt_out}()},
 \code{\link{cohort_enforce_procedure_coded}()}
 }
 \concept{cohort_enforce}
