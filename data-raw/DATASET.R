@@ -58,4 +58,13 @@ synthetic_data <- synthetic_data %>%
 arrow::write_parquet(synthetic_data, "inst/extdata/procedures_synthetic.parquet")
 
 
+n_unique_mrn <- length(unique(synthetic_data$mrn))
+
+synthetic_demographics <- data.frame(
+  mrn = unique(synthetic_data$mrn),
+  restricted_patient_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
+  opt_out_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99))
+)
+
+arrow::write_parquet(synthetic_demographics, "inst/extdata/demographic_synthetic.parquet")
 

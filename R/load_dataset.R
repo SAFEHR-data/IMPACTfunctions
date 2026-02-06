@@ -117,4 +117,8 @@ load_synthetic_dataset <- function() {
   path <- system.file("extdata", "procedures_synthetic.parquet", package = "IMPACTfunctions")
   Procedures <<- arrow::read_parquet(path, as_data_frame = FALSE) # Returns Arrow Table
   }
+  if(!exists("Demographics")){
+    path <- system.file("extdata", "demographic_synthetic.parquet", package = "IMPACTfunctions")
+    Demographics <<- arrow::read_parquet(path, as_data_frame = FALSE) # Returns Arrow Table
+  }
 }
