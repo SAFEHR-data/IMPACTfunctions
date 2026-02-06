@@ -254,10 +254,10 @@ cohort_enforce_opt_out <- function(procedures_table,
 
   if(remove_restricted){
     # If remove_restricted = true then filter by OR
-    mrn_to_filter <- mrn_to_filter %>% collect() %>% filter(opt_out_flag == "1" | restricted_patient_flag == "1") %>% pull(mrn)
+    mrn_to_filter <- mrn_to_filter  %>% filter(opt_out_flag == 1 | restricted_patient_flag == 1) %>% pull(mrn)
   }else{
     # If not then only filter by Opt out
-    mrn_to_filter <- mrn_to_filter %>% filter(opt_out_flag == "1") %>% pull(mrn)
+    mrn_to_filter <- mrn_to_filter %>% filter(opt_out_flag == 1) %>% pull(mrn)
   }
 
   prior <- nrow(procedures_table)
@@ -265,7 +265,7 @@ cohort_enforce_opt_out <- function(procedures_table,
   filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
-    cli::cli_alert("Filtering out {.val {filtered}} due to missing discharge datetime")
+    cli::cli_alert("Filtering out {.val {filtered}} procedures as from Opt out +/- Restricted access ")
   }
 
   if(add_to_eligability_criteria){
