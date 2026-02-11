@@ -16,7 +16,8 @@ Imports:
     arrow,
     cli,
     dplyr,
-    stringr
+    stringr,
+    stringi
 Suggests: 
     knitr,
     rmarkdown

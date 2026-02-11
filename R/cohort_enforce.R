@@ -10,10 +10,12 @@
 #' @param diagnostics To check the eligibility criteria, `diagnostics=TRUE` will return the filtered data but also the excluded data
 #'
 #' @family cohort_enforce
+#' @import dplyr
 #' @name cohort_enforce_family
 #' @examples
 #' library(dplyr)
 #' load_synthetic_dataset()
+#'
 #' filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 #' filtered_dataset %>% collect() %>% head()
 #'
@@ -236,7 +238,7 @@ if(add_to_eligability_criteria){
 #' The function removed patients flagged for data opt out. This is useful for generating research cohorts.
 #' See Data schema for exact details on how the flag is triggered.
 #'
-#' @param Demographics Demographics table
+#' @param demographics_table Demographics table
 #' @param remove_restricted If restricted (break the glass) patients should also be filtered out
 #' @inheritParams cohort_enforce_family
 #' @family cohort_enforce
