@@ -15,3 +15,10 @@ Boolean and if FLASE then CLI alert
 \description{
 OPCD code validation
 }
+\examples{
+codes <- c("A01.3", "S12","A12, A13, A14", "12.3", "A3.2", "Z12.23")
+for (c in codes){
+try(check_OPCS(c),)
+}
+
+}

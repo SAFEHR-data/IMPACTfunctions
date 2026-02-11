@@ -16,6 +16,8 @@ cohort_enforce_opt_out(
 \arguments{
 \item{procedures_table}{A arrow database binding to the procedures table}
 
+\item{demographics_table}{Demographics table}
+
 \item{remove_restricted}{If restricted (break the glass) patients should also be filtered out}
 
 \item{add_to_eligability_criteria}{If we want to add this level of filtering to the \code{eligability_criteria} dataframe}
@@ -23,8 +25,6 @@ cohort_enforce_opt_out(
 \item{verbose}{Print outputs of the function}
 
 \item{diagnostics}{To check the eligibility criteria, \code{diagnostics=TRUE} will return the filtered data but also the excluded data}
-
-\item{Demographics}{Demographics table}
 }
 \description{
 The function removed patients flagged for data opt out. This is useful for generating research cohorts.

@@ -1,5 +1,20 @@
+#' Cohorting: Select by set of OPCS codes
+#'
+#' @param cohort_name A string to group the cohort, this is useful if producing multiple cohorts with this function
+#' @param include_OPCS A vector of OPSC codes (either 3 or 4 digit) to include in the dataset
+#' @param exclude_OPCS A vector of OPSC codes (either 3 or 4 digit) to exclude in the dataset
+#' @param enforce_coded Enforce that the surgery had been coded by the clinical coding dept
+#'
+#' @name cohort_enforce_family
+#' @importFrom stringi stri_split_fixed
+#' @import dplyr
+#' @export
+#' @examples
+#' library(dplyr)
+#' cohort_1 <- cohort_procedure_codes(Procedures, cohort_name = "Tonsillectomy", include_OPCS = c("F34", "F35"), exclude_OPCS = "E20")
+#'
 cohort_procedure_codes <- function(procedures_table = Procedures,
-                                   cohort_name,
+                                   cohort_name = NA,
                                    include_OPCS = NA,
                                    exclude_OPCS = NA,
                                    add_to_eligability_criteria=TRUE,
@@ -103,11 +118,12 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
     if(verbose){cli::cli_alert_success("Removing {(n_prior - nrow(procedures_table))} procedures where exclsuion codes were found")}
   }
 
+  if(!is.na(cohort_name)){
   procedures_table$cohort_name <- cohort_name
+  }
 
   return(procedures_table)
 #End of Func
-
 }
 
 
