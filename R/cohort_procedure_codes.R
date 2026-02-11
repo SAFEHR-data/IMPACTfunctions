@@ -65,22 +65,36 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
 
   if(verbose){cli::cli_alert_info("Applying the {.arg include_OPCS} codes {.val {include_OPCS}}")}
 
-  #Generate the split code matrix
-  code_matrix <- procedures_table %>% pull(combined_coded_opcs_procedures) %>% stringi::stri_split_fixed(pattern = " | ")
-  #Generate a subset mask
+    #Create the string for the Grepl utilising the bar for an OR statement
   code_vector = na.omit(include_OPCS) %>% paste(collapse = "|")
-  inclusion_mask <- vapply(code_matrix, function(sub_list) {
+
+  ## COMMENT: Previously we had some fancy method of passing vectors, this wasn't great as arrow can read in parallel, so the order of the rows may vary if your not using an arrange statement.
+
+  #Extract the codes and case_ids and bring to memory
+  cohort_codes <- procedures_table %>%
+    select(case_id, combined_coded_opcs_procedures) %>%
+    collect()
+
+  #For each case_id assign a boolean
+  cohort_codes$keep_row <- vapply(cohort_codes$combined_coded_opcs_procedures, function(sub_list) {
+    # Ensure we handle NULLs or potential list structure issues
+    if (is.null(sub_list)) return(FALSE)
     any(grepl(pattern = code_vector, x = unlist(sub_list, use.names = FALSE)))
   }, FUN.VALUE = logical(1))
 
-  # Subset by mask
-  procedures_table <- procedures_table[inclusion_mask,]
+  #create a vector of case_id where boolean ==TREU
+  eligiable_case_ids <- cohort_codes %>%
+    filter(keep_row) %>%
+    pull(case_id)
+
+  # Subset the table
+  procedures_table <- procedures_table %>% filter(case_id %in% eligiable_case_ids)
 
   if(add_to_eligability_criteria){
     eligibility_criteria_add(type = "Inclusion",
                              text = paste0("Procedures with OPSC codes: ", paste(include_OPCS, collapse = ", "), ". Inclusive of 4 digit codes where only 3 digit code provided."),
                              function_name = "cohort_procedure_codes()",
-                             function_filter = "Complex",
+                             function_filter = "%>% filter(case_id %in% eligiable_case_ids)",
                              n_prior = n_prior,
                              n_filtered =  nrow(procedures_table))
   }
@@ -94,13 +108,28 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
 
     if(verbose){cli::cli_alert_info("Applying the {.arg exclude_OPCS} codes {.val {exclude_OPCS}}")}
 
-    #Generate the split code matrix
-    code_matrix <- procedures_table %>% pull(combined_coded_opcs_procedures) %>% stringi::stri_split_fixed(pattern = " | ")
     #Generate a subset mask
     code_vector = na.omit(exclude_OPCS) %>% paste(collapse = "|")
-    exclusion_mask <- vapply(code_matrix, function(sub_list) {
+
+    #Re-Extract the codes and case_ids and bring to memory, thois should be much smaller so if efficent
+    cohort_codes <- procedures_table %>%
+      select(case_id, combined_coded_opcs_procedures) %>%
+      collect()
+
+    #For each case_id assign a boolean
+    cohort_codes$keep_row <- vapply(cohort_codes$combined_coded_opcs_procedures, function(sub_list) {
+      # Ensure we handle NULLs or potential list structure issues
+      if (is.null(sub_list)) return(FALSE)
       any(grepl(pattern = code_vector, x = unlist(sub_list, use.names = FALSE)))
     }, FUN.VALUE = logical(1))
+
+    #create a vector of case_id where boolean ==TRUE
+    exclusion_case_ids <- cohort_codes %>%
+      filter(keep_row) %>%
+      pull(case_id)
+
+    # Subset the table, inverted logic to above
+    procedures_table <- procedures_table %>% filter(!case_id %in% exclusion_case_ids)
 
     n_prior <- nrow(procedures_table)
     # Subset by mask
@@ -110,7 +139,7 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
       eligibility_criteria_add(type = "Exclusion",
                                text = paste0("Procedures with OPSC codes: ", paste(include_OPCS, collapse = ", "), ". Inclusive of 4 digit codes where only 3 digit code provided."),
                                function_name = "cohort_procedure_codes()",
-                               function_filter = "Complex",
+                               function_filter = "%>% filter(!case_id %in% exclusion_case_ids)",
                                n_prior = n_prior,
                                n_filtered =  nrow(procedures_table))
     }

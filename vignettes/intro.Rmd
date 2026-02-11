@@ -36,20 +36,56 @@ load_synthetic_dataset()
 ```
 
 
-# Filter dataset to get study cohort
+> Package Terminology
+>
+> Below is the prefixes and general purpose of each function family
+> - `cohort_...()` - General functions to filter the whole extract to the population of intrest.
+> - `cohort_enforce_...()` - Specific functions to filter one aspect, there are used in sequence for the `cohort_...()` functions.
+> - `compute_...()` - Feature generation functions to extract a vector of the variables of intrest for a population.
+> - `compute_result_...()` - Extract a single value from a single record, this function will be looped over within the respective `compute_...()` function. 
 
-## Use whole dataset as study cohort
+
+# Filtering the dataset to get study cohort
+
+We might want a study cohort (or population of intrest more broadly) with a range of inclusion and exclusion criteria. 
+
+## `cohort_...()` - General functions
+
+We can use the general functions `cohort_...()` to produce these and tweak the arguments to produce our study population. 
+
+```{r, echo=FALSE}
+rm(eligibility_criteria)
+```
+
+### `cohort_complete_admissions()` - Return the procedures with complete data 
+```{r}
+dataset_1 <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
+
+#Use the glimpse function to peer into the dataset
+
+dataset_1 %>% glimpse()
+
+# Use the collect statement to call the table into the session memory as a dataframe
+
+df <- dataset_1 %>% collect()
+
+# View the eloigability criteria table to understand the filtering
+
+eligibility_criteria
+```
+```{r, echo=FALSE}
+rm(eligibility_criteria)
+rm(df)
+rm(dataset_1)
+```
+
+### `cohort_procedure_codes()` - Return the procedures matching specific OPCS codes
 
 ```{r}
 
-rm(eligibility_criteria)
+tonsillectomy <- cohort_procedure_codes(Procedures, cohort_name = "Tonsillectomy", include_OPCS = c("F34", "F35"))
 
-dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
-
-#Use the glimpse function to peer into the dataset
-dataset %>% glimpse()
 ```
-
 
 ```{r}
 #Use single `cohort_enforce` statements
@@ -57,22 +93,18 @@ dataset <- Procedures %>% cohort_enforce_opt_out(verbose=TRUE)
 
 #Or chain together multiple enforce statements
 dataset <- Procedures %>% cohort_enforce_discharged(verbose=TRUE) %>%
-  cohort_enforce_procedure_coded(verbose=TRUE)
+  cohort_enforce_procedure_coded(verbose=TRUE, add_to_eligability_criteria = FALSE)
 
 #Use the help to see the family of cohort_enforce functions
 ?cohort_enforce_family
 
 ```
 
-
 ```{r}
-
-
 
 #Use the collect function to pull the dataset into memory as a dataframe
 dataset_df <- dataset %>% collect()
 ```
-
 
 Examine the eligibility criteria used in the filtering
 ```{r}
