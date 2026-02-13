@@ -5,13 +5,19 @@
 #' @param exclude_OPCS A vector of OPSC codes (either 3 or 4 digit) to exclude in the dataset
 #' @param enforce_coded Enforce that the surgery had been coded by the clinical coding dept
 #'
-#' @name cohort_enforce_family
+#' @family cohort
+#' @inheritParams cohort_complete_admissions
+#' @export
 #' @importFrom stringi stri_split_fixed
 #' @import dplyr
-#' @export
 #' @examples
 #' library(dplyr)
-#' cohort_1 <- cohort_procedure_codes(Procedures, cohort_name = "Tonsillectomy", include_OPCS = c("F34", "F35"), exclude_OPCS = "E20")
+#' load_synthetic_dataset()
+#'
+#' cohort_1 <- cohort_procedure_codes(Procedures,
+#'              cohort_name = "Tonsillectomy",
+#'              include_OPCS = c("F34", "F35"),
+#'              exclude_OPCS = "E20")
 #'
 cohort_procedure_codes <- function(procedures_table = Procedures,
                                    cohort_name = NA,
@@ -129,11 +135,8 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
       pull(case_id)
 
     # Subset the table, inverted logic to above
-    procedures_table <- procedures_table %>% filter(!case_id %in% exclusion_case_ids)
-
     n_prior <- nrow(procedures_table)
-    # Subset by mask
-    procedures_table <- procedures_table[!exclusion_mask,]
+    procedures_table <- procedures_table %>% filter(!case_id %in% exclusion_case_ids)
 
     if(add_to_eligability_criteria){
       eligibility_criteria_add(type = "Exclusion",

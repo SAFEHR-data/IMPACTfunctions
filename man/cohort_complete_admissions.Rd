@@ -60,3 +60,8 @@ dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRU
 #Use the collect function to pull the dataset into memory as a dataframe
 dataset_df <- collect(dataset)
 }
+\seealso{
+Other cohort: 
+\code{\link{cohort_procedure_codes}()}
+}
+\concept{cohort}
