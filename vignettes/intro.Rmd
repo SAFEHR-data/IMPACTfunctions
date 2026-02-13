@@ -15,9 +15,10 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(IMPACTfunctions)
-library(arrow)
-library(dplyr)
+suppressMessages(library(IMPACTfunctions))
+suppressMessages(library(arrow))
+suppressMessages(library(dplyr))
+
 ```
 
 # Open Dataset in R session:
