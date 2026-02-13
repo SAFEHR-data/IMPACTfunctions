@@ -28,7 +28,8 @@ library(dplyr)
 IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
              prefix = "SCB_Periop_",
              suffix ="_20260129.parquet",
-             verbose = TRUE)
+             verbose = TRUE,
+             dictionary_check=FALSE)
 
 #If you do not have a real dataset, load the synthetic dataset
 load_synthetic_dataset()
