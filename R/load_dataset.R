@@ -13,6 +13,7 @@
 #' @param verbose Print the output of each step
 #'
 #' @return A series of tables for the IMPACT dataset in the arrow object binding
+#' @import dplyr
 #' @export
 #'
 #' @examples
@@ -108,6 +109,7 @@ load_dataset <- function(
 #'
 #' @return Procedures arrow table
 #' @export
+#' @import dplyr
 #'
 #' @examples
 #' load_synthetic_dataset()

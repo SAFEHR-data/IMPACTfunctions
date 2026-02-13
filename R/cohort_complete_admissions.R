@@ -23,6 +23,7 @@
 #' @param add_to_eligability_criteria If this filtering should be added to the `eligability_criteria` dataframe
 #'
 #' @return A arrow object that is a filtered subset of the origional `procedures_table`
+#' @family cohort
 #' @export
 #'
 #' @examples

@@ -9,11 +9,15 @@
 #' @param verbose Print outputs of the function
 #' @param diagnostics To check the eligibility criteria, `diagnostics=TRUE` will return the filtered data but also the excluded data
 #'
-#' @family cohort_enforce
 #' @name cohort_enforce_family
+#' @keywords internal
+#' @family cohort_enforce
+#' @import dplyr
+#'
 #' @examples
 #' library(dplyr)
 #' load_synthetic_dataset()
+#'
 #' filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 #' filtered_dataset %>% collect() %>% head()
 #'
@@ -26,9 +30,8 @@
 #' list_of_datasets$included %>% collect() %>% head()
 #' # View the rows that have been excluded
 #' list_of_datasets$excluded %>% collect() %>% head()
+#'
 NULL
-#> NULL
-
 
 #' Eligibility criteria: Complete anaesthetic chart
 #'
@@ -62,7 +65,7 @@ cohort_enforce_complete_anaesthetic_chart <- function(procedures_table,
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
            )
   }else{
     return(procedures_table_filtered)
@@ -100,7 +103,7 @@ cohort_enforce_procedure_coded <- function(procedures_table,
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
     )
   }else{
     return(procedures_table_filtered)
@@ -140,7 +143,7 @@ cohort_enforce_dates_complete <- function(procedures_table,
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
     )
   }else{
     return(procedures_table_filtered)
@@ -182,7 +185,7 @@ cohort_enforce_dates_ordered <- function(procedures_table,
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
     )
   }else{
     return(procedures_table_filtered)
@@ -223,9 +226,9 @@ if(add_to_eligability_criteria){
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
     )
-  }else{
+  }else{diagnostics
     return(procedures_table_filtered)
   }
 
@@ -236,7 +239,7 @@ if(add_to_eligability_criteria){
 #' The function removed patients flagged for data opt out. This is useful for generating research cohorts.
 #' See Data schema for exact details on how the flag is triggered.
 #'
-#' @param Demographics Demographics table
+#' @param demographics_table Demographics table
 #' @param remove_restricted If restricted (break the glass) patients should also be filtered out
 #' @inheritParams cohort_enforce_family
 #' @family cohort_enforce
@@ -254,10 +257,10 @@ cohort_enforce_opt_out <- function(procedures_table,
 
   if(remove_restricted){
     # If remove_restricted = true then filter by OR
-    mrn_to_filter <- mrn_to_filter  %>% filter(opt_out_flag == 1 | restricted_patient_flag == 1) %>% pull(mrn)
+    mrn_to_filter <- mrn_to_filter  %>% filter(opt_out_flag == 1 | restricted_patient_flag == 1) %>% pull(mrn, as_vector = FALSE)
   }else{
     # If not then only filter by Opt out
-    mrn_to_filter <- mrn_to_filter %>% filter(opt_out_flag == 1) %>% pull(mrn)
+    mrn_to_filter <- mrn_to_filter %>% filter(opt_out_flag == 1) %>% pull(mrn, as_vector = FALSE)
   }
 
   prior <- nrow(procedures_table)
@@ -279,7 +282,7 @@ cohort_enforce_opt_out <- function(procedures_table,
 
   if(diagnostics){
     return(list("included" = procedures_table_filtered,
-                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id))))
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
     )
   }else{
     return(procedures_table_filtered)

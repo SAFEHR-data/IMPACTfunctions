@@ -21,6 +21,7 @@ Find a list of the possible functions in the \strong{See Also} section below.
 \examples{
 library(dplyr)
 load_synthetic_dataset()
+
 filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 filtered_dataset \%>\% collect() \%>\% head()
 
@@ -33,6 +34,7 @@ list_of_datasets <- cohort_enforce_dates_ordered(procedures_table = Procedures,
 list_of_datasets$included \%>\% collect() \%>\% head()
 # View the rows that have been excluded
 list_of_datasets$excluded \%>\% collect() \%>\% head()
+
 }
 \seealso{
 Other cohort_enforce: 
@@ -44,3 +46,4 @@ Other cohort_enforce:
 \code{\link{cohort_enforce_procedure_coded}()}
 }
 \concept{cohort_enforce}
+\keyword{internal}
