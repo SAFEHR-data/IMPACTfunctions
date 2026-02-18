@@ -1,5 +1,5 @@
 dataset <- Procedures
-medication <- "morphine"
+medication <- "morphine sulfate"
 MAR <- IntraOpMar
 search_column = "SimpleGenericName"
 
@@ -7,7 +7,7 @@ search_column = "SimpleGenericName"
 extract_medication <- function(dataset,
                                MAR = c(IntraOpMar, PostOpMar),
                                medication,
-                               search_column = "SimpleGenericName",
+                               col = "SimpleGenericName",
                                timeframe = c("whole_encounter", "post_op", "specific"),
                                t0,
                                t1,
@@ -17,18 +17,44 @@ extract_medication <- function(dataset,
 
   # Step 1 - Error checking
 
-  # Argument checking
+  if(verbose){
+    cli::cli_h1("Starting medication feature extraction")
+    cli::cli_h2("Checking data and variable quality")
+  }
 
+  # Argument checking
   if(nrow(dataset)< 1 ){cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away")}
   if(missing(medication)){cli::cli_abort("No medication specifed {.arg medication} to search for, \n \n Please provide a medication to search for")}
+  if(length(medication)>1){cli::cli_alert_info("You have provided a vector of medications, will composite them")}
+
+
+  # TO add time point rules and checking
+
+  if(verbose){cli::cli_alert_success("Arguments provided to function correct")}
 
   # Data quality checking
 
-
-  med_check_soft <- search_drug_names(MAR, "morpggghine")
-  if(nrow(med_check)< 1){
+  #First do a soft check to ensure no misspelling
+  med_check_soft <- search_drug_names(MAR, medication)
+  if(nrow(med_check_soft) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) isnt't in the dataset in any column, \n \n Check for spelling. Use the function {.fun search_drug_names()} to help you check the correct string.")
+  }else{
+    if(verbose){cli::cli_alert_success("{.val {medication}} found in the MAR")}
   }
+
+  med_check_strict <- search_drug_names(MAR, medication, col = col, strict_search = TRUE)
+  if(nrow(med_check_strict) < 1){
+    cli::cli_abort("The {.arg medication} provided ({.val {medication}}) didn't have any exact matched in the {.arg col} = {.val {col}},
+                   \n \nThere were some rows of the MAR that matched! Use the function {.fun search_drug_names} to help you check the variables to pass or see the table below:")
+    print(med_check_soft)
+  }else{
+    if(verbose){cli::cli_alert_success("{.val {medication}} matched values in the column {.val {col}}")}
+  }
+
+
+
+
+
 
 
 
@@ -58,7 +84,7 @@ extract_medication <- function(dataset,
 #' There is often inconsistency in how a medication name, formulation and group is stored. This may represent old formulations being removed, or not listed correctly. This functions helps you to understand what your search string is doing and which medications may be captures for your feature extraction.
 #'
 #' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `PostOpMar`
-#' @param drug_name_string String of the medication to search. It is case insensitive for the soft search
+#' @param medication String of the medication to search. It is case insensitive for the soft search
 #' @param col Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name"` to do a hard search only in that column.
 #' @param verbose Print output
 #'
@@ -75,7 +101,7 @@ extract_medication <- function(dataset,
 #' # We can use the strict search to emulate the medications search functions
 #' search_drug_names(IntraOpMar, "fentanyl", col="simple_generic_name", strict_search=TRUE)
 search_drug_names <- function(MAR = c(IntraOpMar, PostOpMar),
-                              drug_name_string,
+                              medication,
                               strict_search = FALSE,
                               col = c("medication_name", "generic_name", "simple_generic_name"),
                               verbose=TRUE){
@@ -98,21 +124,21 @@ search_drug_names <- function(MAR = c(IntraOpMar, PostOpMar),
     if(all(col ==  c("medication_name", "generic_name", "simple_generic_name"))){
     summary <- summary %>%
       filter(
-        grepl(drug_name_string, medication_name, ignore.case = TRUE) |
-        grepl(drug_name_string, generic_name, ignore.case = TRUE) |
-        grepl(drug_name_string, simple_generic_name, ignore.case = TRUE)
+        grepl(medication, medication_name, ignore.case = TRUE) |
+        grepl(medication, generic_name, ignore.case = TRUE) |
+        grepl(medication, simple_generic_name, ignore.case = TRUE)
       )
     } else{
       # Else doing a single column soft search
      summary <- summary %>%
         filter(
-          grepl(drug_name_string, .data[[col]], ignore.case = TRUE)
+          grepl(medication, .data[[col]], ignore.case = TRUE)
         )
     }
   }else{
     # Strict search
     summary <- summary %>%
-      filter(.data[[col]] == drug_name_string)
+      filter(.data[[col]] == medication)
   }
   return(summary)
 }
