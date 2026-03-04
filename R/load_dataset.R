@@ -102,9 +102,11 @@ load_dataset <- function(
     path <- paste0(folder_path,"/", files[i])
     df <- arrow::open_dataset(path)
 
+
     # If a col name issue is presne then rename
     if(col_rename %in% names(df)){
       #Apply the column renaming
+      cli::cli_alert_warning("WARNING: In the table {.val {names[i]}} there is a typo in the column {.val {names(df)[which(names(df) %in% col_rename)]}}. Overwriting to {.val {names(col_rename)[col_rename == names(df)[names(df) %in% col_rename]]}}. ")
       df <- df %>% rename(col_rename)
     }
 
