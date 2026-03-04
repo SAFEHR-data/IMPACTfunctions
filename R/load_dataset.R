@@ -86,14 +86,33 @@ load_dataset <- function(
   }
 
 
+  # Check for column name integrity
+  ## THis is a placeholder until github issue: https://github.com/SAFEHR-data/IMPACTfunctions/issues/1 is resolved
+  ## When we have a updateable schema we can match table AND column names in the logic above.
+  ## In the meantime we will apply overwritting to ensure common format.
+  ## Missing columns are dellt with using the vignettes and the synthetic dataset (If a col isnt in the synth data, the vignette building will fail. )
+
+  ## Format: NEW NAME = OLD NAME
+  col_rename <- c("anaesthesia_csn" = "anesthesia_csn")
+
   # Stage 3 - Loading data into current R session
 
   if(verbose){cli::cli_alert("Uploading {.val {length(files)}} tables to the R session enviroment")}
   for(i in 1:length(files)){
     path <- paste0(folder_path,"/", files[i])
     df <- arrow::open_dataset(path)
+
+    # If a col name issue is presne then rename
+    if(col_rename %in% names(df)){
+      #Apply the column renaming
+      df <- df %>% rename(col_rename)
+    }
+
     assign(names[i], df, envir = globalenv())
   }
+
+
+
 
 
   if(verbose){cli::cli_alert_success("Dataset imported!")}
