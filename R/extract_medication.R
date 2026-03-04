@@ -139,6 +139,11 @@ extract_medication <- function(dataset,
 
   }
 
+  #### ERROR CHECKING - See Github Issue: https://github.com/SAFEHR-data/IMPACTfunctions/issues/21
+  if(typeof(timeframe_df$admission_csn) != typeof(MAR %>% pull(admission_csn))){
+    cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
+    timeframe_df$admission_csn <- as.numeric(timeframe_df$admission_csn)
+  }
 
 
 
