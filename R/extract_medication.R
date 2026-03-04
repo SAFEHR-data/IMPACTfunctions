@@ -1,8 +1,11 @@
-dataset <- Procedures
-medication <- c("morphine sulfate", "propofol")
-MAR <- IntraOpMar
+dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
+medication <- "morphine sulfate"
+MAR <- PostOpMar
 search_column = "simple_generic_name"
-
+timeframe = "post_op"
+t0 <- "operation_date"
+t_int <- lubridate::hours(3)
+t1 <- "discharge_date"
 
 #' Title
 #'
@@ -24,8 +27,8 @@ search_column = "simple_generic_name"
 #' @param medication Name of medication to search for. Can be single medication or vector
 #' @param search_column The column which to search the medication string against. See help above.
 #' @param timeframe A set of time frames of which to search for, See help above for options
-#' @param t0 If subsetting by time, what is the start time to filter by
-#' @param t_int If subsetting by time, the time interval from t0 to search from
+#' @param t0 If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.
+#' @param t_int If subsetting by time, the time interval from t0 to search from.
 #' @param t1 If subsetting by time, what is the end time to filter by
 #' @param format
 #' @param verbose
@@ -77,6 +80,22 @@ extract_medication <- function(dataset,
     cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val PostOpMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a cimmunity MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
   }
 
+  ## Dataset checking
+  duplicate_rows <- any(dataset %>% pull(any_of(csn_vector_name)) %>% duplicated())
+  if(duplicate_rows & identical(MAR, IntraOpMar)){
+    cli::cli_alert_danger("CAUTION: There are rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching intra-op MAR's. This is because the variable returned will be a sum/avg across mutiple anaesthetic MAR's. Suggest enforcing filter with one procedure per encounter")
+  }else if(duplicate_rows & identical(MAR, PostOpMar)){
+    cli::cli_alert_danger("CAUTION: There are  rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching post-op MAR's. Ajny timeframe filtering may return varying windows. Variable may be duplicated across these duplicated rows.")
+  }
+
+  na_csn_rows <- any(dataset %>% pull(any_of(csn_vector_name)) %>% is.na())
+  if(na_csn_rows){
+    cli::cli_alert_danger("CAUTION: There are rows within the dataset provided that have {.val NA} in the column {.arg {csn_vector_name}}, this may cause errors as you are searching against a {.val NA} CSN. Reccommend you run {.fn cohort_complete_admissions} in your workflow. \n \n Removing these rows for now. ")
+    dataset <- dataset %>% filter(!is.na(csn_vector_name))
+  }
+
+
+
   ## Assigning time points if used timeframe argument
   if(missing(timeframe)){
     if(verbose){cli::cli_alert_success("No timeframe provided, searching whole MAR per encounter.")}
@@ -85,28 +104,43 @@ extract_medication <- function(dataset,
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching whole MAR per encounter.")}
   }else if(timeframe == "pre_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only pre-operative period.")}
-    t0 <- dataset %>% pull(admission_date)
-    t1 <- dataset %>% pull(operation_date)
+    t0_col <- dataset %>% select(all_of(csn_vector_name), admission_date)
+    t1_col <- dataset %>% select(all_of(csn_vector_name), operation_date)
+    timeframe_df <- full_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "post_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
-    t0 <- dataset %>% pull(operation_date)
-    t1 <- dataset %>% pull(discharge_date)
+    t0_col <- dataset %>% select(all_of(csn_vector_name), operation_date)
+    t1_col <- dataset %>% select(all_of(csn_vector_name), discharge_date)
+    timeframe_df <- full_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "custom"){
+
+    ## Error checking that the timestamps are set properly
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
+
     #If timeframe custom, ensure propry t0,t1 and t_int set.
+    t0_col <- dataset %>% select(all_of(csn_vector_name, t0))
     if(!missing(t_int) & !missing_t_1){
       cli::cli_abort("You have tried to supply both a time interval ({.arg t_int}) and a end time ({.arg t_1}). \n \n Supply only one end time variable")
     }else if(!missing(t0) & (mising(t1) & missing(t_int))){
     cli::cli_alert_danger("CAUTION: you have supplied a start time to subset by but not an end time. Will return from the {.arg t0} timepoint onwards.")
     }
+
+    #Assuming test above are passed then we can check if have passed a t_int and then calcualte the t_1
+    if(!missing(t_int)){
+      t0_col <- dataset %>% select(all_of(csn_vector_name), t0 = all_of(t0))
+      timeframe_df <- t0_col %>% collect() %>% mutate(t1 = t0 + t_int)
+    }else if(!missing(t1)){
+      t0_col <- dataset %>% select(all_of(csn_vector_name),  t0 = all_of(t0))
+      t1_col <- dataset %>% select(all_of(csn_vector_name),  t1 = all_of(t1))
+      timeframe_df <- full_join(t0_col, t1_col) %>% collect()
+    }else{
+      cli::cli_abort("Hmm, you should have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
+      }
+
   }
 
-  duplicate_rows <- any(dataset %>% pull(admission_csn) %>% duplicated())
-  if(duplicate_rows & identical(MAR, IntraOpMar)){
-    cli:cli_alert_danger("CAUTION: There are multiple procedures within the dataset provided, this may cause errors as you are searching intra-op MAR's. This is because the variable returned will be a sum/avg across mutiple anaesthetic MAR's. Suggest enforcing filter with one procedure per encounter")
-  }else if(duplicate_rows & identical(MAR, PostOpMar)){
-    cli:cli_alert_danger("CAUTION: There are multiple procedures within the dataset provided, this may cause errors as you are searching post-op MAR's. Ajny timeframe filtering may return varying windows. Variable may be duplicated across these duplicated rows.")
-  }
+
+
 
   if(verbose){cli::cli_alert_success("Arguments provided to function correct")}
 
@@ -146,31 +180,27 @@ extract_medication <- function(dataset,
   # 2b - Establishing the value to return against.
   ## Uses the vector that is set above given the type of MAR you are extracting against.
 
-  csv_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
-  subset <- subset %>% filter(.data[[csn_vector_name]] %in% csv_vector)
+  csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
 
   # 2c - Subsetting for the patients in the dataset
 
+  subset <- subset %>% filter(.data[[csn_vector_name]] %in% csn_vector)
 
-
-  dataset %>%
-
-    ## Need to work out this subsettign by patietn,
-    ##Issue of if you search for post-op mar then return the variable vector against the admission CSN but if searching intra-op mar then to return agaisnt the aanaesthetis/case CSN
-    ## Issue of how to then extrac the variable timepoints.
-    ##Could use a case_When? or an embedded lambda function or a left join
 
   # 2d - Subsetting for timeframe
 
- if(timeframe == "whole_mar"){dwhit
-   NULL
+ if(timeframe == "whole_mar"){
+   subset <- subset %>% collect()
  }else{
-   #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc). We could try a to_duckdb() but we will just call to memory as the subset should be small by now.
-    subset <- subset %>% collect()
+   #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc).
+   ##Instead we pull our timepoints in the logic section above to make a fixed dataset object where the t0 and t1 times are on the same row as the CSN.
+
+   ## Regretablly the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
+    subset <- subset %>% collect() %>% left_join(timeframe_df, copy = TRUE)
     subset <- subset %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
  }
 
-  subset %>% collect()
+
 
 
 
