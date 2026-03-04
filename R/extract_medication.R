@@ -64,8 +64,17 @@ extract_medication <- function(dataset,
   if(identical(MAR, IntraOpMar)){
     if(timeframe %in% c("pre_op", "post_op")){cli::cli_abort("Requested {.val timeframe} of {.val {timeframe}} but the {.arg MAR} supplied is the {.val IntraOpMar}. \n \n Please either change the MAR or use {.arg timeframe} = {.val 'whole_mar'} or {.val 'specific'}")}
     if(verbose){cli::cli_alert_success("Searching in the Intra-Op MAR")}
-  }else{
+
+    #Set the return vector against the anaesthesia record
+    ## NOTE: this vector is intentionally not exposed to the arguments, its seems the custom use of this may be too advanced.
+    csn_vector_name <- "anaesthesia_csn"
+
+  }else if(identical(MAR, PostOpMar)){
     if(verbose){cli::cli_alert_success("Searching in the Post-Op MAR")}
+    csn_vector_name <- "admission_csn"
+
+  }else{
+    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val PostOpMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a cimmunity MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
   }
 
   ## Assigning time points if used timeframe argument
@@ -126,7 +135,7 @@ extract_medication <- function(dataset,
 
   # We concatenate the medications strings here to allow the search functions above to recive a vector.
   if(length(medication)>1){
-    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an OR search")}
+    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
     medication <- paste0(medication, collapse = "|")
   }
 
@@ -134,13 +143,26 @@ extract_medication <- function(dataset,
 
   subset <- MAR %>% filter(get({{search_column}}) %in% medication)
 
-  # 2b - Subsetting for the patients in the dataset
+  # 2b - Establishing the value to return against.
+  ## Uses the vector that is set above given the type of MAR you are extracting against.
+
+  csv_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
+  subset <- subset %>% filter(.data[[csn_vector_name]] %in% csv_vector)
+
+  # 2c - Subsetting for the patients in the dataset
+
+
 
   dataset %>%
 
-  # 2b - Subsetting for timeframe
+    ## Need to work out this subsettign by patietn,
+    ##Issue of if you search for post-op mar then return the variable vector against the admission CSN but if searching intra-op mar then to return agaisnt the aanaesthetis/case CSN
+    ## Issue of how to then extrac the variable timepoints.
+    ##Could use a case_When? or an embedded lambda function or a left join
 
- if(timeframe == "whole_mar"){
+  # 2d - Subsetting for timeframe
+
+ if(timeframe == "whole_mar"){dwhit
    NULL
  }else{
    #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc). We could try a to_duckdb() but we will just call to memory as the subset should be small by now.
