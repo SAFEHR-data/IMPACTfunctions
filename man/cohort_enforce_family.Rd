@@ -19,8 +19,9 @@ Below is all of the enforcement level functions for contorting Each one will exe
 Find a list of the possible functions in the \strong{See Also} section below.
 }
 \examples{
+\dontshow{list2env(load_synthetic_dataset(), envir = .GlobalEnv)}
+
 library(dplyr)
-load_synthetic_dataset()
 
 filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 filtered_dataset \%>\% collect() \%>\% head()

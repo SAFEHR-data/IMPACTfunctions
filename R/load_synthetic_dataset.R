@@ -9,7 +9,10 @@
 #' @import dplyr
 #'
 #' @examples
-#' load_synthetic_dataset()
+#'
+#' ## Note that you need to assign the synth_data to the global Env for the functions to work.
+#' synth_data <- load_synthetic_dataset()
+#' list2env(synth_data, envir = .GlobalEnv)
 #'
 load_synthetic_dataset <- function() {
 

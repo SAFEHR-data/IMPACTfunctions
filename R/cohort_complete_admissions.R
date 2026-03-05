@@ -25,8 +25,9 @@
 #' @return A arrow object that is a filtered subset of the origional `procedures_table`
 #' @family cohort
 #' @export
-#'
+#' @template setup-data
 #' @examples
+#'
 #' library(dplyr)
 #' dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
 #' #Use the glimpse function to peer into the dataset

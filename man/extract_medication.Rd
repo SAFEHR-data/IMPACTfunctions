@@ -29,9 +29,9 @@ extract_medication(
 
 \item{timeframe}{A set of time frames of which to search for, See help above for options}
 
-\item{t0}{If subsetting by time, what is the start time to filter by}
+\item{t0}{If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.}
 
-\item{t_int}{If subsetting by time, the time interval from t0 to search from}
+\item{t_int}{If subsetting by time, the time interval from t0 to search from.}
 
 \item{t1}{If subsetting by time, what is the end time to filter by}
 

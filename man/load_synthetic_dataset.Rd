@@ -16,6 +16,9 @@ A function to check if there is Procedure tables in the environment, if not then
 This is used for testing of functions
 }
 \examples{
-load_synthetic_dataset()
+
+## Note that you need to assign the synth_data to the global Env for the functions to work.
+synth_data <- load_synthetic_dataset()
+list2env(synth_data, envir = .GlobalEnv)
 
 }

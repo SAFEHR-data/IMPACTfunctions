@@ -33,8 +33,8 @@ cohort_procedure_codes(
 Cohorting: Select by set of OPCS codes
 }
 \examples{
+\dontshow{list2env(load_synthetic_dataset(), envir = .GlobalEnv)}
 library(dplyr)
-load_synthetic_dataset()
 
 cohort_1 <- cohort_procedure_codes(Procedures,
              cohort_name = "Tonsillectomy",
