@@ -1,0 +1,153 @@
+get_synthetic_cache_dir <- function() {
+  cache_dir <- tools::R_user_dir("IMPACTfunctions", which = "cache")
+  if (!dir.exists(cache_dir)) {
+    dir.create(cache_dir, recursive = TRUE)
+  }
+  return(cache_dir)
+}
+
+generate_synthetic_dataset<- function(clear_cache = FALSE){
+
+  #### SYNTHETIC DATASET
+  cache_dir <- get_synthetic_cache_dir()
+
+  if(clear_cache){
+    unlink(paste0(cache_dir,"/*"))
+  }
+
+  ## The procedures table is generated first, then the others from there
+
+  path_procedures <- file.path(cache_dir, "procedures_synthetic.parquet")
+
+  if (!file.exists(path_procedures)){
+    # If the parquet file cannot be found then generate and save to cache.
+
+  # Generate 10,000 procedures
+  n <- 10000
+  # Generate a list of CNS to populate the various columns
+  csn_list <- sample(c(1000000:2000000), n*4, replace = FALSE)
+
+  #Date ranges
+  start_date = "2020-01-01 00:00:00" %>% as.POSIXct()
+  end_date = "2025-12-31 23:00:00"%>% as.POSIXct()
+  time_to_surgery = 3
+  time_to_discharge = 24
+
+  #Coded_procedures
+  code_numbers <- c(paste0(0, 1:9), 10:99)
+  procedure_codes <- apply(expand.grid(LETTERS, code_numbers), 1, paste0, collapse="")
+  procedure_codes <- apply(expand.grid(procedure_codes, 1:9), 1, paste0, collapse=".")
+
+
+  synthetic_procedures <- data.frame(mrn = as.character(40000000+sample.int(n*0.8, size = n, replace = TRUE)),
+                                     admission_csn = csn_list[1:n],
+                                     anaesthesia_csn = csn_list[(n+1):(2*n)],
+                                     operation_csn = csn_list[((2*n)+1):(3*n)],
+                                     case_id = 1:n,
+                                     admission_date = sample(c(start_date:end_date), n, replace = TRUE) %>% as.POSIXct(),
+                                     operation_date = NA,
+                                     discharge_date = NA,
+                                     primary_coded_procedure = sample(procedure_codes, n),
+                                     combined_coded_opcs_procedures=NA)
+
+  # Apply column relationships
+
+
+  synthetic_procedures <- synthetic_procedures %>%
+    mutate(operation_date = admission_date + lubridate::minutes(as.integer(rnorm(n = n, mean = time_to_surgery)*60 ))) %>%
+    mutate(discharge_date = operation_date + lubridate::minutes(as.integer(rnorm(n = n, mean = time_to_discharge, sd=10)*60))
+    ) %>% rowwise() %>%
+    mutate(combined_coded_opcs_procedures = {
+      # Sample between 0 and 10 codes independently for this row
+      additional_codes <- sample(procedure_codes, size = sample.int(10,1, replace=TRUE), replace = TRUE)
+      # Combine the primary code with the new samples
+      paste(c(primary_coded_procedure, additional_codes), collapse = " | ")
+    }) %>%
+    ungroup()
+
+
+  # Apply random drop-out to simulate missing data
+
+  synthetic_procedures <- synthetic_procedures %>%
+    mutate(anaesthesia_csn = if_else(runif(n()) < 0.005, NA, anaesthesia_csn)) %>%
+    mutate(admission_date = if_else(runif(n()) < 0.005, NA, admission_date)) %>%
+    mutate(discharge_date = if_else(runif(n()) < 0.01, NA, discharge_date))
+
+    arrow::write_parquet(synthetic_procedures, path_procedures)
+
+  }
+
+  ##### SYNTHETIC DEMOGRAPHICS
+  path_demographics <- file.path(cache_dir, "demographics_synthetic.parquet")
+
+  if (!file.exists(path_demographics)){
+  n_unique_mrn <- length(unique(synthetic_procedures$mrn))
+
+  synthetic_demographics <- data.frame(
+    mrn = unique(synthetic_procedures$mrn),
+    restricted_patient_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
+    opt_out_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99))
+  )
+  arrow::write_parquet(synthetic_demographics, path_demographics)
+  }
+
+  ### SYNTHETIC MAR
+
+  path_intraopmar <- file.path(cache_dir, "intraopmar_synthetic.parquet")
+
+  if (!file.exists(path_intraopmar)){
+
+    intra_op_medications <- c("paracetamol", "sodium lactate compound", "propofol", "fentanyl", "ondansetron", "dexamethasone", "remifentanil", "morphine sulfate" )
+
+  # Each patient will get 5 intra-op meds
+  synthetic_intraopmar  <- synthetic_procedures %>%
+    slice_sample(n = n*5, replace = TRUE)%>%
+    rowwise() %>%
+    mutate(
+      simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
+      dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
+      administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
+    )%>%
+    ungroup()%>%
+    mutate(
+      # Use n() to match the dataframe row count
+      # Ensure time_to_surgery is numeric (representing hours)
+      administration_offset_minutes = as.integer(rnorm(n = n(), mean = 1, sd=0.3) * 60),
+      administration_date_time = operation_date + lubridate::minutes(administration_offset_minutes)
+    )%>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes))
+
+  arrow::write_parquet(synthetic_intraopmar, path_intraopmar)
+  }
+
+
+  path_postopmar <- file.path(cache_dir, "postopmar_synthetic.parquet")
+
+  if (!file.exists(path_postopmar)){
+
+    post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
+
+  # and 20 post-op meds
+  synthetic_postopmar  <- synthetic_procedures %>%
+    slice_sample(n = n*20, replace = TRUE)%>%
+    rowwise() %>%
+    mutate(
+      simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
+      dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
+      administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
+      administration_date_time = as.POSIXct(
+        runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date)),
+        origin = "1970-01-01"
+      )
+    )%>%
+    ungroup()%>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures)) %>%
+    na.omit()
+
+  arrow::write_parquet(synthetic_postopmar, path_postopmar)
+  }
+
+
+}
