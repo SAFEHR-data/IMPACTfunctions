@@ -17,9 +17,14 @@ search_drug_names(
 
 \item{medication}{String of the medication to search. It is case insensitive for the soft search}
 
+\item{strict_search}{TO do exact string and column matching. Useful for testing arguments for \code{extract_medication()} function}
+
 \item{search_column}{Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of \verb{"medication_name", "generic_name", "simple_generic_name"} to do a hard search only in that column.}
 
 \item{verbose}{Print output}
+}
+\value{
+A dataframe summarising the medications mathcing the search criteria and their freqency.
 }
 \description{
 There is often inconsistency in how a medication name, formulation and group is stored. This may represent old formulations being removed, or not listed correctly. This functions helps you to understand what your search string is doing and which medications may be captures for your feature extraction.

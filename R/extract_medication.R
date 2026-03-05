@@ -11,7 +11,7 @@
 #'
 #' To search the relevant MAR to return features/variables related to the medications
 #'
-#'\section{Search time windows}
+#' Search time windows
 #'
 #' The default behavior of the function is to return the metric of all of the medications on the MAR of intrest, for the admission of intrest. We may want to search with specific timepoints to establise the medication use during a sepcifed periood such as Post op.
 #'
@@ -30,14 +30,20 @@
 #' @param t0 If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.
 #' @param t_int If subsetting by time, the time interval from t0 to search from.
 #' @param t1 If subsetting by time, what is the end time to filter by
-#' @param format
-#' @param verbose
-#' @param feature_name
+#' @param format The format you want the function to return, choose either: **"table"** or **"vector"**
+#' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "Min", "Max", "Mean", "Mode"
+#' @param verbose Print the stwps as the function runs? Helpfu for setting up and debugging
+#' @param feature_name if returning a vector, what do you want the feature column called?
 #'
-#' @return
+#' @return Either a subsetted MAR daraframe or feature vector depedning on `format`
 #' @export
-#'
+#' @template setup-data
 #' @examples
+#'
+#' #dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
+#' #extract_medication(dataset, MAR = IntraOpMAR, ...)
+#'
+#'
 extract_medication <- function(dataset,
                                MAR = c(IntraOpMar, PostOpMar),
                                medication,
@@ -47,8 +53,10 @@ extract_medication <- function(dataset,
                                t_int,
                                t1,
                                format,
-                               verbose=TRUE,
-                               feature_name){
+                               feature,
+                               feature_name,
+                               verbose=TRUE
+                               ){
 
   # Step 1 - Error checking
 
