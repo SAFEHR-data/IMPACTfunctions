@@ -116,7 +116,9 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
       administration_offset_minutes = as.integer(rnorm(n = n(), mean = 1, sd=0.3) * 60),
       administration_date_time = operation_date + lubridate::minutes(administration_offset_minutes)
     )%>%
-    select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes))
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes)) %>%
+    mutate(generic_name = toupper(simple_generic_name),
+           medication_name = paste(generic_name, dose, dose_units))
 
   arrow::write_parquet(synthetic_intraopmar, path_intraopmar)
   }
@@ -144,7 +146,9 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     )%>%
     ungroup()%>%
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures)) %>%
-    na.omit()
+    na.omit()%>%
+    mutate(generic_name = toupper(simple_generic_name),
+           medication_name = paste(generic_name, dose, dose_units))
 
   arrow::write_parquet(synthetic_postopmar, path_postopmar)
   }
