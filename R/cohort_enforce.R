@@ -13,10 +13,10 @@
 #' @keywords internal
 #' @family cohort_enforce
 #' @import dplyr
-#'
+#' @template setup-data
 #' @examples
+#'
 #' library(dplyr)
-#' load_synthetic_dataset()
 #'
 #' filtered_dataset <- cohort_enforce_complete_anaesthetic_chart(Procedures)
 #' filtered_dataset %>% collect() %>% head()

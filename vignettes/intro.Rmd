@@ -7,23 +7,34 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, include = FALSE, echo=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 ```
 
-```{r setup}
-suppressMessages(library(IMPACTfunctions))
-suppressMessages(library(arrow))
-suppressMessages(library(dplyr))
+```{r echo=FALSE, eval=TRUE, message=FALSE}
+# Instead of librarying the package, we actually want to dynamically load_all
+library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
+```
 
+```{r setup, eval=FALSE, echo=TRUE}
+library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
 ```
 
 # Open Dataset in R session:
 
-```{r}
+
+## Using real IMPACT data
+
+You can either load the dataset using a parquet extract from the IMPACT dataset as below
+
+```{r, eval=FALSE}
 
 # Load real data
 IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
@@ -32,19 +43,35 @@ IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/2026012
              verbose = TRUE,
              dictionary_check=FALSE)
 
-#If you do not have a real dataset, load the synthetic dataset
-load_synthetic_dataset()
 
 ```
 
+## Using synthetic data
+
+Alternatively you can use the synthetic data that comes with the package to test and build your workflow whislt you wait for data. 
+Note that the synthetic data is a minimum viable dataset to allow all of the functions within the package. The Fully IMPACT dataset can and does contain more data that we have not replicated. 
+
+```{r, message=FALSE}
+#If you do not have a real dataset, load the synthetic dataset
+synth_data <- load_synthetic_dataset()
+list2env(synth_data, envir = .GlobalEnv)
+rm(synth_data)
+
+```
+
+# A Note on package terminology
+
+We use the following terms to describe our functions.
 
 > Package Terminology
 >
 > Below is the prefixes and general purpose of each function family
 > - `cohort_...()` - General functions to filter the whole extract to the population of intrest.
 > - `cohort_enforce_...()` - Specific functions to filter one aspect, there are used in sequence for the `cohort_...()` functions.
-> - `compute_...()` - Feature generation functions to extract a vector of the variables of intrest for a population.
-> - `compute_result_...()` - Extract a single value from a single record, this function will be looped over within the respective `compute_...()` function. 
+> - `extract_...()` - Feature generation functions to extract a vector of the variables of intrest for a population.
+> - `extract_record_...()` - Extract a single value from a single record, this function will be looped over within the respective `compute_...()` function. 
+
+Note as a number of our extract functions are vectorised they may not have a extract_record version. Otherwise you should subset your dataframe to the patient of interest and then run the extract function. 
 
 
 # Filtering the dataset to get study cohort

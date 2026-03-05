@@ -2,7 +2,7 @@
 #'
 #' @return A dataframe `eligibility_criteria` to the global environment if it doesn't yet exist.
 #' @export
-#'
+#' @template setup-data
 #' @examples
 #' # Not run
 eligibility_criteria_check <- function(){

@@ -13,5 +13,8 @@ A dataframe \code{eligibility_criteria} to the global environment if it doesn't 
 Check eligibility criteria dataframe
 }
 \examples{
+\dontshow{
+list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+}
 # Not run
 }

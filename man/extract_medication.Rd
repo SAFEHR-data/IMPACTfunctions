@@ -14,8 +14,9 @@ extract_medication(
   t_int,
   t1,
   format,
-  verbose = TRUE,
-  feature_name
+  feature,
+  feature_name,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -29,19 +30,28 @@ extract_medication(
 
 \item{timeframe}{A set of time frames of which to search for, See help above for options}
 
-\item{t0}{If subsetting by time, what is the start time to filter by}
+\item{t0}{If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.}
 
-\item{t_int}{If subsetting by time, the time interval from t0 to search from}
+\item{t_int}{If subsetting by time, the time interval from t0 to search from.}
 
 \item{t1}{If subsetting by time, what is the end time to filter by}
 
-\item{feature_name}{}
+\item{format}{The format you want the function to return, choose either: \strong{"table"} or \strong{"vector"}}
+
+\item{feature}{If returning a vector, what type of feature do you want extracted? Choose: \strong{"binary"}, "Min", "Max", "Mean", "Mode"}
+
+\item{feature_name}{if returning a vector, what do you want the feature column called?}
+
+\item{verbose}{Print the stwps as the function runs? Helpfu for setting up and debugging}
+}
+\value{
+Either a subsetted MAR daraframe or feature vector depedning on \code{format}
 }
 \description{
 To search the relevant MAR to return features/variables related to the medications
 }
 \details{
-\section{Search time windows}
+Search time windows
 
 The default behavior of the function is to return the metric of all of the medications on the MAR of intrest, for the admission of intrest. We may want to search with specific timepoints to establise the medication use during a sepcifed periood such as Post op.
 
@@ -50,4 +60,14 @@ If \emph{timeframe} = \emph{"whole_mar} (\strong{The default behavior}) then it 
 If \emph{timeframe} = \emph{pre_op} then it will return the sections of the Post-op MAR (Even though it is called post-op it is really the ward MAR which is all medications given outside of theatre) between the admission datetime and the operation datetime.
 If \emph{timeframe} = \emph{post_op} then it will return the sections of the Post-op MAR between the admission operation datetime and the discharge datetime.
 If \emph{timeframe} = \emph{custom} then you may supply the vector of values for t0 and either t1 or 1_int to set a custom time window.
+}
+\examples{
+\dontshow{
+list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+}
+
+#dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
+#extract_medication(dataset, MAR = IntraOpMAR, ...)
+
+
 }

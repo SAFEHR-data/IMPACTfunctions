@@ -1,17 +1,17 @@
-dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
-medication <- "morphine sulfate"
-MAR <- PostOpMar
-search_column = "simple_generic_name"
-timeframe = "post_op"
-t0 <- "operation_date"
-t_int <- lubridate::hours(3)
-t1 <- "discharge_date"
+#dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
+#medication <- "morphine sulfate"
+#MAR <- PostOpMar
+#search_column = "simple_generic_name"
+#timeframe = "post_op"
+#t0 <- "operation_date"
+#t_int <- lubridate::hours(3)
+#t1 <- "discharge_date"
 
 #' Title
 #'
 #' To search the relevant MAR to return features/variables related to the medications
 #'
-#'\section{Search time windows}
+#' Search time windows
 #'
 #' The default behavior of the function is to return the metric of all of the medications on the MAR of intrest, for the admission of intrest. We may want to search with specific timepoints to establise the medication use during a sepcifed periood such as Post op.
 #'
@@ -30,14 +30,20 @@ t1 <- "discharge_date"
 #' @param t0 If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.
 #' @param t_int If subsetting by time, the time interval from t0 to search from.
 #' @param t1 If subsetting by time, what is the end time to filter by
-#' @param format
-#' @param verbose
-#' @param feature_name
+#' @param format The format you want the function to return, choose either: **"table"** or **"vector"**
+#' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "Min", "Max", "Mean", "Mode"
+#' @param verbose Print the stwps as the function runs? Helpfu for setting up and debugging
+#' @param feature_name if returning a vector, what do you want the feature column called?
 #'
-#' @return
+#' @return Either a subsetted MAR daraframe or feature vector depedning on `format`
 #' @export
-#'
+#' @template setup-data
 #' @examples
+#'
+#' #dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
+#' #extract_medication(dataset, MAR = IntraOpMAR, ...)
+#'
+#'
 extract_medication <- function(dataset,
                                MAR = c(IntraOpMar, PostOpMar),
                                medication,
@@ -47,8 +53,10 @@ extract_medication <- function(dataset,
                                t_int,
                                t1,
                                format,
-                               verbose=TRUE,
-                               feature_name){
+                               feature,
+                               feature_name,
+                               verbose=TRUE
+                               ){
 
   # Step 1 - Error checking
 
@@ -231,79 +239,6 @@ extract_medication <- function(dataset,
 
 
 }
-
-
-
-#' Helper function to search the MAR
-#'
-#' There is often inconsistency in how a medication name, formulation and group is stored. This may represent old formulations being removed, or not listed correctly. This functions helps you to understand what your search string is doing and which medications may be captures for your feature extraction.
-#'
-#' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `PostOpMar`
-#' @param medication String of the medication to search. It is case insensitive for the soft search
-#' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name"` to do a hard search only in that column.
-#' @param verbose Print output
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' search_drug_names(IntraOpMar, "morphine") #Notice that we capture Diamorph as well
-#' search_drug_names(IntraOpMar, "morphine sulfate") # We have now refined our string to remove diamorph but we have also lost the `Morphine 10mg for recovery`
-#' search_drug_names(IntraOpMar, "MORPHINE") #Notice that the search is case insenstive becuase capitilisation is not consistent
-#'
-#' search_drug_names(IntraOpMar, "fentanyl")
-#' search_drug_names(IntraOpMar, "fentanyl", search_column="simple_generic_name")
-#' # We can use the strict search to emulate the medications search functions
-#' search_drug_names(IntraOpMar, "fentanyl", search_column="simple_generic_name", strict_search=TRUE)
-search_drug_names <- function(MAR = c(IntraOpMar, PostOpMar),
-                              medication,
-                              strict_search = FALSE,
-                              search_column = c("medication_name", "generic_name", "simple_generic_name"),
-                              verbose=TRUE){
-
-  if(verbose){
-  cli::cli_h1("Starting drug search tool")
-  cli::cli_inform("Use this function to help understand the names that drugs use within the the diffrent naming columns")
-  }
-
-  # If multiple strings attached then concat with bar for OR statement in GREPL
-  if(length(medication)> 1){
-    medication <- paste0(medication, collapse = "|")
-  }
-
-  if(strict_search & missing(search_column)){
-    Possible_col = c("medication_name", "generic_name", "simple_generic_name")
-    cli::cli_abort("You gave tried to do a strict search but not included a column to search in. \n \n Provide the argument {.arg col} with one of following column names: {.val {Possible_col}} ")
-  }
-
-  # Generate the summary for all columns
-  summary <- MAR %>% group_by(medication_name,generic_name, simple_generic_name ) %>% summarise(rows = n(), .groups = "drop") %>% collect()
-
-  if(!strict_search){
-  # If doing soft search then do OR for the grep
-    if(all(search_column %in%  c("medication_name", "generic_name", "simple_generic_name"))){
-    summary <- summary %>%
-      filter(
-        grepl(medication, medication_name, ignore.case = TRUE) |
-        grepl(medication, generic_name, ignore.case = TRUE) |
-        grepl(medication, simple_generic_name, ignore.case = TRUE)
-      )
-    } else{
-      # Else doing a single column soft search
-     summary <- summary %>%
-        filter(
-          grepl(medication, .data[[search_column]], ignore.case = TRUE)
-        )
-    }
-  }else{
-    # Strict search
-    summary <- summary %>%
-      filter(.data[[search_column]] == medication)
-  }
-  return(summary)
-}
-
-
 
 
 
