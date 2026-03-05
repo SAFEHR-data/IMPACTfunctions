@@ -1,19 +1,3 @@
-
-#### IMPACT dictionary
-
-## The below if fixed code to define the IMPACT dataset schema, this serves to ensure imported files with the `import_dataset()` match the approved structre.
-## This is a placeholder for a dynamic dataset reading from an online source: https://github.com/SAFEHR-data/IMPACTfunctions/issues/1
-
-IMPACT_dictionary <- data.frame(table_name = c("Demographics", "ePOMS_AcuteKidneyInjuries", "ePOMS_AntibacAntifungalAdmins", "ePOMS_AntiemeticAdmins", "ePOMS_BloodProductTransfusions", "ePOMS_Bupivacaine", "ePOMS_CamICU", "ePOMS_CTHead", "ePOMS_Delirium", "ePOMS_Furosemide", "ePOMS_GCS", "ePOMS_IntravenousOpioids", "ePOMS_LeftRightPowerMismatch", "ePOMS_ReOperations", "ePOMS_Specialling", "ePOMS_SupplementaryO2", "ePOMS_SupplementaryO2Additional", "ePOMS_SuspiciousCardio", "ePOMS_Temperature", "ePOMS_Troponin", "IntraOpMar", "Nasogastric", "PCAs", "Phases", "PostOpDreaming", "PostOpMar", "PostOpMortality_CardioMed", "PostOpMortality_CardioObs", "PostOpMortality_FIO2", "PostOpMortality_InfectionCulture", "PostOpMortality_InfectionMed", "PostOpMortality_InfectionTemp", "PostOpMortality_OutputMl", "PostOpMortality_Reoperation", "PostOpMortality_Respiration", "PostOpMortality_Troponin", "PreBloods", "PreOpCTScans", "ProcedureNotes", "Procedures", "UrinaryCatheters", "Preassessment", "SurgicalCareTeam"))
-
-
-usethis::use_data(IMPACT_dictionary, overwrite = TRUE)
-
-
-##### Routes_dictonary
-
-
-
 #### SYNTHETIC DATASET
 
 # Generate 10,000 procedures
