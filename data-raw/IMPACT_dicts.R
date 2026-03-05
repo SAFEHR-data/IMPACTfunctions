@@ -21,6 +21,7 @@ dictionary_medication_route <- googlesheets4::read_sheet(dict_url, sheet = "dict
 dictionary_opioid <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_opioid")
 dictionary_equivelence <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_equivelence")
 
+usethis::use_data(dict_url)
 
 usethis::use_data(dictionary_IMPACT_schema)
 usethis::use_data(dictionary_medication_route)
