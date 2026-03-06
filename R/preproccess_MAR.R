@@ -8,6 +8,8 @@
 #' @param route_dict The route dictionary, defaults to `dictionary_medication_route` from the google sheets link below.
 #' @param opioid_dict The opioid dictonary, defaults to `dictionary_opioid` from the google sheets link below.
 #' @param equivelence_dict The equivilence dictonary, defaults to `dictionary_equivelence` from the google sheets link below.
+#' @param deduplicate_rows KEEP TRUE, see GH issue #24
+#' @param administered_only Filter to only keep the medications administered.
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
 #' @return
@@ -17,7 +19,9 @@
 preproccess_MAR <- function(MAR,
                             route_dict = dictionary_medication_route,
                             opioid_dict = dictionary_opioid,
-                            equivelence_dict = dictionary_equivelence){
+                            equivelence_dict = dictionary_equivelence,
+                            deduplicate_rows = TRUE,
+                            administered_only = TRUE){
 
   # Check col names match
   if(! identical(names(route_dict), names(dictionary_medication_route))){cli::cli_abort("You have passed a custom dict to {.arg route_dict} but the column names don't match. \n \n Change the column names of your custom dict to {.val {paste0(names(dictionary_medication_route), collapse = ', ')}}")}
@@ -33,7 +37,8 @@ preproccess_MAR <- function(MAR,
 
   ## Dose harmonisation
 
-  # THis is a placeholder for github issue #23
+  # THis is a placeholder for github issue #23.
+  # The dose haromisation is being done for two doses onlu: MG and MCG as below in the case when
 
   ## Calculate OME
 
@@ -47,6 +52,11 @@ preproccess_MAR <- function(MAR,
         TRUE                       ~ NA_real_
       )
     )
+
+  ## Need to add admnisatation action == "given"
+
+
+
 
  return(MAR)
 
