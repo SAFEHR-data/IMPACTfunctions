@@ -9,7 +9,7 @@
 #' @param opioid_dict The opioid dictonary, defaults to `dictionary_opioid` from the google sheets link below.
 #' @param equivelence_dict The equivilence dictonary, defaults to `dictionary_equivelence` from the google sheets link below.
 #' @param deduplicate_rows KEEP TRUE, see GH issue #24
-#' @param administered_only Filter to only keep the medications administered.
+#' @param administered_only Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are `!= "given"`
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
 #' @return
@@ -55,8 +55,7 @@ preproccess_MAR <- function(MAR,
 
   ## Need to add admnisatation action == "given"
 
-
-
+  MAR <- MAR %>% filter(administration_action == "Given")
 
  return(MAR)
 
