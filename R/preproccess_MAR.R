@@ -28,6 +28,15 @@ preproccess_MAR <- function(MAR,
   if(! identical(names(opioid_dict), names(dictionary_opioid))){cli::cli_abort("You have passed a custom dict to {.arg opioid_dict} but the column names don't match. \n \n Change the column names of your custom dict to {.val {paste0(names(dictionary_opioid), collapse = ', ')}}")}
   if(! identical(names(equivelence_dict), names(dictionary_equivelence))){cli::cli_abort("You have passed a custom dict to {.arg equivelence_dict} but the column names don't match. \n \n Change the column names of your custom dict to {.val {paste0(names(dictionary_equivelence), collapse = ', ')}}")}
 
+  # Check for pre-proccess mar already
+  if(identical(MAR, PostOpMar)){
+    MAR_choice <- "PostOp"
+  }else if(identical(MAR, IntraOpMar)){
+    MAR_choice <- "IntraOp"
+  }else{
+    cli::cli_abort("MAR passed to arguement {.arg MAR} is not identical to the base MARs. \n \n Have you preproccessed it already?")
+  }
+
   # Add dictonaries
 
   MAR <- MAR %>%
@@ -60,16 +69,15 @@ preproccess_MAR <- function(MAR,
 
   ## De-duplicate rows
   ## This is a patch for GH issue #23
-  if(c("case_id", "anaesthesia_csn", "operation_csn") %in% names(MAR)){
+  if(any(c("case_id", "anaesthesia_csn", "operation_csn") %in% names(MAR))){
     cli::cli_alert_danger("KNOWN DATA ISSUE: {.href [GH issue #23](https://github.com/SAFEHR-data/IMPACTfunctions/issues)}. \n \n Enacting patch to deduplicate rows. ")
 
     ## Strip duplicated rows
-    if(identical(MAR, PostOpMar)){
+    if(MAR_choice == "PostOp"){
       # We try use these numberic cols rather than the name as there is a 1:! medication_order_id to medicaton_name and num <> num comparison are faster
-
       MAR <- MAR %>% select(-c(case_id, anaesthesia_csn, operation_csn))
       MAR <- MAR %>% unique("admission_csn", "medication_order_id", "administration_date_time")
-    }else if(identical(MAR, IntraOpMar)){
+    }else if(MAR_choice == "IntraOp"){
       MAR <- MAR %>% select(-c(case_id, admission_csn, operation_csn))
       MAR <- MAR %>% unique("anaesthesia_csn", "medication_order_id", "administration_date_time")
     }
@@ -80,7 +88,5 @@ preproccess_MAR <- function(MAR,
     cli::cli_alert_success("KNOWN DATA ISSUE Patched: Please resolve {.href [GH issue #23](https://github.com/SAFEHR-data/IMPACTfunctions/issues)}. ")
   }
 
-
  return(MAR)
-
 }
