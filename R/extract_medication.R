@@ -17,16 +17,17 @@
 #' @param MAR The medication administration record (MAR) to search across, Can be either Intra-Op or Post-Op MAR.
 #' @param medication Name of medication to search for. Can be single medication or vector
 #' @param search_column The column which to search the medication string against. See help above.
+#' @param check_search Boolean, Check if the medications and search column provided are valid.
 #' @param timeframe A set of time frames of which to search for, See help above for options
 #' @param t0 If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.
 #' @param t_int If subsetting by time, the time interval from t0 to search from.
 #' @param t1 If subsetting by time, what is the end time to filter by
-
-#' @param verbose Print the stwps as the function runs? Helpfu for setting up and debugging
-#' @param feature_name if returning a vector, what do you want the feature column called?
+#' @param filter_route The strings of the routes to be filtered by.
+#' @param route_column The column which to apply the route strings to filter upon. Select from **"route"** or **"simple_route"**.
+#' @param verbose Print the stwps as the function runs? Helpful for setting up and debugging
 #' @param apply_preproccess_MAR Allow the function to do the preprocessing for you. Turn to **FALSE** if you have used `preproccess_MAR()` in your workflow already.
 #'
-#' @return Either a subsetted MAR daraframe or feature vector depedning on `format`
+#' @return A arrow query of the subset of medications of intrest.
 #' @export
 #' @template setup-data
 #' @examples
@@ -39,10 +40,13 @@ extract_medication <- function(dataset,
                                MAR = c(IntraOpMar, PostOpMar),
                                medication,
                                search_column = "simple_generic_name",
+                               check_search = TRUE,
                                timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
                                t0,
                                t_int,
                                t1,
+                               filter_route,
+                               route_column,
                                verbose=TRUE,
                                apply_preproccess_MAR = TRUE
                                ){
@@ -133,10 +137,8 @@ extract_medication <- function(dataset,
 
   }
 
-
-
-  if(csn_vector_name == "admission_csn" ){
-    #### ERROR CHECKING - See Github Issue: https://github.com/SAFEHR-data/IMPACTfunctions/issues/21
+  if(csn_vector_name == "admission_csn" & timeframe != "whole_mar" ){
+    # ERROR CHECKING - See Github Issue: #21
     if(typeof(timeframe_df$admission_csn) != typeof(MAR %>% pull(admission_csn))){
       cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
       timeframe_df$admission_csn <- as.numeric(timeframe_df$admission_csn)
@@ -153,6 +155,7 @@ extract_medication <- function(dataset,
     MAR <- preproccess_MAR(MAR)
   }
 
+  if(check_search){
   #First do a soft check to ensure no misspelling
   med_check_soft <- search_drug_names(MAR, medication)
   if(nrow(med_check_soft) < 1){
@@ -168,6 +171,7 @@ extract_medication <- function(dataset,
     print(med_check_soft)
   }else{
     if(verbose){cli::cli_alert_success("{.val {medication}} matched values in the column {.val {search_column}}")}
+  }
   }
 
   # Step 2 - Subsetting
@@ -199,6 +203,19 @@ extract_medication <- function(dataset,
     df <- df %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
 
  }
+
+  # 2d filtering by route
+
+  if(!missing(filter_route)){
+    if(missing(route_column)){
+      cli::cli_abort("You have tried to filter by route but have not included a route column to filter against. \n \n Set {.arg filter_column} to one of {.val route} or {.val route_simple}")
+    }
+
+    if(verbose){cli::cli_alert_info("Filtering to only include medications where the route is {.val {filter_route}} in the column {.val {route_column}}.")}
+
+    df <- df %>% filter(.data[[route_column]] %in% filter_route)
+
+    }
 
    #return the query
     return(df)
