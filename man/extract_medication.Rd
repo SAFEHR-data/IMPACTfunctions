@@ -16,7 +16,8 @@ extract_medication(
   format,
   feature,
   feature_name,
-  verbose = TRUE
+  verbose = TRUE,
+  apply_preproccess_MAR = TRUE
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ extract_medication(
 \item{feature_name}{if returning a vector, what do you want the feature column called?}
 
 \item{verbose}{Print the stwps as the function runs? Helpfu for setting up and debugging}
+
+\item{apply_preproccess_MAR}{Allow the function to do the preprocessing for you. Turn to \strong{FALSE} if you have used \code{preproccess_MAR()} in your workflow already.}
 }
 \value{
 Either a subsetted MAR daraframe or feature vector depedning on \code{format}

@@ -21,9 +21,9 @@ dictionary_medication_route <- googlesheets4::read_sheet(dict_url, sheet = "dict
 dictionary_opioid <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_opioid")
 dictionary_equivelence <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_equivelence")
 
-usethis::use_data(dict_url)
+usethis::use_data(dict_url, overwrite = T)
 
-usethis::use_data(dictionary_IMPACT_schema)
-usethis::use_data(dictionary_medication_route)
-usethis::use_data(dictionary_opioid)
-usethis::use_data(dictionary_equivelence)
+usethis::use_data(dictionary_IMPACT_schema, overwrite = T)
+usethis::use_data(dictionary_medication_route, overwrite = T)
+usethis::use_data(dictionary_opioid, overwrite = T)
+usethis::use_data(dictionary_equivelence, overwrite = T)
