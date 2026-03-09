@@ -51,7 +51,7 @@ preproccess_MAR <- function(MAR,
 
   ## Calculate OME
 
-  MAR_processed <- MAR %>%
+  MAR <- MAR %>%
     # Perform mutation before collect() if possible to optimize DB-side execution
     mutate(
       # Standardize dose to mg first, then apply equivalence factor
