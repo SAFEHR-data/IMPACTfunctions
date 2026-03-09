@@ -1,5 +1,3 @@
-
-
 #' Title
 #'
 #' To search the relevant MAR to return features/variables related to the medications
@@ -23,8 +21,7 @@
 #' @param t0 If subsetting by time, a column name of a datetime column to use. This column can be from any table in the dataset.
 #' @param t_int If subsetting by time, the time interval from t0 to search from.
 #' @param t1 If subsetting by time, what is the end time to filter by
-#' @param format The format you want the function to return, choose either: **"table"** or **"vector"**
-#' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "Min", "Max", "Mean", "Mode"
+
 #' @param verbose Print the stwps as the function runs? Helpfu for setting up and debugging
 #' @param feature_name if returning a vector, what do you want the feature column called?
 #' @param apply_preproccess_MAR Allow the function to do the preprocessing for you. Turn to **FALSE** if you have used `preproccess_MAR()` in your workflow already.
@@ -46,9 +43,6 @@ extract_medication <- function(dataset,
                                t0,
                                t_int,
                                t1,
-                               format,
-                               feature,
-                               feature_name,
                                verbose=TRUE,
                                apply_preproccess_MAR = TRUE
                                ){
@@ -61,7 +55,7 @@ extract_medication <- function(dataset,
   }
 
   ## Argument checking
-  if(nrow(dataset)< 1 ){
+  if(nrow(compute(dataset)) < 1 ){
     cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away all patients")}
   if(missing(medication)){
     cli::cli_abort("No medication specifed {.arg medication} to search for, \n \n Please provide a medication to search for")}
@@ -70,7 +64,6 @@ extract_medication <- function(dataset,
   if(identical(MAR, IntraOpMar)){
     if(timeframe %in% c("pre_op", "post_op")){cli::cli_abort("Requested {.val timeframe} of {.val {timeframe}} but the {.arg MAR} supplied is the {.val IntraOpMar}. \n \n Please either change the MAR or use {.arg timeframe} = {.val 'whole_mar'} or {.val 'specific'}")}
     if(verbose){cli::cli_alert_success("Searching in the Intra-Op MAR")}
-
     #Set the return vector against the anaesthesia record
     ## NOTE: this vector is intentionally not exposed to the arguments, its seems the custom use of this may be too advanced.
     csn_vector_name <- "anaesthesia_csn"
@@ -78,9 +71,8 @@ extract_medication <- function(dataset,
   }else if(identical(MAR, PostOpMar)){
     if(verbose){cli::cli_alert_success("Searching in the Post-Op MAR")}
     csn_vector_name <- "admission_csn"
-
   }else{
-    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val PostOpMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a cimmunity MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
+    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val PostOpMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a community MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
   }
 
   ## Dataset checking
@@ -117,10 +109,8 @@ extract_medication <- function(dataset,
     t1_col <- dataset %>% select(all_of(csn_vector_name), t1 = discharge_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "custom"){
-
     ## Error checking that the timestamps are set properly
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
-
     #If timeframe custom, ensure propry t0,t1 and t_int set.
     t0_col <- dataset %>% select(all_of(csn_vector_name, t0))
     if(!missing(t_int) & !missing_t_1){
@@ -148,15 +138,12 @@ extract_medication <- function(dataset,
   if(csn_vector_name == "admission_csn" ){
     #### ERROR CHECKING - See Github Issue: https://github.com/SAFEHR-data/IMPACTfunctions/issues/21
     if(typeof(timeframe_df$admission_csn) != typeof(MAR %>% pull(admission_csn))){
-    cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-    timeframe_df$admission_csn <- as.numeric(timeframe_df$admission_csn)
+      cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
+      timeframe_df$admission_csn <- as.numeric(timeframe_df$admission_csn)
     }else{
       cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-
       }
     }
-
-
 
   if(verbose){cli::cli_alert_success("Arguments provided to function correct")}
 
@@ -165,7 +152,6 @@ extract_medication <- function(dataset,
   if(apply_preproccess_MAR){
     MAR <- preproccess_MAR(MAR)
   }
-
 
   #First do a soft check to ensure no misspelling
   med_check_soft <- search_drug_names(MAR, medication)
@@ -184,9 +170,7 @@ extract_medication <- function(dataset,
     if(verbose){cli::cli_alert_success("{.val {medication}} matched values in the column {.val {search_column}}")}
   }
 
-
   # Step 2 - Subsetting
-
 
   # We concatenate the medications strings here to allow the search functions above to recive a vector.
   if(length(medication)>1){
@@ -198,16 +182,11 @@ extract_medication <- function(dataset,
 
   subset <- MAR %>% filter(get({{search_column}}) %in% medication)
 
-  # 2b - Establishing the value to return against.
-  ## Uses the vector that is set above given the type of MAR you are extracting against.
-
+  # 2b - Subsetting for the patients in the dataset
   csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
+  subset <- subset %>% filter(get({{csn_vector_name}}) %in% csn_vector)
 
-  # 2c - Subsetting for the patients in the dataset
-
-  subset <- subset %>% filter(.data[[csn_vector_name]] %in% csn_vector)
-
-  # 2d - Subsetting for timeframe
+  # 2c - Subsetting for timeframe
 
  if(timeframe == "whole_mar"){
    return(subset)
@@ -215,69 +194,16 @@ extract_medication <- function(dataset,
    #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc).
    ##Instead we pull our timepoints in the logic section above to make a fixed dataset object where the t0 and t1 times are on the same row as the CSN.
 
-   ## Regretablly the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
-
+   ## Regrettably the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
     df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "one-to-many")
-
     df <- df %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
 
  }
 
-
-  # Step 3 - Calculating the feature vector
-
-  if(format == "df"){
-    # Nil further proccessing or checking needed
+   #return the query
     return(df)
-  }else{
 
-    ## Step 3 further filtering and cleaning of data
-    df <- df %>% collect()
-
-    ## Users may want to return a feature (such as an avg or sum dose) across medications that are not comparable. For example (sum dose of an infusion and a discreate medications)
-    ## We will do some error checking on `df` to warn against this. We can bypass some error checking is we want OME for example.
-
-    ## Error checking: Before pooling ensure, same drug, same route, same units.
-
-    if(length(unique(df$dose_units, incomparables = TRUE)) == 1){
-      if(verbose){cli::cli_alert_success("Dose units are all the same!")}
-    }else{
-      cli::cli_abort("Not all dose units the same, unable to return feature")
-    }
-
-    if(length(unique(df$route, incomparables = TRUE)) == 1){
-      if(verbose){cli::cli_alert_success("Routes are all the same!")}
-    }else{
-      cli::cli_abort("Not all routes the same, unable to return feature")
-    }
-
-    if(length(medication) > 1){
-      cli::cli_abort("It looks like you are search for more than 1 medication ({.val {medication}}). To return a feature only use one medication")
-    }
-
-
-    ## Now process the features
-
-
-
-
-    dataset %>% pull()
-
-    ## Route checking
-
-
-    df %>% group_by(.data[[csn_vector_name]]) %>% summarise(n=n())
-
-      ## Units
-
-
-
-
-
-
-  }
 
 }
-
 
 
