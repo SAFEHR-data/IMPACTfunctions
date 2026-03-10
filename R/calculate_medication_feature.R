@@ -20,16 +20,16 @@ calculate_medication_feature <- function(dataset,
                                          overide_route_check = FALSE){
 
   ## Step 3 further filtering and cleaning of data
-  df <- MAR
+
 
   # We determine the MAR type by the columns. Only the Post-Op MAR has `admissions_csn` and vice versa for anaesthetisa CSN and Intra-opMar
 
-  if(all("admission_csn" %in% names(df),"anaesthesia_csn" %in% names(df))){
+  if(all("admission_csn" %in% names(MAR),"anaesthesia_csn" %in% names(MAR))){
     cli::cli_abort("The {.arg MAR} has both the anaesthesia and admission_csn as columns. You must use {.fun preproccess_MAR} or review GH issues #23 ")
-  }else if("admission_csn" %in% names(df)){
+  }else if("admission_csn" %in% names(MAR)){
     MAR_type <- "PostOp"
     csn_vector_name <- "admission_csn"
-  }else if ("anaesthesia_csn" %in% names(df)){
+  }else if ("anaesthesia_csn" %in% names(MAR)){
     MAR_type <- "IntraOp"
     csn_vector_name <- "anaesthesia_csn"
   }else{
@@ -38,26 +38,26 @@ calculate_medication_feature <- function(dataset,
 
 
   ## Users may want to return a feature (such as an avg or sum dose) across medications that are not comparable. For example (sum dose of an infusion and a discreate medications)
-  ## We will do some error checking on `df` to warn against this. We can bypass some error checking is we want OME for example.
+  ## We will do some error checking on `MAR` to warn against this. We can bypass some error checking is we want OME for example.
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
-  if(length(unique(df$dose_units, incomparables = TRUE)) == 1){
+  if(length(unique(MAR$dose_units, incomparables = TRUE)) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
     if(overide_dose_check){if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
     else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(df$dose_units)}}).\n\n If this will not impact your feature then change {.arg overide_unit_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR$dose_units)}}).\n\n If this will not impact your feature then change {.arg overide_unit_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }
     }
   }
 
-  if(length(unique(pull(df, route))) == 1){
+  if(length(unique(pull(MAR, route))) == 1){
     if(verbose){cli::cli_alert_success("Routes are all the same!")}
   }else{
     if(overide_route_check){if(verbose){cli::cli_alert_success("DRoute check overidden. Proceding to return vector with mutiple routes.")
       }else{
-        cli::cli_abort("Not all routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(df$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+        cli::cli_abort("Not all routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }
     }
   }
@@ -69,25 +69,39 @@ calculate_medication_feature <- function(dataset,
 
   if(feature == "binary"){
 
-    result <-  data.frame(csn_vector) %>%
-      mutate(match_status = csn_vector %in% df[[csn_vector_name]])
+    MAR_df <- MAR %>% collect()
 
-    names(result) <- c(csn_vector_name, feature_name)
+    result <-  data.frame(csn_vector) %>%
+      mutate(match_status = csn_vector %in% MAR_df[[csn_vector_name]])
+
 
   }else if(feature == "sum_dose"){
 
-    result <- df %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(dose))
+    if((length(unique(MAR %>% pull(simple_generic_name))) > 1) | (length(unique(MAR %>% pull(route_simple))) > 1)){
+      cli::cli_alert_danger("DANGER: The MAR supplied more than 1 medication or more than 1 route in it but your are requesting a summed dose. This may return a sum acorss different medications or routes.\n \n Consdier revising the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such if you wanted to sum the total paracetmol doses regardless of route")
+    }
+
+    result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
+      summarise(result = sum(dose)) %>%
+      collect()
 
   }else if(feature == "sum_ome"){
 
-    result <- df %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(ome))
+    # If requesting and OME, check there is more than one medication
+
+   if(length(unique(MAR %>% pull(simple_generic_name))) == 1){
+     cli::cli_alert_danger("DANGER: The MAR supplied only has 1 medication in it but your are requesting and OME.\n \n Consdier remvoing the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such as if you want to calcualute a OME of IV and Oral morphine. ")
+   }
+
+    result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
+      summarise(result = sum(ome)) %>%
+      collect()
 
   }else if(feature == "count"){
 
-    result <- df %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = n())
+    result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
+      summarise(result = n()) %>%
+      collect()
 
   }
 

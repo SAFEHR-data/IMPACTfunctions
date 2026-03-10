@@ -154,17 +154,58 @@ From the subsetted medications we can then generate feature vectors of intrest.
 
 ```{r}
 
-morphine_table <- calculate_medication_feature(dataset = dataset, 
+morphine_table <- calculate_medication_feature(dataset, 
                              MAR = post_op_morphine,
                              format = "table",
                              feature = "binary",
                              feature_name = "morphine_post_op")
 
+morphine_table %>% collect()
+
+```
+
+We can also use the format = joined whcih will left join our vector to our dataset, this allow us to easily and recurvily add new vectors. 
+```{r}
+
+dataset <- calculate_medication_feature(dataset, 
+                             MAR = post_op_morphine,
+                             format = "joined",
+                             feature = "sum_dose",
+                             feature_name = "morphine_post_op")
 
 morphine_table %>% collect()
 
 ```
 
+
+We can try calcualuating and OME from our post-op morphine
+```{r}
+dataset <- calculate_medication_feature(dataset, 
+                             MAR = post_op_morphine,
+                             format = "joined",
+                             feature = "sum_ome",
+                             feature_name = "morphine_post_op")
+
+## NOTICE THE DANAGER ERROR
+```
+But we get a danger error to remined us we are trying to calculate an OME but we have filtered out the other opioids. 
+
+So we can subset our meds again but this time chain then toether in an effecient workflow
+```{r}
+
+all_recovery_meds <- extract_medication(dataset,
+                                       MAR = PostOpMar,
+                                       timeframe = "custom",
+                                       t0 = "operation_date",
+                                       t_int = lubridate::hours(3),
+                                       verbose = TRUE)
+  
+ calculate_medication_feature(MAR = all_recovery_meds,
+                             format = "joined",
+                             feature = "sum_ome",
+                             feature_name = "morphine_post_op")
+
+```
 
 There are a range of possible ways to subset the MAR, type `?extract_medication` for more details than whats offered below. 
 

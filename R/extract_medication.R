@@ -38,7 +38,7 @@
 #'
 extract_medication <- function(dataset,
                                MAR = c(IntraOpMar, PostOpMar),
-                               medication,
+                               medication = NA,
                                search_column = "simple_generic_name",
                                check_search = TRUE,
                                timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
@@ -188,7 +188,11 @@ extract_medication <- function(dataset,
 
   # 2a - Subset for medication
 
-  subset <- MAR %>% filter(get({{search_column}}) %in% medication)
+  if(medication == NA){
+    subset <- MAR
+  }else{
+    subset <- MAR %>% filter(get({{search_column}}) %in% medication)
+  }
 
   # 2b - Subsetting for the patients in the dataset
   csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
