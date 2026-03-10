@@ -1,16 +1,48 @@
 
 
-#' Title
+#' Calculate features across medications
 #'
-#' @param dataset
-#' @param MAR
+#' For more details see the help vignette:
+#' \code{vignette("extracting_features", package = "IMPACTfunctions")}
+#'
+#' @param dataset The dataset of patients of intrest to return the feature against.
+#' @param MAR The subsetted MAR from the output of the `extract_medication()` function.
 #' @param format The format you want the function to return, choose either: **"joined"** or **"table"**
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
-#' @return
+#' @return Either a table of the vector of interest of the joined dataset left joined.
 #' @export
+#' @template setup-data
 #'
 #' @examples
+#'
+#'   dataset <- cohort_complete_admissions(Procedures) %>%
+#'  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
+#'
+#'  medication <- "morphine sulfate"
+#'  MAR <- PostOpMar
+
+#'  post_op_morphine <- extract_medication(dataset,
+#'  MAR = PostOpMar,
+#'  medication = medication,
+#'  timeframe = "custom",
+#'  t0 = "operation_date",
+#'  t1 = "discharge_date",
+#'  verbose = TRUE)
+#'
+#' dataset <- calculate_medication_feature(dataset,
+#' MAR = post_op_morphine,
+#' format = "joined",
+#' feature = "sum_dose",
+#' feature_name = "morphine_post_op")
+#'
+#'
+#' morphine_table <- calculate_medication_feature(dataset,
+#' MAR = post_op_morphine,
+#' format = "table",
+#' feature = "binary",
+#' feature_name = "morphine_post_op")
+#'
 calculate_medication_feature <- function(dataset,
                                          MAR,
                                          format,
@@ -35,7 +67,6 @@ calculate_medication_feature <- function(dataset,
   }else{
     cli::cli_abort("The {.arg MAR} has neither the anaesthesia and admission_csn as columns. Check input data")
   }
-
 
   ## Users may want to return a feature (such as an avg or sum dose) across medications that are not comparable. For example (sum dose of an infusion and a discreate medications)
   ## We will do some error checking on `MAR` to warn against this. We can bypass some error checking is we want OME for example.

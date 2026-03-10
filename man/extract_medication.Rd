@@ -7,15 +7,15 @@
 extract_medication(
   dataset,
   MAR = c(IntraOpMar, PostOpMar),
-  medication,
+  medication = NA,
   search_column = "simple_generic_name",
+  check_search = TRUE,
   timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
-  t0,
-  t_int,
-  t1,
-  format,
-  feature,
-  feature_name,
+  t0 = NA,
+  t_int = NA,
+  t1 = NA,
+  filter_route,
+  route_column,
   verbose = TRUE,
   apply_preproccess_MAR = TRUE
 )
@@ -25,9 +25,11 @@ extract_medication(
 
 \item{MAR}{The medication administration record (MAR) to search across, Can be either Intra-Op or Post-Op MAR.}
 
-\item{medication}{Name of medication to search for. Can be single medication or vector}
+\item{medication}{Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.}
 
 \item{search_column}{The column which to search the medication string against. See help above.}
+
+\item{check_search}{Boolean, Check if the medications and search column provided are valid.}
 
 \item{timeframe}{A set of time frames of which to search for, See help above for options}
 
@@ -37,18 +39,16 @@ extract_medication(
 
 \item{t1}{If subsetting by time, what is the end time to filter by}
 
-\item{format}{The format you want the function to return, choose either: \strong{"table"} or \strong{"vector"}}
+\item{filter_route}{The strings of the routes to be filtered by.}
 
-\item{feature}{If returning a vector, what type of feature do you want extracted? Choose: \strong{"binary"}, "Min", "Max", "Mean", "Mode"}
+\item{route_column}{The column which to apply the route strings to filter upon. Select from \strong{"route"} or \strong{"simple_route"}.}
 
-\item{feature_name}{if returning a vector, what do you want the feature column called?}
-
-\item{verbose}{Print the stwps as the function runs? Helpfu for setting up and debugging}
+\item{verbose}{Print the stwps as the function runs? Helpful for setting up and debugging}
 
 \item{apply_preproccess_MAR}{Allow the function to do the preprocessing for you. Turn to \strong{FALSE} if you have used \code{preproccess_MAR()} in your workflow already.}
 }
 \value{
-Either a subsetted MAR daraframe or feature vector depedning on \code{format}
+A arrow query of the subset of medications of intrest.
 }
 \description{
 To search the relevant MAR to return features/variables related to the medications
@@ -67,6 +67,8 @@ If \emph{timeframe} = \emph{custom} then you may supply the vector of values for
 \examples{
 \dontshow{
 list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+library(dplyr)
+library(lubridate)
 }
 
 #dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)

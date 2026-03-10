@@ -5,7 +5,7 @@
 \title{Helper function to search the MAR}
 \usage{
 search_drug_names(
-  MAR = c(IntraOpMAR, PostOpMAR),
+  MAR = c(IntraOpMar, PostOpMar),
   medication,
   strict_search = FALSE,
   search_column = c("medication_name", "generic_name", "simple_generic_name"),
@@ -32,13 +32,15 @@ There is often inconsistency in how a medication name, formulation and group is 
 \examples{
 \dontshow{
 list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+library(dplyr)
+library(lubridate)
 }
-search_drug_names(IntraOpMAR, "morphine") #Notice that we capture Diamorph as well
-search_drug_names(IntraOpMAR, "morphine sulfate") # We have now refined our string to remove diamorph but we have also lost the `Morphine 10mg for recovery`
-search_drug_names(IntraOpMAR, "MORPHINE") #Notice that the search is case insenstive becuase capitilisation is not consistent
+search_drug_names(IntraOpMar, "morphine") #Notice that we capture Diamorph as well
+search_drug_names(IntraOpMar, "morphine sulfate") # We have now refined our string to remove diamorph but we have also lost the `Morphine 10mg for recovery`
+search_drug_names(IntraOpMar, "MORPHINE") #Notice that the search is case insenstive becuase capitilisation is not consistent
 
-search_drug_names(IntraOpMAR, "fentanyl")
-search_drug_names(IntraOpMAR, "fentanyl", search_column="simple_generic_name")
+search_drug_names(IntraOpMar, "fentanyl")
+search_drug_names(IntraOpMar, "fentanyl", search_column="simple_generic_name")
 # We can use the strict search to emulate the medications search functions
-search_drug_names(IntraOpMAR, "fentanyl", search_column="simple_generic_name", strict_search=TRUE)
+search_drug_names(IntraOpMar, "fentanyl", search_column="simple_generic_name", strict_search=TRUE)
 }

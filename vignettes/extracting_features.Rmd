@@ -1,8 +1,8 @@
 ---
-title: "selecting_cohorts"
+title: "extracting_features"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{selecting_cohorts}
+  %\VignetteIndexEntry{extracting_features}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,7 +16,6 @@ knitr::opts_chunk$set(
 
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-
 library(IMPACTfunctions)
 library(arrow)
 library(dplyr)

@@ -12,10 +12,15 @@
 #' @param administered_only Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are `!= "given"`
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
-#' @return
+#' @return The origonal MAR arrow table with additional columns and cleaned rows.
 #' @export
+#' @template setup-data
 #'
 #' @examples
+#'
+#' cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+#' head(cleaned_MAR %>% collect())
+#'
 preproccess_MAR <- function(MAR,
                             route_dict = dictionary_medication_route,
                             opioid_dict = dictionary_opioid,

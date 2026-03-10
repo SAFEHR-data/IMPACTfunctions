@@ -29,9 +29,23 @@ preproccess_MAR(
 
 \item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are \verb{!= "given"}}
 }
+\value{
+The origonal MAR arrow table with additional columns and cleaned rows.
+}
 \description{
 Preproccesing of tables to allow other feature extractions functions to run. This left joins the dynamic dictionaries and calculate a value for OME.
 }
 \details{
 If you want to use custom values then replace the dictonary with your custom dictonary. Do not change the col names and they are used for left joining.
+}
+\examples{
+\dontshow{
+list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+library(dplyr)
+library(lubridate)
+}
+
+cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+head(cleaned_MAR \%>\% collect())
+
 }
