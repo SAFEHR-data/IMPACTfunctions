@@ -44,9 +44,9 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
                                      anaesthesia_csn = csn_list[(n+1):(2*n)],
                                      operation_csn = csn_list[((2*n)+1):(3*n)],
                                      case_id = 1:n,
-                                     admission_date = sample(c(start_date:end_date), n, replace = TRUE) %>% as.POSIXct(),
-                                     operation_date = NA,
-                                     discharge_date = NA,
+                                     admission_date = lubridate::with_tz(sample(c(start_date:end_date), n, replace = TRUE) %>% as.POSIXct(), tzone = "UTC"),
+                                     operation_date = lubridate::with_tz(NA, tzone = "UTC"),
+                                     discharge_date = lubridate::with_tz(NA, tzone = "UTC"),
                                      primary_coded_procedure = sample(procedure_codes, n),
                                      combined_coded_opcs_procedures=NA)
 
@@ -108,13 +108,14 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
       dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
+      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05)),
     )%>%
     ungroup()%>%
     mutate(
       # Use n() to match the dataframe row count
       # Ensure time_to_surgery is numeric (representing hours)
       administration_offset_minutes = as.integer(rnorm(n = n(), mean = 1, sd=0.3) * 60),
-      administration_date_time = operation_date + lubridate::minutes(administration_offset_minutes)
+      administration_date_time = lubridate::with_tz(operation_date + lubridate::minutes(administration_offset_minutes), tzone = "UTC")
     )%>%
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes)) %>%
     mutate(generic_name = toupper(simple_generic_name),
@@ -141,8 +142,9 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
       administration_date_time = as.POSIXct(
         runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date)),
-        origin = "1970-01-01"
-      )
+        origin = "1970-01-01", tz="UTC"
+      ),
+      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05)),
     )%>%
     ungroup()%>%
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures)) %>%

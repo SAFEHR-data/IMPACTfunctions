@@ -24,8 +24,8 @@ load_synthetic_dataset <- function() {
   file_map <- c(
     "Procedures" = "procedures_synthetic.parquet",
     "Demographics" = "demographics_synthetic.parquet",
-    "PostOpMAR" = "postopmar_synthetic.parquet",
-    "IntraOpMAR" = "intraopmar_synthetic.parquet"
+    "PostOpMar" = "postopmar_synthetic.parquet",
+    "IntraOpMar" = "intraopmar_synthetic.parquet"
   )
 
   # 2. Iterate over names(file_map) to ensure the list is named correctly

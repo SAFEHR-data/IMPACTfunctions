@@ -42,9 +42,9 @@ extract_medication <- function(dataset,
                                search_column = "simple_generic_name",
                                check_search = TRUE,
                                timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
-                               t0,
-                               t_int,
-                               t1,
+                               t0 = NA,
+                               t_int = NA,
+                               t1 = NA,
                                filter_route,
                                route_column,
                                verbose=TRUE,
@@ -116,21 +116,25 @@ extract_medication <- function(dataset,
     ## Error checking that the timestamps are set properly
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
     #If timeframe custom, ensure propry t0,t1 and t_int set.
-    t0_col <- dataset %>% select(all_of(csn_vector_name, t0))
-    if(!missing(t_int) & !missing_t_1){
+    if(!is.na(t_int) & !is.na(t1)){
       cli::cli_abort("You have tried to supply both a time interval ({.arg t_int}) and a end time ({.arg t_1}). \n \n Supply only one end time variable")
-    }else if(!missing(t0) & (mising(t1) & missing(t_int))){
+    }else if((t0 != NA) & (is.na(t1) & is.na(t_int))){
     cli::cli_alert_danger("CAUTION: you have supplied a start time to subset by but not an end time. Will return from the {.arg t0} timepoint onwards.")
     }
 
     #Assuming test above are passed then we can check if have passed a t_int and then calcualte the t_1
-    if(!missing(t_int)){
-      t0_col <- dataset %>% select(all_of(csn_vector_name), t0 = all_of(t0))
-      timeframe_df <- t0_col %>% collect() %>% mutate(t1 = t0 + t_int)
-    }else if(!missing(t1)){
-      t0_col <- dataset %>% select(all_of(csn_vector_name),  t0 = all_of(t0))
-      t1_col <- dataset %>% select(all_of(csn_vector_name),  t1 = all_of(t1))
-      timeframe_df <- full_join(t0_col, t1_col) %>% collect()
+    if(!is.na(t_int)){
+
+      timeframe_df <- dataset %>%
+        select(all_of(csn_vector_name), t0 = all_of(t0)) %>%
+        collect() %>%
+        mutate(
+          # Perform R-side arithmetic, then force UTC to match the Arrow schema
+          t1 = lubridate::with_tz(t0 + t_int, tzone = "Etc/UTC")
+        )
+
+    }else if(!is.na(t1)){
+      timeframe_df <- dataset %>% select(all_of(csn_vector_name),  t0 = all_of(t0), t1 = all_of(t1))
     }else{
       cli::cli_abort("Hmm, you should have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
       }

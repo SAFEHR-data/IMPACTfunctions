@@ -1,0 +1,170 @@
+---
+title: "selecting_cohorts"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{selecting_cohorts}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r echo=FALSE, eval=TRUE, message=FALSE}
+# Instead of librarying the package, we actually want to dynamically load_all
+
+library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
+```
+
+```{r eval=TRUE, message=FALSE, echo=FALSE}
+#If you do not have a real dataset, load the synthetic dataset
+synth_data <- load_synthetic_dataset()
+list2env(synth_data, envir = .GlobalEnv)
+rm(synth_data)
+```
+
+```{r setup, eval=FALSE, echo=TRUE}
+library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
+```
+
+# Introduction
+
+Once we have found our cohort of interest (see vignette 2: selecting cohorts), we may want to extract features from the data that are of interest. 
+
+These may be total doses of medications or outcome based features such as rates of AKI. In this vignette we will demonstrate the ways we can generate different features. 
+
+[NB: We will use the term variable and feature interchangeable]
+
+## Loading data
+
+We will load the most recent 100 patients for example
+
+```{r}
+
+dataset <- cohort_complete_admissions(Procedures) %>% cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
+
+df <- dataset %>% collect()
+
+```
+
+# Medications
+
+Medications are found in two sources the Intra operative MAR (Medication administration record) and the Post operative MAR (which is all the medications NOT given in theatre, including those given before theatre.)
+
+We will take them separately but the functions and arguments used are the same.
+
+## Finding the medications of intrest
+
+Medications have a wide range of names in the MAR and differing groupings. We can use the *`search_drug_names()`* function to help.
+
+We can use the function to start seaching for strings that we think might match. *NB: in the synthetic dataset there is much less variation that in the real dataset. To this end you may not be able to replicate some of the differences demosntrated below*.
+```{r}
+
+search_drug_names(PostOpMar, "morphine sulphate")
+```
+Note that we didn't get any results, we can now try a looser search term. 
+
+```{r}
+search_drug_names(PostOpMar, "morphine")
+```
+We can now see the range of different names under each of the columns as well as the row counts. The row counts are helpful to see if a formulation is popular. 
+
+When we are happy with our search we can test it using the *`strict_search`* which enforces strict searching the mimic the proccess in the *`extract_medication()`* function. Note that we now need to speiciy which exact column we wish to filter against. 
+
+```{r}
+
+medication <- "morphine sulfate"
+MAR <- PostOpMar
+
+search_drug_names(MAR,
+                  medication,
+                  search_column = "simple_generic_name",
+                  strict_search = TRUE,
+                  verbose = FALSE)
+
+```
+We now know that if we run the extract_medications with the following variables we will include the above medication types. 
+
+## Preproccessing the MARs
+
+Each of the MAR's are a raw pull of the data with little to no cleaning. We can use the function `preproccess_MAR` to clean and get the MAR ready for subsetting. 
+
+```{r}
+
+cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+
+head(cleaned_MAR %>% collect())
+
+```
+We can see the added columns from the common dictonaries and the new OME column added. 
+
+## Extracting the subset
+
+Given the size of the MAR's we generate features in 2 steps. First is to subset the medication of intrest, for the patietns of intrest. Then to calculate the feature across the subset. 
+
+We note that the extract_medications function uses the preproccess_mar function built in so we can just pass the orgional MAR. If you wanted to use custom dictonaries, you would separate out these functions.  
+
+
+```{r}
+
+morphine <- extract_medication(dataset,
+                                       MAR = PostOpMar,
+                                       medication = medication
+                                       )
+
+morphine %>% collect() %>% head()
+```
+If we don't provide a timeframe, it will default to the whole of that admission (for PostOpMar) or the whole of that anaesthetic chart (for the IntraOpMar).
+
+We can use the t_0, t_int and t_1 to provide custom time points to subset between
+
+```{r}
+
+
+post_op_morphine <- extract_medication(dataset,
+                                       MAR = PostOpMar,
+                                       medication = medication,
+                                       timeframe = "custom",
+                                       t0 = "operation_date",
+                                       t1 = "discharge_date",
+                                       verbose = TRUE)
+
+post_op_morphine_3hr <- extract_medication(dataset,
+                                       MAR = PostOpMar,
+                                       medication = medication,
+                                       timeframe = "custom",
+                                       t0 = "operation_date",
+                                       t_int = lubridate::hours(3),
+                                       verbose = TRUE)
+
+post_op_morphine_3hr %>% collect()
+
+```
+
+From the subsetted medications we can then generate feature vectors of intrest. 
+
+
+```{r}
+
+morphine_table <- calculate_medication_feature(dataset = dataset, 
+                             MAR = post_op_morphine,
+                             format = "table",
+                             feature = "binary",
+                             feature_name = "morphine_post_op")
+
+
+morphine_table %>% collect()
+
+```
+
+
+There are a range of possible ways to subset the MAR, type `?extract_medication` for more details than whats offered below. 
+
