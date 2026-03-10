@@ -82,7 +82,7 @@ calculate_medication_feature <- function(dataset,
     }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(dose)) %>%
+      summarise(result = sum(dose, na.rm = TRUE)) %>%
       collect()
 
   }else if(feature == "sum_ome"){
@@ -94,7 +94,7 @@ calculate_medication_feature <- function(dataset,
    }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(ome)) %>%
+      summarise(result = sum(ome, na.rm = TRUE)) %>%
       collect()
 
   }else if(feature == "count"){
@@ -108,6 +108,7 @@ calculate_medication_feature <- function(dataset,
   names(result) <- c(csn_vector_name, feature_name)
 
 
+  if(csn_vector_name == "admission_csn"){
     # ERROR CHECKING - See Github Issue: #21
     if(typeof(result$admission_csn) != typeof(dataset %>% pull(admission_csn))){
       cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
@@ -115,6 +116,7 @@ calculate_medication_feature <- function(dataset,
     }else{
       cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
     }
+  }
 
 
   # Return either the feature vector or the feature joined back to the origional dataframe

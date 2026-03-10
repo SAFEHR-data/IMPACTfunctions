@@ -195,17 +195,39 @@ So we can subset our meds again but this time chain then toether in an effecient
 
 all_recovery_meds <- extract_medication(dataset,
                                        MAR = PostOpMar,
+                                       medication = NULL,
                                        timeframe = "custom",
                                        t0 = "operation_date",
-                                       t_int = lubridate::hours(3),
+                                       t_int = lubridate::hours(6),
                                        verbose = TRUE)
   
- calculate_medication_feature(MAR = all_recovery_meds,
+calculate_medication_feature(dataset = dataset,
+                             MAR = all_recovery_meds,
                              format = "joined",
                              feature = "sum_ome",
-                             feature_name = "morphine_post_op")
+                             feature_name = "recovery_ome") %>% collect()
 
 ```
+
+## Intra-op medications
+
+```{r}
+
+intraop   <-  extract_medication(dataset,
+                                  MAR = IntraOpMar,
+                                  medication = NULL,
+                                  verbose = TRUE,
+                                 timeframe = "whole_mar")
+  
+calculate_medication_feature(dataset = dataset,
+                             MAR = intraop,
+                             format = "joined",
+                             feature = "sum_ome",
+                             feature_name = "recovery_ome") 
+
+
+```
+
 
 There are a range of possible ways to subset the MAR, type `?extract_medication` for more details than whats offered below. 
 
