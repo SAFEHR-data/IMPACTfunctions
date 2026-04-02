@@ -11,7 +11,8 @@ calculate_medication_feature(
   feature,
   feature_name,
   overide_dose_check = FALSE,
-  overide_route_check = FALSE
+  overide_route_check = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -24,6 +25,12 @@ calculate_medication_feature(
 \item{feature}{If returning a vector, what type of feature do you want extracted? Choose: \strong{"binary"}, "sum_dose", "sum_ome","count"}
 
 \item{feature_name}{if returning a vector, what do you want the feature column called?}
+
+\item{overide_dose_check}{The function will check to ensure all the units are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different units.}
+
+\item{overide_route_check}{The function will check to ensure all the of the routes are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different routes}
+
+\item{verbose}{Print the outputs of the function explicility.}
 }
 \value{
 Either a table of the vector of interest of the joined dataset left joined.
@@ -39,7 +46,7 @@ library(dplyr)
 library(lubridate)
 }
 
-  dataset <- cohort_complete_admissions(Procedures) \%>\%
+ dataset <- cohort_complete_admissions(Procedures) \%>\%
  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 
  medication <- "morphine sulfate"

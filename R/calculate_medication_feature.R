@@ -10,13 +10,15 @@
 #' @param format The format you want the function to return, choose either: **"joined"** or **"table"**
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
+#' @param overide_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
+#' @param overide_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
+#' @param verbose Print the outputs of the function explicility.
 #' @return Either a table of the vector of interest of the joined dataset left joined.
-#' @export
 #' @template setup-data
-#'
+#' @export
 #' @examples
 #'
-#'   dataset <- cohort_complete_admissions(Procedures) %>%
+#'  dataset <- cohort_complete_admissions(Procedures) %>%
 #'  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 #'
 #'  medication <- "morphine sulfate"
