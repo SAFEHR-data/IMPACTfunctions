@@ -49,7 +49,8 @@ calculate_medication_feature <- function(dataset,
                                          feature,
                                          feature_name,
                                          overide_dose_check = FALSE,
-                                         overide_route_check = FALSE){
+                                         overide_route_check = FALSE,
+                                         verbose = TRUE){
 
   ## Step 3 further filtering and cleaning of data
 
@@ -113,7 +114,7 @@ calculate_medication_feature <- function(dataset,
     }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(dose, na.rm = TRUE)) %>%
+      summarise(result = sum(dose, na.rm = FALSE)) %>%
       collect()
 
   }else if(feature == "sum_ome"){

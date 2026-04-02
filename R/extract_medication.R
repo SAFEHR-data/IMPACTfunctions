@@ -124,7 +124,7 @@ extract_medication <- function(dataset,
     #If timeframe custom, ensure propry t0,t1 and t_int set.
     if(!is.na(t_int) & !is.na(t1)){
       cli::cli_abort("You have tried to supply both a time interval ({.arg t_int}) and a end time ({.arg t_1}). \n \n Supply only one end time variable")
-    }else if((t0 != NA) & (is.na(t1) & is.na(t_int))){
+    }else if( is.na(t0) & is.na(t1) & is.na(t_int) ){
     cli::cli_alert_danger("CAUTION: you have supplied a start time to subset by but not an end time. Will return from the {.arg t0} timepoint onwards.")
     }
 
@@ -207,7 +207,7 @@ extract_medication <- function(dataset,
   # 2c - Subsetting for timeframe
 
  if(timeframe == "whole_mar"){
-   return(subset)
+   df <- subset
  }else{
    #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc).
    ##Instead we pull our timepoints in the logic section above to make a fixed dataset object where the t0 and t1 times are on the same row as the CSN.
