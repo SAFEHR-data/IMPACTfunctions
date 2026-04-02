@@ -10,9 +10,9 @@
 #' @export
 #' @importFrom stringi stri_split_fixed
 #' @import dplyr
+#' @template setup-data
 #' @examples
 #' library(dplyr)
-#' load_synthetic_dataset()
 #'
 #' cohort_1 <- cohort_procedure_codes(Procedures,
 #'              cohort_name = "Tonsillectomy",

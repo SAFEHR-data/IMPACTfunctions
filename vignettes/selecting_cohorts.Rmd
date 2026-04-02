@@ -14,8 +14,24 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r echo=FALSE, eval=TRUE, message=FALSE}
+# Instead of librarying the package, we actually want to dynamically load_all
+
 library(IMPACTfunctions)
+library(arrow)
+library(dplyr)
+```
+
+```{r eval=TRUE, message=FALSE, echo=FALSE}
+#If you do not have a real dataset, load the synthetic dataset
+synth_data <- load_synthetic_dataset()
+list2env(synth_data, envir = .GlobalEnv)
+rm(synth_data)
+```
+
+```{r setup, eval=FALSE, echo=TRUE}
+library(IMPACTfunctions)
+library(arrow)
 library(dplyr)
 ```
 
@@ -71,9 +87,13 @@ We will present the following functions to cohort on a particular axis: `cohort_
 
 Depending on the dataset generation dates the dataset may contain patients who have been admitted but not discharge, if we calculate features such as `length_of_stay` or `discharge_medications` we will generate NA's that may skew our results. Thus we can use `cohort_complete_admissions()` to remove encounters with missing data over a series of criteria. 
 
-```{r}
+```{r chunk 1}
 
-study_dataset <- cohort_complete_admissions(procedures_table = Procedures)
+#nrow(Procedures)
+
+#study_dataset <- cohort_complete_admissions(procedures_table = Procedures)
+
+#nrow(study_dataset)
 
 ```
 
@@ -91,7 +111,6 @@ study_dataset <- cohort_complete_admissions(procedures_table = Procedures)
 
 
 # Specific patient/procedure list
-
 
 
 # A note on optimisation

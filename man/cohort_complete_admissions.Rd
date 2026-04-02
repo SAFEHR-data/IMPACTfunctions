@@ -52,6 +52,12 @@ To investigate exactly which patients are being removed at each step you can run
 \code{result$excluded \%>\% collect() \%>\% View()}
 }
 \examples{
+\dontshow{
+list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+library(dplyr)
+library(lubridate)
+}
+
 library(dplyr)
 dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRUE)
 #Use the glimpse function to peer into the dataset
