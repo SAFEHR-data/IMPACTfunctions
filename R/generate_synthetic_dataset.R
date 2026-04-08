@@ -6,6 +6,19 @@ get_synthetic_cache_dir <- function() {
   return(cache_dir)
 }
 
+#' Generate synthetic dataset
+#'
+#' This function generates a minimum viable IMPACT dataset that is used for package testing and showcase.
+#'
+#' The data produces is purely synthetic and uses uniform distributions (such as picking a OPCS code between A01 and Z99) even when values are not feasiable or clinically meaningful.
+#' The tables are then saved as parquet format within the R User cache.
+#'
+#' @param clear_cache Clear the cache and generate synthetic data again.
+#'
+#' @return A series of Parquet files in the cache directory
+#' @export
+#'
+#' @examples
 generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   #### SYNTHETIC DATASET
@@ -30,6 +43,8 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
   #Date ranges
   start_date = "2020-01-01 00:00:00" %>% as.POSIXct()
   end_date = "2025-12-31 23:00:00"%>% as.POSIXct()
+  dob_start = "1970-01-01 00:00:00" %>% as.POSIXct()
+  dob_end = "2025-01-01 00:00:00" %>% as.POSIXct()
   time_to_surgery = 3
   time_to_discharge = 24
 
@@ -83,12 +98,27 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
   if (!file.exists(path_demographics)){
   n_unique_mrn <- length(unique(synthetic_procedures$mrn))
 
+  #Taken from ONS 2021 Census - https://www.ethnicity-facts-figures.service.gov.uk/style-guide/ethnic-groups/
+  ethnicity_list <- c("Indian", "Pakistani", "Bangladeshi", "Chinese", "Any other Asian background",
+                      "Caribbean", "African", "Any other Black, Black British, or Caribbean background",
+                      "White and Black Caribbean", "White and Black African", "White and Asian", "Any other Mixed or multiple ethnic background",
+                      "English, Welsh, Scottish, Northern Irish or British","Irish", "Gypsy or Irish Traveller","Roma", "Any other White background",
+                      "Arab", "Any other ethnic group")
+
+  #Seed the table
   synthetic_demographics <- data.frame(
     mrn = unique(synthetic_procedures$mrn),
     restricted_patient_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
-    opt_out_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99))
+    opt_out_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
+    dob = lubridate::with_tz(sample(c(dob_start:dob_end),n_unique_mrn, replace = TRUE) %>% as.POSIXct(), tzone = "UTC"),
+    sex = sample(c("Male", "Female"),n_unique_mrn, replace = TRUE),
+    ethnicity = sample(ethnicity_list, n_unique_mrn, replace=TRUE)
   )
-  arrow::write_parquet(synthetic_demographics, path_demographics)
+
+  synthetic_demographics <- synthetic_demographics %>%
+    mutate(ethnicity = if_else(runif(n()) < 0.2, NA, ethnicity))
+
+    arrow::write_parquet(synthetic_demographics, path_demographics)
   }
 
   ### SYNTHETIC MAR
