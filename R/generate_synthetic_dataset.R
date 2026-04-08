@@ -18,7 +18,6 @@ get_synthetic_cache_dir <- function() {
 #' @return A series of Parquet files in the cache directory
 #' @export
 #'
-#' @examples
 generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   #### SYNTHETIC DATASET
@@ -43,8 +42,8 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
   #Date ranges
   start_date = "2020-01-01 00:00:00" %>% as.POSIXct()
   end_date = "2025-12-31 23:00:00"%>% as.POSIXct()
-  dob_start = "1970-01-01 00:00:00" %>% as.POSIXct()
-  dob_end = "2025-01-01 00:00:00" %>% as.POSIXct()
+  dob_start = "1970-01-01" %>% as.POSIXct()
+  dob_end = "2025-01-01" %>% as.POSIXct()
   time_to_surgery = 3
   time_to_discharge = 24
 
@@ -110,7 +109,7 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     mrn = unique(synthetic_procedures$mrn),
     restricted_patient_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
     opt_out_flag = sample(c("1", "0"), n_unique_mrn, replace = TRUE, prob = c(0.01, 0.99)),
-    dob = lubridate::with_tz(sample(c(dob_start:dob_end),n_unique_mrn, replace = TRUE) %>% as.POSIXct(), tzone = "UTC"),
+    dob = sample(c(dob_start:dob_end),n_unique_mrn, replace = TRUE),
     sex = sample(c("Male", "Female"),n_unique_mrn, replace = TRUE),
     ethnicity = sample(ethnicity_list, n_unique_mrn, replace=TRUE)
   )
