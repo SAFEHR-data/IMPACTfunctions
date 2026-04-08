@@ -79,8 +79,8 @@ calculate_medication_feature <- function(dataset,
   if(length(unique(MAR$dose_units, incomparables = TRUE)) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
-    if(overide_dose_check){if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
-    else{
+    if(overide_dose_check){if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")
+      }else{
       cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR$dose_units)}}).\n\n If this will not impact your feature then change {.arg overide_unit_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }
     }
