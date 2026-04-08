@@ -4,7 +4,7 @@
 \alias{load_synthetic_dataset}
 \title{Loading synthetic data}
 \usage{
-load_synthetic_dataset()
+load_synthetic_dataset(clear_cache = FALSE)
 }
 \value{
 Procedures arrow table
@@ -13,7 +13,7 @@ Procedures arrow table
 A function to check if there is Procedure tables in the environment, if not then it will read in the synthetic dataset.
 }
 \details{
-This is used for testing of functions
+This is used for testing of functions or showcase/planning
 }
 \examples{
 
