@@ -2,7 +2,7 @@
 #'
 #'  A function to check if there is Procedure tables in the environment, if not then it will read in the synthetic dataset.
 #'
-#'  This is used for testing of functions
+#'  This is used for testing of functions or showcase/planning
 #'
 #' @return Procedures arrow table
 #' @export
@@ -14,10 +14,10 @@
 #' synth_data <- load_synthetic_dataset()
 #' list2env(synth_data, envir = .GlobalEnv)
 #'
-load_synthetic_dataset <- function() {
+load_synthetic_dataset <- function(clear_cache = FALSE) {
 
   # Ensure the data exists in the cache
-  generate_synthetic_dataset(clear_cache = FALSE)
+  generate_synthetic_dataset(clear_cache)
 
   cache_dir <- get_synthetic_cache_dir()
 
