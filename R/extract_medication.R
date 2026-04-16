@@ -37,7 +37,7 @@
 #'
 #'
 extract_medication <- function(dataset,
-                               MAR = c(IntraOpMar, PostOpMar),
+                               MAR = c(IntraOpMar, HospitalMar),
                                medication = NA,
                                search_column = "simple_generic_name",
                                check_search = TRUE,
@@ -78,18 +78,18 @@ extract_medication <- function(dataset,
     ## NOTE: this vector is intentionally not exposed to the arguments, its seems the custom use of this may be too advanced.
     csn_vector_name <- "anaesthesia_csn"
 
-  }else if(identical(MAR, PostOpMar)){
+  }else if(identical(MAR, HospitalMar)){
     if(verbose){cli::cli_alert_success("Searching in the Post-Op MAR")}
     csn_vector_name <- "admission_csn"
   }else{
-    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val PostOpMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a community MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
+    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val HospitalMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a community MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
   }
 
   ## Dataset checking
   duplicate_rows <- any(dataset %>% pull(any_of(csn_vector_name)) %>% duplicated())
   if(duplicate_rows & identical(MAR, IntraOpMar)){
     cli::cli_alert_danger("CAUTION: There are rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching intra-op MAR's. This is because the variable returned will be a sum/avg across mutiple anaesthetic MAR's. Suggest enforcing filter with one procedure per encounter")
-  }else if(duplicate_rows & identical(MAR, PostOpMar)){
+  }else if(duplicate_rows & identical(MAR, HospitalMar)){
     cli::cli_alert_danger("CAUTION: There are  rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching post-op MAR's. Ajny timeframe filtering may return varying windows. Variable may be duplicated across these duplicated rows.")
   }
 

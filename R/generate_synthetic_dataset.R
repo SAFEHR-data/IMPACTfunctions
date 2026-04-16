@@ -154,14 +154,14 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
   }
 
 
-  path_postopmar <- file.path(cache_dir, "postopmar_synthetic.parquet")
+  path_hospitalmar <- file.path(cache_dir, "hospitalmar_synthetic.parquet")
 
-  if (!file.exists(path_postopmar)){
+  if (!file.exists(path_hospitalmar)){
 
     post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
 
   # and 20 post-op meds
-  synthetic_postopmar  <- synthetic_procedures %>%
+  synthetic_hospitalmar  <- synthetic_procedures %>%
     slice_sample(n = n*20, replace = TRUE)%>%
     rowwise() %>%
     mutate(
@@ -181,7 +181,7 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     mutate(generic_name = toupper(simple_generic_name),
            medication_name = paste(generic_name, dose, dose_units))
 
-  arrow::write_parquet(synthetic_postopmar, path_postopmar)
+  arrow::write_parquet(synthetic_hospitalmar, path_hospitalmar)
   }
 
 

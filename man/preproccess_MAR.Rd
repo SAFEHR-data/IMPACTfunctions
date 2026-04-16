@@ -45,7 +45,7 @@ library(dplyr)
 library(lubridate)
 }
 
-cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+cleaned_MAR <- preproccess_MAR(MAR = HospitalMar)
 head(cleaned_MAR \%>\% collect())
 
 }

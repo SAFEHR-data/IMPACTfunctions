@@ -28,6 +28,10 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 
 ```
 
+## FAQ and error troubleshooting
+
+See the `FAQ.md` file or tips on the troubleshooting and expaling errors. 
+
 ## Contributing
 
 We welcome the help to contribute, see the [SLAB article](https://uclh.slab.com/posts/how-to-contribute-to-an-r-package-kkfuh997?shr=a5jb3q7t0av7r0z9e22b36l5) on how to add fuctions

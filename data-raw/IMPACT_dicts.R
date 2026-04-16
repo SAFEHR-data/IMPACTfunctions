@@ -4,11 +4,6 @@
 
 dict_url <-  "https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0"
 
-googlesheets4::gs4_auth(
-  path = "service_accout.json",
-  scopes = "https://www.googleapis.com/auth/spreadsheets.readonly"
-)
-
 token <- googlesheets4::gs4_token()
 googledrive::drive_auth(token = token)
 googledrive::drive_has_token()

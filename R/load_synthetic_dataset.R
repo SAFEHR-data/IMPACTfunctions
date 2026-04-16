@@ -24,7 +24,7 @@ load_synthetic_dataset <- function(clear_cache = FALSE) {
   file_map <- c(
     "Procedures" = "procedures_synthetic.parquet",
     "Demographics" = "demographics_synthetic.parquet",
-    "PostOpMar" = "postopmar_synthetic.parquet",
+    "HospitalMar" = "hospitalmar_synthetic.parquet",
     "IntraOpMar" = "intraopmar_synthetic.parquet"
   )
 

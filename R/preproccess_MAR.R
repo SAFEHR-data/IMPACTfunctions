@@ -18,7 +18,7 @@
 #'
 #' @examples
 #'
-#' cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+#' cleaned_MAR <- preproccess_MAR(MAR = HospitalMar)
 #' head(cleaned_MAR %>% collect())
 #'
 preproccess_MAR <- function(MAR,
@@ -34,7 +34,7 @@ preproccess_MAR <- function(MAR,
   if(! identical(names(equivelence_dict), names(dictionary_equivelence))){cli::cli_abort("You have passed a custom dict to {.arg equivelence_dict} but the column names don't match. \n \n Change the column names of your custom dict to {.val {paste0(names(dictionary_equivelence), collapse = ', ')}}")}
 
   # Check for pre-proccess mar already
-  if(identical(MAR, PostOpMar)){
+  if(identical(MAR, HospitalMar)){
     MAR_choice <- "PostOp"
   }else if(identical(MAR, IntraOpMar)){
     MAR_choice <- "IntraOp"

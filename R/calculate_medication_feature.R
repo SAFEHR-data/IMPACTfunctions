@@ -22,10 +22,10 @@
 #'  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 #'
 #'  medication <- "morphine sulfate"
-#'  MAR <- PostOpMar
+#'  MAR <- HospitalMar
 
 #'  post_op_morphine <- extract_medication(dataset,
-#'  MAR = PostOpMar,
+#'  MAR = HospitalMar,
 #'  medication = medication,
 #'  timeframe = "custom",
 #'  t0 = "operation_date",

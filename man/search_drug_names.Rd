@@ -5,7 +5,7 @@
 \title{Helper function to search the MAR}
 \usage{
 search_drug_names(
-  MAR = c(IntraOpMar, PostOpMar),
+  MAR = c(IntraOpMar, HospitalMar),
   medication,
   strict_search = FALSE,
   search_column = c("medication_name", "generic_name", "simple_generic_name"),
@@ -13,7 +13,7 @@ search_drug_names(
 )
 }
 \arguments{
-\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{PostOpMar}}
+\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{HospitalMar}}
 
 \item{medication}{String of the medication to search. It is case insensitive for the soft search}
 

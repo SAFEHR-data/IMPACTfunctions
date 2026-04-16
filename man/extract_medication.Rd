@@ -6,7 +6,7 @@
 \usage{
 extract_medication(
   dataset,
-  MAR = c(IntraOpMar, PostOpMar),
+  MAR = c(IntraOpMar, HospitalMar),
   medication = NA,
   search_column = "simple_generic_name",
   check_search = TRUE,
