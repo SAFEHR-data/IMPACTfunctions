@@ -17,9 +17,9 @@ To resolve the error you should follow the following steps:
 
 2. Log a github issue to update the dictionary (This is important as other functions may break if table names change).
 
+3. Whilst waiting for the new version to be released, use the `dictionary_check = FALSE` to overule the check. 
 
-
-3. When the dictionary is updated then rerun the function, it should fetch the latest copy of the Google sheet and confirm that your uploaded dataset meets the table name criteria. 
+4. When the dictionary is updated, install the latest version of the package and then rerun the function.
 
 
 > Developer notes
