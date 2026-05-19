@@ -71,15 +71,22 @@ extract_medication <- function(dataset,
     cli::cli_h2("Checking data and variable quality")
   }
 
+
+  # We concatenate the medications strings here to allow the search functions above to recive a vector.
+  if(length(medication)>1){
+    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
+    medication_vector <- paste0(medication, collapse = "|")
+  }
+
   ## Argument checking
   if(nrow(compute(dataset)) < 1 ){
     cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away all patients")}
 
-  if(is.null(medication)){
+  if(all(is.null(medication))){
     if(verbose){cli::cli_alert_info("No medications given to {.arg medication}, Returning all medications.")}
     check_search <- FALSE
     #Turn the meds search off so not to throw an error.
-  }else if(is.na(medication)){
+  }else if(all(is.na(medication))){
     cli::cli_abort("No medication specifed {.arg medication} to search for. Please provide a medication to search for. \n\n If you intended to return all meds then set {.arg medication} = {.val NULL}. ")
   }
 
@@ -141,14 +148,14 @@ extract_medication <- function(dataset,
 
   if(check_search){
   #First do a soft check to ensure no misspelling
-  med_check_soft <- search_drug_names(MAR, medication)
+  med_check_soft <- search_drug_names(MAR, medication, verbose = FALSE)
   if(nrow(med_check_soft) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) isnt't in the dataset in any column, \n \n Check for spelling. Use the function {.fun search_drug_names()} to help you check the correct string.")
   }else{
     if(verbose){cli::cli_alert_success("{.val {medication}} found in the MAR")}
   }
 
-  med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE)
+  med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
   if(nrow(med_check_strict) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) didn't have any exact matched in the {.arg search_column} = {.val {search_column}},
                    \n \nThere were some rows of the MAR that matched! Use the function {.fun search_drug_names} to help you check the variables to pass or see the table below:")
@@ -181,11 +188,7 @@ extract_medication <- function(dataset,
     if(verbose){cli::cli_alert_success("Searching all medications administered during inpatient stay")}
   }
 
-  # We concatenate the medications strings here to allow the search functions above to recive a vector.
-  if(length(medication)>1){
-    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
-    medication <- paste0(medication, collapse = "|")
-  }
+
 
   # 2a - Subset for medication
 
