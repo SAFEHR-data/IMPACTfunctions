@@ -20,11 +20,19 @@ get_synthetic_cache_dir <- function() {
 #'
 generate_synthetic_dataset<- function(clear_cache = FALSE){
 
+
+  ## Force cache clearance if files not found.
+
+
+
+
+
   #### SYNTHETIC DATASET
   cache_dir <- get_synthetic_cache_dir()
 
   if(clear_cache){
     unlink(paste0(cache_dir,"/*"))
+    cli::cli_alert_info("Generating synthetic dataset, please wait...")
   }
 
   ## The procedures table is generated first, then the others from there

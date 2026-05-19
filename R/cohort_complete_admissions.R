@@ -44,7 +44,7 @@ cohort_complete_admissions <- function(procedures_table=Procedures,
                                          enforce_complete_anaesthetic_chart=TRUE,
                                          add_to_eligability_criteria = TRUE,
                                          verbose=FALSE){
-  load_synthetic_dataset()
+
 
   # Preamble for verbose
   if(verbose){

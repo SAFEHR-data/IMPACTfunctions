@@ -14,10 +14,7 @@
 #' synth_data <- load_synthetic_dataset()
 #' list2env(synth_data, envir = .GlobalEnv)
 #'
-load_synthetic_dataset <- function(clear_cache = FALSE) {
-
-  # Ensure the data exists in the cache
-  generate_synthetic_dataset(clear_cache)
+load_synthetic_dataset <- function() {
 
   cache_dir <- get_synthetic_cache_dir()
 
@@ -27,6 +24,15 @@ load_synthetic_dataset <- function(clear_cache = FALSE) {
     "PostOpMar" = "postopmar_synthetic.parquet",
     "IntraOpMar" = "intraopmar_synthetic.parquet"
   )
+
+  # 1. Check synthetic datasets are presnet
+  # Attempt to read file
+  if(all(file.exists(file_map))){
+    # all files presnet, will proceed to try to re-read
+  }else{
+    # force a flush and re-generation
+    generate_synthetic_dataset(clear_cache=TRUE)
+  }
 
   # 2. Iterate over names(file_map) to ensure the list is named correctly
   synthetic_datasets <- lapply(names(file_map), function(obj_name) {
@@ -39,6 +45,9 @@ load_synthetic_dataset <- function(clear_cache = FALSE) {
       # Return the Arrow Table
       return(arrow::read_parquet(target_path, as_data_frame = FALSE))
     } else {
+
+
+
       warning(paste("File for", obj_name, "not found at:", target_path))
       return(NULL)
     }
