@@ -10,7 +10,7 @@
 #' @param route_dict The route dictionary, defaults to `dictionary_medication_route` from the google sheets link below.
 #' @param opioid_dict The opioid dictonary, defaults to `dictionary_opioid` from the google sheets link below.
 #' @param equivelence_dict The equivilence dictonary, defaults to `dictionary_equivelence` from the google sheets link below.
-#' @param administered_only Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are `!= "given"`
+#' @param administered_only Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are  `"given"` or `"Dose Documentation"`. The latter is used to capture to total doses of TIVA medications.
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
 #' @return The origonal MAR arrow table with additional columns and cleaned rows.
@@ -68,7 +68,7 @@ preproccess_MAR <- function(MAR = HospitalMar,
   ## Need to add admnisatation action == "given"
 
   if(administered_only){
-  MAR <- MAR %>% filter(administration_action == "Given")
+  MAR <- MAR %>% filter(administration_action %in% c("Given", "Dose Documentation"))
   }
 
   ## De-duplicate rows
