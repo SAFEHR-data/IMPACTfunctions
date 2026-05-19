@@ -1,3 +1,9 @@
+#' get cache
+#'
+#' @return
+#' @export
+#'
+#' @examples
 get_synthetic_cache_dir <- function() {
   cache_dir <- tools::R_user_dir("IMPACTfunctions", which = "cache")
   if (!dir.exists(cache_dir)) {
@@ -19,13 +25,6 @@ get_synthetic_cache_dir <- function() {
 #' @export
 #'
 generate_synthetic_dataset<- function(clear_cache = FALSE){
-
-
-  ## Force cache clearance if files not found.
-
-
-
-
 
   #### SYNTHETIC DATASET
   cache_dir <- get_synthetic_cache_dir()
@@ -130,11 +129,13 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   ### SYNTHETIC MAR
 
-  path_intraopmar <- file.path(cache_dir, "intraopmar_synthetic.parquet")
+  path_hospitalmar <- file.path(cache_dir, "hospital_synthetic.parquet")
 
-  if (!file.exists(path_intraopmar)){
+  if (!file.exists(path_hospitalmar)){
 
     intra_op_medications <- c("paracetamol", "sodium lactate compound", "propofol", "fentanyl", "ondansetron", "dexamethasone", "remifentanil", "morphine sulfate" )
+    pharmaceutical_class_list <- c("Analgeisa", "Antibiotic")
+    pharmaceutical_subclass_list <- c("Simple analgeisa", "Opioid", "NSAID", "Penicillin", "cephalasporin")
 
   # Each patient will get 5 intra-op meds
   synthetic_intraopmar  <- synthetic_procedures %>%
@@ -142,10 +143,12 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     rowwise() %>%
     mutate(
       simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
       dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
-      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05)),
+      administration_action = sample(c("Given", "See Alternative", "Held", "Dose documented", NA), size = 1, prob = c(0.7, 0.05, 0.05, 0.1, 0.05)),
     )%>%
     ungroup()%>%
     mutate(
@@ -156,24 +159,18 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     )%>%
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes)) %>%
     mutate(generic_name = toupper(simple_generic_name),
-           medication_name = paste(generic_name, dose, dose_units))
+           medication_name = paste(generic_name, dose, dose_units),
+           operation_csn = NA)
 
-  arrow::write_parquet(synthetic_intraopmar, path_intraopmar)
-  }
+  post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
 
-
-  path_postopmar <- file.path(cache_dir, "postopmar_synthetic.parquet")
-
-  if (!file.exists(path_postopmar)){
-
-    post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
-
-  # and 20 post-op meds
   synthetic_postopmar  <- synthetic_procedures %>%
     slice_sample(n = n*20, replace = TRUE)%>%
     rowwise() %>%
     mutate(
       simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
       dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
@@ -187,9 +184,41 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures)) %>%
     na.omit()%>%
     mutate(generic_name = toupper(simple_generic_name),
-           medication_name = paste(generic_name, dose, dose_units))
+           medication_name = paste(generic_name, dose, dose_units),
+          anaesthesia_csn = NA,
+           operation_csn = NA)
 
-  arrow::write_parquet(synthetic_postopmar, path_postopmar)
+  operative_medications <- c("lidocaine", "prilocain","lidocaine with adrenaline", "saline", "keterolac")
+
+  synthetic_operative_mar  <- synthetic_procedures %>%
+    slice_sample(n = 0.5*n, replace = TRUE)%>%
+    rowwise() %>%
+    mutate(
+      simple_generic_name = sample(operative_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
+      dose = sample(c(5,10,20), size = 1, replace = TRUE),
+      dose_units = "mg",
+      administration_route = sample(c("local", "intra-articular"), size=1,  replace = TRUE),
+      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05))
+    )%>%
+    ungroup()%>%
+    mutate(  # Use n() to match the dataframe row count
+      # Ensure time_to_surgery is numeric (representing hours)
+      administration_offset_minutes = as.integer(rnorm(n = n(), mean = 1, sd=0.3) * 60),
+      administration_date_time = lubridate::with_tz(operation_date + lubridate::minutes(administration_offset_minutes), tzone = "UTC")) %>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures,administration_offset_minutes)) %>%
+    na.omit()%>%
+    mutate(generic_name = toupper(simple_generic_name),
+           medication_name = paste(generic_name, dose, dose_units),
+           anaesthesia_csn = NA)
+
+ synthetic_hospitalmar <- rbind(synthetic_intraopmar, synthetic_postopmar, synthetic_operative_mar)
+
+ synthetic_hospitalmar <- synthetic_hospitalmar %>%
+   mutate(mar_id = sample(c(1000000:2000000), size=nrow(synthetic_hospitalmar), replace = FALSE))
+
+  arrow::write_parquet(synthetic_hospitalmar, path_hospitalmar)
   }
 
 

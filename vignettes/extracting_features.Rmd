@@ -14,11 +14,33 @@ knitr::opts_chunk$set(
 )
 ```
 
+
+
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-library(IMPACTfunctions)
+devtools::load_all()
 library(arrow)
 library(dplyr)
+```
+
+```{r}
+  cache_dir <- get_synthetic_cache_dir()
+
+  file_map <- c(
+    "Procedures" = "procedures_synthetic.parquet",
+    "Demographics" = "demographics_synthetic.parquet",
+    "HospitalMar" = "hospital_synthetic.parquet"
+  )
+
+  # 1. Check synthetic datasets are presnet
+  # Attempt to read file
+  if(all(file.exists(paste0(cache_dir, "/",file_map)))){
+    # all files presnet, will proceed to try to re-read
+  }else{
+    # force a flush and re-generation
+    generate_synthetic_dataset(clear_cache=TRUE)
+  }
+
 ```
 
 ```{r eval=TRUE, message=FALSE, echo=FALSE}
@@ -67,12 +89,12 @@ Medications have a wide range of names in the MAR and differing groupings. We ca
 We can use the function to start seaching for strings that we think might match. *NB: in the synthetic dataset there is much less variation that in the real dataset. To this end you may not be able to replicate some of the differences demosntrated below*.
 ```{r}
 
-search_drug_names(PostOpMar, "morphine sulphate")
+search_drug_names(HospitalMar, "morphine sulphate")
 ```
 Note that we didn't get any results, we can now try a looser search term. 
 
 ```{r}
-search_drug_names(PostOpMar, "morphine")
+search_drug_names(HospitalMar, "morphine")
 ```
 We can now see the range of different names under each of the columns as well as the row counts. The row counts are helpful to see if a formulation is popular. 
 
@@ -81,7 +103,7 @@ When we are happy with our search we can test it using the *`strict_search`* whi
 ```{r}
 
 medication <- "morphine sulfate"
-MAR <- PostOpMar
+MAR <- HospitalMar
 
 search_drug_names(MAR,
                   medication,
@@ -98,7 +120,7 @@ Each of the MAR's are a raw pull of the data with little to no cleaning. We can 
 
 ```{r}
 
-cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+cleaned_MAR <- preproccess_MAR(MAR = HospitalMar)
 
 head(cleaned_MAR %>% collect())
 
@@ -115,13 +137,13 @@ We note that the extract_medications function uses the preproccess_mar function 
 ```{r}
 
 morphine <- extract_medication(dataset,
-                                       MAR = PostOpMar,
+                                       MAR = HospitalMar,
                                        medication = medication
                                        )
 
 morphine %>% collect() %>% head()
 ```
-If we don't provide a timeframe, it will default to the whole of that admission (for PostOpMar) or the whole of that anaesthetic chart (for the IntraOpMar).
+If we don't provide a timeframe, it will default to the whole of that admission (for HospitalMar) or the whole of that anaesthetic chart (for the IntraOpMar).
 
 We can use the t_0, t_int and t_1 to provide custom time points to subset between
 
@@ -129,7 +151,7 @@ We can use the t_0, t_int and t_1 to provide custom time points to subset betwee
 
 
 post_op_morphine <- extract_medication(dataset,
-                                       MAR = PostOpMar,
+                                       MAR = HospitalMar,
                                        medication = medication,
                                        timeframe = "custom",
                                        t0 = "operation_date",
@@ -137,7 +159,7 @@ post_op_morphine <- extract_medication(dataset,
                                        verbose = TRUE)
 
 post_op_morphine_3hr <- extract_medication(dataset,
-                                       MAR = PostOpMar,
+                                       MAR = HospitalMar,
                                        medication = medication,
                                        timeframe = "custom",
                                        t0 = "operation_date",
@@ -158,7 +180,8 @@ calculate_medication_feature(dataset = df,
                              MAR = post_op_morphine %>% collect(),
                              feature = "sum_ome",
                              feature_name = "Moprhine",
-                             format = "joined")
+                             format = "joined",
+                             overide_dose_check  = TRUE)
 
 ```
 From the subsetted medications we can then generate feature vectors of intrest. 
@@ -170,7 +193,8 @@ morphine_table <- calculate_medication_feature(dataset,
                              MAR = post_op_morphine,
                              format = "table",
                              feature = "binary",
-                             feature_name = "morphine_post_op")
+                             feature_name = "morphine_post_op",
+                             overide_dose_check =TRUE)
 
 morphine_table %>% collect()
 
@@ -183,7 +207,8 @@ dataset <- calculate_medication_feature(dataset,
                              MAR = post_op_morphine,
                              format = "joined",
                              feature = "sum_dose",
-                             feature_name = "morphine_post_op")
+                             feature_name = "morphine_post_op",
+                             overide_dose_check = TRUE)
 
 morphine_table %>% collect()
 
@@ -196,7 +221,8 @@ calculate_medication_feature(dataset,
                              MAR = post_op_morphine,
                              format = "joined",
                              feature = "sum_ome",
-                             feature_name = "morphine_post_op")
+                             feature_name = "morphine_post_op",
+                             overide_dose_check = TRUE)
 
 ## NOTICE THE DANAGER ERROR
 ```
@@ -206,7 +232,7 @@ So we can subset our meds again but this time chain then together in an efficien
 ```{r}
 
 all_recovery_meds <- extract_medication(dataset,
-                                       MAR = PostOpMar,
+                                       MAR = HospitalMar,
                                        medication = NULL,
                                        timeframe = "custom",
                                        t0 = "operation_date",
@@ -217,7 +243,8 @@ calculate_medication_feature(dataset = dataset,
                              MAR = all_recovery_meds,
                              format = "joined",
                              feature = "sum_ome",
-                             feature_name = "recovery_ome") %>% collect()
+                             feature_name = "recovery_ome",
+                             overide_dose_check = TRUE) %>% collect()
 
 ```
 

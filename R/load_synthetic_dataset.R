@@ -21,13 +21,12 @@ load_synthetic_dataset <- function() {
   file_map <- c(
     "Procedures" = "procedures_synthetic.parquet",
     "Demographics" = "demographics_synthetic.parquet",
-    "PostOpMar" = "postopmar_synthetic.parquet",
-    "IntraOpMar" = "intraopmar_synthetic.parquet"
+    "HospitalMar" = "hospital_synthetic.parquet"
   )
 
   # 1. Check synthetic datasets are presnet
   # Attempt to read file
-  if(all(file.exists(file_map))){
+  if(all(file.exists(paste0(cache_dir, "/",file_map)))){
     # all files presnet, will proceed to try to re-read
   }else{
     # force a flush and re-generation
@@ -45,9 +44,6 @@ load_synthetic_dataset <- function() {
       # Return the Arrow Table
       return(arrow::read_parquet(target_path, as_data_frame = FALSE))
     } else {
-
-
-
       warning(paste("File for", obj_name, "not found at:", target_path))
       return(NULL)
     }
