@@ -2,11 +2,12 @@
 % Please edit documentation in R/extract_medication.R
 \name{extract_medication}
 \alias{extract_medication}
-\title{Title}
+\title{Extract Medication administrations}
 \usage{
 extract_medication(
   dataset,
-  MAR = c(IntraOpMar, PostOpMar),
+  MAR = HospitalMar,
+  mar_source = NA,
   medication = NA,
   search_column = "simple_generic_name",
   check_search = TRUE,
@@ -23,7 +24,9 @@ extract_medication(
 \arguments{
 \item{dataset}{The procedures set of which to search across.}
 
-\item{MAR}{The medication administration record (MAR) to search across, Can be either Intra-Op or Post-Op MAR.}
+\item{MAR}{The MAR to extract from. Will default to \code{HospitalMar}.}
+
+\item{mar_source}{The source MAR to filter from to filter across both then leave this as \code{NA}. See section above. Multiple sources can be combined (\code{mar_source = c("anaesthetic", "operation")}.}
 
 \item{medication}{Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.}
 
@@ -51,17 +54,30 @@ extract_medication(
 A arrow query of the subset of medications of intrest.
 }
 \description{
-To search the relevant MAR to return features/variables related to the medications
+To search the MAR to return features/variables related to the medications.
 }
 \details{
+MAR Source
+
+There are 3 places medications can be recorded as administered (MAR) in the hospital:
+\enumerate{
+\item The general MAR where the majority of medications are recorded. Use \code{mar_source = "ward"}.
+\item The anaesthetic MAR that contains the medications recorded by the anaesthetist. Use \code{mar_source = "anaesthetic"}.
+\item The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon). Use \code{mar_source = "operation"}.
+}
+
+Generally you want to use \code{mar_source = NA} which will not apply any filtering.
+
+To select a specific MAR source see the parameter options below. Ensure you validate the specific medication used as documentation practices may vary (eg being double recorded)
+
 Search time windows
 
-The default behavior of the function is to return the metric of all of the medications on the MAR of intrest, for the admission of intrest. We may want to search with specific timepoints to establise the medication use during a sepcifed periood such as Post op.
+The default behaviour of the function is to return the metric of all of the medications on the MAR, for the admission of interest. We may want to search with specific time points to establish the medication use during a specified period such as 3hrs Post op.
 
 There are 3 easy to use time frames by default but they can be customised further.
-If \emph{timeframe} = \emph{"whole_mar} (\strong{The default behavior}) then it will return the feature of the whole MAR for the patients admission.
-If \emph{timeframe} = \emph{pre_op} then it will return the sections of the Post-op MAR (Even though it is called post-op it is really the ward MAR which is all medications given outside of theatre) between the admission datetime and the operation datetime.
-If \emph{timeframe} = \emph{post_op} then it will return the sections of the Post-op MAR between the admission operation datetime and the discharge datetime.
+If \emph{timeframe} = \emph{"whole_mar} (\strong{The default behaviour}) then it will return the feature of the whole MAR for the patients admission.
+If \emph{timeframe} = \emph{pre_op} then it will return the section of the MAR between the admission datetime and the operation datetime.
+If \emph{timeframe} = \emph{post_op} then it will return the section of the Post-op MAR between the operation datetime and the discharge datetime.
 If \emph{timeframe} = \emph{custom} then you may supply the vector of values for t0 and either t1 or 1_int to set a custom time window.
 }
 \examples{

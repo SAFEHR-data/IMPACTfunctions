@@ -1,14 +1,15 @@
 #' Preprocessing of MAR
 #'
-#' Preproccesing of tables to allow other feature extractions functions to run. This left joins the dynamic dictionaries and calculate a value for OME.
+#' Pre-proccesing of tables to allow other feature extractions functions to run. This left joins the dynamic dictionaries and calculate a value for OME.
 #'
-#' If you want to use custom values then replace the dictonary with your custom dictonary. Do not change the col names and they are used for left joining.
+#' If you want to use custom values then replace the dictionary with your custom dictionary. Do not change the col names and they are used for left joining.
 #'
-#' @param MAR The arrow file of the MAR
+#' If there are medications for which a opioid-equivelence is not being generated this may be due to the lack of dose unit harmonisation. Please log a github issue to get the dose unit added.
+#'
+#' @param MAR The arrow file of the MAR. defaults to `HospitalMar`.
 #' @param route_dict The route dictionary, defaults to `dictionary_medication_route` from the google sheets link below.
 #' @param opioid_dict The opioid dictonary, defaults to `dictionary_opioid` from the google sheets link below.
 #' @param equivelence_dict The equivilence dictonary, defaults to `dictionary_equivelence` from the google sheets link below.
-#' @param deduplicate_rows KEEP TRUE, see GH issue #24
 #' @param administered_only Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are `!= "given"`
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
@@ -18,14 +19,13 @@
 #'
 #' @examples
 #'
-#' cleaned_MAR <- preproccess_MAR(MAR = PostOpMar)
+#' cleaned_MAR <- preproccess_MAR(MAR = HospitalMar)
 #' head(cleaned_MAR %>% collect())
 #'
-preproccess_MAR <- function(MAR,
+preproccess_MAR <- function(MAR = HospitalMar,
                             route_dict = dictionary_medication_route,
                             opioid_dict = dictionary_opioid,
                             equivelence_dict = dictionary_equivelence,
-                            deduplicate_rows = TRUE,
                             administered_only = TRUE){
 
   # Check col names match
@@ -34,10 +34,8 @@ preproccess_MAR <- function(MAR,
   if(! identical(names(equivelence_dict), names(dictionary_equivelence))){cli::cli_abort("You have passed a custom dict to {.arg equivelence_dict} but the column names don't match. \n \n Change the column names of your custom dict to {.val {paste0(names(dictionary_equivelence), collapse = ', ')}}")}
 
   # Check for pre-proccess mar already
-  if(identical(MAR, PostOpMar)){
-    MAR_choice <- "PostOp"
-  }else if(identical(MAR, IntraOpMar)){
-    MAR_choice <- "IntraOp"
+  if(identical(MAR, HospitalMar)){
+    MAR_choice <- "HospitalMar"
   }else{
     cli::cli_abort("MAR passed to arguement {.arg MAR} is not identical to the base MARs. \n \n Have you preproccessed it already?")
   }
@@ -69,28 +67,13 @@ preproccess_MAR <- function(MAR,
 
   ## Need to add admnisatation action == "given"
 
+  if(administered_only){
   MAR <- MAR %>% filter(administration_action == "Given")
-
+  }
 
   ## De-duplicate rows
-  ## This is a patch for GH issue #23
-  if(any(c("case_id", "anaesthesia_csn", "operation_csn") %in% names(MAR))){
-    cli::cli_alert_danger("KNOWN DATA ISSUE: {.href [GH issue #23](https://github.com/SAFEHR-data/IMPACTfunctions/issues)}. \n \n Enacting patch to deduplicate rows. ")
-
-    ## Strip duplicated rows
-    if(MAR_choice == "PostOp"){
-      # We try use these numberic cols rather than the name as there is a 1:! medication_order_id to medicaton_name and num <> num comparison are faster
-      MAR <- MAR %>% select(-c(case_id, anaesthesia_csn, operation_csn))
-      MAR <- MAR %>% unique("admission_csn", "medication_order_id", "administration_date_time")
-    }else if(MAR_choice == "IntraOp"){
-      MAR <- MAR %>% select(-c(case_id, admission_csn, operation_csn))
-      MAR <- MAR %>% unique("anaesthesia_csn", "medication_order_id", "administration_date_time")
-    }
-
-    # For a medication to be distinct it needs a admission, medication_order_id and adminsitration_datetime.
-
-  }else{
-    cli::cli_alert_success("KNOWN DATA ISSUE Patched: Please resolve {.href [GH issue #23](https://github.com/SAFEHR-data/IMPACTfunctions/issues)}. ")
+  if(any(duplicated(MAR %>% pull(mar_id, as_vector = TRUE)))){
+    cli::cli_abort("DATA ISSUE: There is duplication of the `mar_id` column. This may cause double counting of medications.")
   }
 
  return(MAR)
