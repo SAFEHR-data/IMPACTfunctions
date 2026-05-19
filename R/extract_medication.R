@@ -121,7 +121,7 @@ extract_medication <- function(dataset,
     if(!is.na(t_int)){
 
       timeframe_df <- dataset %>%
-        select(admission_csn,anaesthesia_csn,, t0 = all_of(t0)) %>%
+        select(admission_csn,anaesthesia_csn, t0 = all_of(t0)) %>%
         collect() %>%
         mutate(
           # Perform R-side arithmetic, then force UTC to match the Arrow schema
@@ -133,6 +133,9 @@ extract_medication <- function(dataset,
     }else{
       cli::cli_abort("Hmm, you should not have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
       }
+
+  }else{
+    cli::cli_abort("Incorrect value supplied to {.arg timeframe}. See {.code ?extract_medication} for assistance. ")
 
   }
 
@@ -172,15 +175,15 @@ extract_medication <- function(dataset,
   if(all(!is.na(mar_source))) {
     subsets <- list()
     if ("ward"        %in% mar_source){
-      subsets[["ward"]]        <- MAR %>% filter(is.na(anaesthesia_csn), is.na(operation_case_id))
+      subsets[["ward"]]        <- MAR %>% filter(encounter_type == "Hospital Encounter")
       if(verbose){cli::cli_alert_success("Removing medications given on the anesthetic or operation MAR")}
     }
     if ("anaesthetic" %in% mar_source){
-      subsets[["anaesthetic"]] <- MAR %>% filter(!is.na(anaesthesia_csn))
+      subsets[["anaesthetic"]] <- MAR %>%filter(encounter_type == "Anaesthesia ")
       if(verbose){cli::cli_alert_success("Selecting only medications given on the anesthetic MAR")}
     }
     if ("operation"   %in% mar_source){
-      subsets[["operation"]]  <- MAR %>% filter(!is.na(operation_case_id))
+      subsets[["operation"]]  <- MAR %>% filter(encounter_type == "Operation")
       if(verbose){cli::cli_alert_success("Selecting only medications given on the operation MAR")}
     }
     MAR <- purrr::reduce(subsets, union_all)

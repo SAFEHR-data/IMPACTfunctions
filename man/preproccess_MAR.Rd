@@ -24,7 +24,7 @@ preproccess_MAR(
 
 \item{equivelence_dict}{The equivilence dictonary, defaults to \code{dictionary_equivelence} from the google sheets link below.}
 
-\item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are \verb{!= "given"}}
+\item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are  \code{"given"} or \code{"Dose Documentation"}. The latter is used to capture to total doses of TIVA medications.}
 }
 \value{
 The origonal MAR arrow table with additional columns and cleaned rows.
