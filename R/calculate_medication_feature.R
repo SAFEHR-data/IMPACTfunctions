@@ -23,10 +23,10 @@
 #'  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 #'
 #'  medication <- "morphine sulfate"
-#'  MAR <- PostOpMar
+#'  MAR <- HospitalMar
 
 #'  post_op_morphine <- extract_medication(dataset,
-#'  MAR = PostOpMar,
+#'  MAR = HospitalMar,
 #'  medication = medication,
 #'  timeframe = "custom",
 #'  t0 = "operation_date",
@@ -37,14 +37,16 @@
 #' MAR = post_op_morphine,
 #' format = "joined",
 #' feature = "sum_dose",
-#' feature_name = "morphine_post_op")
+#' feature_name = "morphine_post_op",
+#' overide_dose_check= TRUE)
 #'
 #'
 #' morphine_table <- calculate_medication_feature(dataset,
 #' MAR = post_op_morphine,
 #' format = "table",
 #' feature = "binary",
-#' feature_name = "morphine_post_op")
+#' feature_name = "morphine_post_op",
+#' overide_dose_check= TRUE)
 #'
 calculate_medication_feature <- function(dataset,
                                          MAR,
@@ -94,7 +96,7 @@ calculate_medication_feature <- function(dataset,
     if(overide_dose_check){
       if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
     }else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_unit_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }
     }
 

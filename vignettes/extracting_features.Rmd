@@ -18,29 +18,9 @@ knitr::opts_chunk$set(
 
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-devtools::load_all()
+library(IMPACTfunctions)
 library(arrow)
 library(dplyr)
-```
-
-```{r}
-  cache_dir <- get_synthetic_cache_dir()
-
-  file_map <- c(
-    "Procedures" = "procedures_synthetic.parquet",
-    "Demographics" = "demographics_synthetic.parquet",
-    "HospitalMar" = "hospital_synthetic.parquet"
-  )
-
-  # 1. Check synthetic datasets are presnet
-  # Attempt to read file
-  if(all(file.exists(paste0(cache_dir, "/",file_map)))){
-    # all files presnet, will proceed to try to re-read
-  }else{
-    # force a flush and re-generation
-    generate_synthetic_dataset(clear_cache=TRUE)
-  }
-
 ```
 
 ```{r eval=TRUE, message=FALSE, echo=FALSE}
@@ -252,8 +232,67 @@ calculate_medication_feature(dataset = dataset,
 
 ```{r}
 
+   dataset <- cohort_complete_admissions(Procedures) %>%
+   cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
+ 
+   medication <- "morphine sulfate"
+   MAR <- HospitalMar
+
+   post_op_morphine <- extract_medication(dataset,
+   MAR = HospitalMar,
+   medication = medication,
+   timeframe = "custom",
+   t0 = "operation_date",
+   t1 = "discharge_date",
+   verbose = TRUE)
+ 
+  dataset <- calculate_medication_feature(dataset,
+  MAR = post_op_morphine,
+  format = "joined",
+  feature = "sum_dose",
+  feature_name = "morphine_post_op",
+  overide_dose_check= TRUE
+  )
+ 
+ 
+  morphine_table <- calculate_medication_feature(dataset,
+  MAR = post_op_morphine,
+  format = "table",
+  feature = "binary",
+  feature_name = "morphine_post_op",
+  overide_dose_check= TRUE)
+
 
 ```
 
 There are a range of possible ways to subset the MAR, type `?extract_medication` for more details than whats offered below. 
+
+# Extracting flowsheet data
+
+```{r}
+
+dataset <- cohort_complete_admissions(Procedures) %>%
+   cohort_procedure_codes(cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48")) %>% collect()
+
+ heart_rate <- extract_flowsheet_data(dataset = Procedures,
+   flowsheet = Measurements,
+    flowsheet_question_name = "Pulse",
+    timeframe = "whole_flowsheet"
+   )
+ 
+  dataset <- calculate_flowsheet_feature(dataset,
+    flowsheet = heart_rate,
+    format = "joined",
+    feature = "mean_values",
+    feature_name = "mean_post_op_hr"
+    )
+ 
+  hr_table <- calculate_flowsheet_feature(dataset,
+    flowsheet = heart_rate,
+    format = "table",
+    feature = "mean_values",
+    feature_name = "post_op_hr_values")
+
+
+```
 

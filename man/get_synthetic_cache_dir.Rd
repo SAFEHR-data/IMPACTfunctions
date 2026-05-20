@@ -6,6 +6,9 @@
 \usage{
 get_synthetic_cache_dir()
 }
+\value{
+a directory of the cache location
+}
 \description{
 get cache
 }

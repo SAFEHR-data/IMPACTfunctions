@@ -74,6 +74,7 @@ extract_flowsheet_data <- function(
     timeframe <- "whole_flowsheet"
   } else if (timeframe == "whole_flowsheet") {
     if (verbose) cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching whole flowsheet per encounter.")
+    timeframe_df <- NA
   } else if (timeframe == "pre_op") {
     if (verbose) cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only pre-operative period.")
     t0_col <- dataset %>% select(admission_csn, anaesthesia_csn, t0 = admission_date)
@@ -155,7 +156,10 @@ extract_flowsheet_data <- function(
   if (verbose) cli::cli_alert_success("Removing flowsheet rows from patients not in dataset.")
 
   # ERROR CHECKING - See Github Issue: #31
-  if (typeof(subset %>% pull(anaesthesia_csn)) != typeof(timeframe_df %>% pull(anaesthesia_csn))) {
+  if(length(timeframe_df)==1){
+    NULL
+    # This is a bit of a bodge but when the datatype of the measuremtns sheet is fixed this whole section can be removed
+  }else if (typeof(subset %>% pull(anaesthesia_csn)) != typeof(timeframe_df %>% pull(anaesthesia_csn))) {
     cli::cli_alert_danger("KNOWN BUG: {.val anaesthesia_csn} in Measurements is {.val int32} rather than {.val double}. Coercing to match. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/31)}")
     subset <- subset %>% mutate(anaesthesia_csn = as.double(anaesthesia_csn))
   } else {

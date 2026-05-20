@@ -51,7 +51,7 @@ dataset <- cohort_complete_admissions(Procedures) \%>\%
 
 heart_rate <- extract_flowsheet_data(dataset,
   flowsheet = Measurements,
-  flowsheet_question_name = "Heart Rate",
+  flowsheet_question_name = "Pulse",
   timeframe = "post_op")
 
 dataset <- calculate_flowsheet_feature(dataset,
@@ -63,7 +63,7 @@ dataset <- calculate_flowsheet_feature(dataset,
 hr_table <- calculate_flowsheet_feature(dataset,
   flowsheet = heart_rate,
   format = "table",
-  feature = "list_values",
+  feature = "sum_values",
   feature_name = "post_op_hr_values")
 
 }

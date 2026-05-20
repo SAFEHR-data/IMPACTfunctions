@@ -22,7 +22,7 @@
 #'
 #' heart_rate <- extract_flowsheet_data(dataset,
 #'   flowsheet = Measurements,
-#'   flowsheet_question_name = "Heart Rate",
+#'   flowsheet_question_name = "Pulse",
 #'   timeframe = "post_op")
 #'
 #' dataset <- calculate_flowsheet_feature(dataset,
@@ -34,7 +34,7 @@
 #' hr_table <- calculate_flowsheet_feature(dataset,
 #'   flowsheet = heart_rate,
 #'   format = "table",
-#'   feature = "list_values",
+#'   feature = "sum_values",
 #'   feature_name = "post_op_hr_values")
 #'
 calculate_flowsheet_feature <- function(dataset,
@@ -94,14 +94,14 @@ calculate_flowsheet_feature <- function(dataset,
 
     result <- flowsheet %>%
       group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(meas_value, na.rm = TRUE)) %>%
+      summarise(result = sum(value, na.rm = TRUE)) %>%
       collect()
 
   } else if (feature == "mean_values") {
 
     result <- flowsheet %>%
       group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = mean(meas_value, na.rm = TRUE)) %>%
+      summarise(result = mean(value, na.rm = TRUE)) %>%
       collect()
 
   } else if (feature == "count_of_values") {
@@ -116,7 +116,7 @@ calculate_flowsheet_feature <- function(dataset,
     result <- flowsheet %>%
       collect() %>%
       group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = list(meas_value), .groups = "drop")
+      summarise(result = list(value), .groups = "drop")
 
   } else {
     cli::cli_abort("{.arg feature} must be one of {.val binary}, {.val sum_values}, {.val mean_values}, {.val count_of_values}, or {.val list_values}.")
