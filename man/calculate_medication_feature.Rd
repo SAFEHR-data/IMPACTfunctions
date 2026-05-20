@@ -10,6 +10,7 @@ calculate_medication_feature(
   format,
   feature,
   feature_name,
+  link_column = "admission_csn",
   overide_dose_check = FALSE,
   overide_route_check = FALSE,
   verbose = TRUE
@@ -25,6 +26,8 @@ calculate_medication_feature(
 \item{feature}{If returning a vector, what type of feature do you want extracted? Choose: \strong{"binary"}, "sum_dose", "sum_ome","count"}
 
 \item{feature_name}{if returning a vector, what do you want the feature column called?}
+
+\item{link_column}{Which column to use as the primary source of return. Select one option from: \code{link_column = c(admission_csn, anaesthesia_csn, operation_csn)}}
 
 \item{overide_dose_check}{The function will check to ensure all the units are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different units.}
 
@@ -50,9 +53,9 @@ library(lubridate)
  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 
  medication <- "morphine sulfate"
- MAR <- PostOpMar
+ MAR <- HospitalMar
  post_op_morphine <- extract_medication(dataset,
- MAR = PostOpMar,
+ MAR = HospitalMar,
  medication = medication,
  timeframe = "custom",
  t0 = "operation_date",
@@ -63,13 +66,15 @@ dataset <- calculate_medication_feature(dataset,
 MAR = post_op_morphine,
 format = "joined",
 feature = "sum_dose",
-feature_name = "morphine_post_op")
+feature_name = "morphine_post_op",
+overide_dose_check= TRUE)
 
 
 morphine_table <- calculate_medication_feature(dataset,
 MAR = post_op_morphine,
 format = "table",
 feature = "binary",
-feature_name = "morphine_post_op")
+feature_name = "morphine_post_op",
+overide_dose_check= TRUE)
 
 }

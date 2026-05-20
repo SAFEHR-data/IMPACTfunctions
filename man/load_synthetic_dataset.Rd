@@ -4,7 +4,7 @@
 \alias{load_synthetic_dataset}
 \title{Loading synthetic data}
 \usage{
-load_synthetic_dataset(clear_cache = FALSE)
+load_synthetic_dataset()
 }
 \value{
 Procedures arrow table

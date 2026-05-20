@@ -14,19 +14,25 @@
 #' synth_data <- load_synthetic_dataset()
 #' list2env(synth_data, envir = .GlobalEnv)
 #'
-load_synthetic_dataset <- function(clear_cache = FALSE) {
-
-  # Ensure the data exists in the cache
-  generate_synthetic_dataset(clear_cache)
+load_synthetic_dataset <- function() {
 
   cache_dir <- get_synthetic_cache_dir()
 
   file_map <- c(
     "Procedures" = "procedures_synthetic.parquet",
     "Demographics" = "demographics_synthetic.parquet",
-    "PostOpMar" = "postopmar_synthetic.parquet",
-    "IntraOpMar" = "intraopmar_synthetic.parquet"
+    "HospitalMar" = "hospital_synthetic.parquet",
+    "Measurements" = "measurements_synthetic.parquet"
   )
+
+  # 1. Check synthetic datasets are presnet
+  # Attempt to read file
+  if(all(file.exists(paste0(cache_dir, "/",file_map)))){
+    # all files presnet, will proceed to try to re-read
+  }else{
+    # force a flush and re-generation
+    generate_synthetic_dataset(clear_cache=TRUE)
+  }
 
   # 2. Iterate over names(file_map) to ensure the list is named correctly
   synthetic_datasets <- lapply(names(file_map), function(obj_name) {
