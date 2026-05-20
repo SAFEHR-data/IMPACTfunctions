@@ -1892,6 +1892,8 @@ build_pcas_clean_flag <- function(pcas_final,
 }
 
 
+## DW futher clean and de-duplicate
+
 
 # =============================================================================
 # resolve_crossover_duplicates()
@@ -2217,6 +2219,9 @@ resolve_crossover_duplicates <- function(
     ungroup()
 }
 
+
+## DW - Summarise PCA to binds
+
 # =============================================================================
 # summarise_postop_bins()
 # -----------------------------------------------------------------------------
@@ -2402,6 +2407,8 @@ summarise_postop_bins <- function(
 }
 
 
+## DW - FUNCTION FOR RESULTS
+
 # =============================================================================
 # summarise_postop_days()
 # -----------------------------------------------------------------------------
@@ -2526,6 +2533,9 @@ summarise_postop_days <- function(pcas_clean_flag_deduplicated,
       end   = if_else(day == 0L, day0_end,      day0_end + days(day)),
       day_label = paste0("day_", day)
     )
+
+
+
 
   # ---------------------------------------------------------------------------
   # 5) Assign each hourly PCA row to its day window
