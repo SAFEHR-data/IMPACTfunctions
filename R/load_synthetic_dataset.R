@@ -21,7 +21,8 @@ load_synthetic_dataset <- function() {
   file_map <- c(
     "Procedures" = "procedures_synthetic.parquet",
     "Demographics" = "demographics_synthetic.parquet",
-    "HospitalMar" = "hospital_synthetic.parquet"
+    "HospitalMar" = "hospital_synthetic.parquet",
+    "Measurements" = "measurements_synthetic.parquet"
   )
 
   # 1. Check synthetic datasets are presnet

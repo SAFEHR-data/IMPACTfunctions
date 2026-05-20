@@ -1,9 +1,8 @@
 #' get cache
 #'
-#' @return
+#' @return a directory of the cache location
 #' @export
 #'
-#' @examples
 get_synthetic_cache_dir <- function() {
   cache_dir <- tools::R_user_dir("IMPACTfunctions", which = "cache")
   if (!dir.exists(cache_dir)) {
@@ -221,5 +220,51 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
   arrow::write_parquet(synthetic_hospitalmar, path_hospitalmar)
   }
 
+
+ # synthetic_measurments
+
+  path_measurements <- file.path(cache_dir, "measurements_synthetic.parquet")
+
+  if (!file.exists(path_measurements)){
+
+  flowsheet_question_name <- c(
+    "Verbal pain score - at rest", "Verbal pain score - on movement",
+    "BP", "Pulse", "Size", "Laterality", "Skin decontamination",
+    "Reason for Art Line", "Orientation", "Placement Date"
+  )
+
+  flowsheet_probs <- c(3021570, 2342216, 6519997, 30411508, 89598, 38876, 66744, 3883, 355959, 930516)
+  flowsheet_probs <- flowsheet_probs / sum(flowsheet_probs)
+
+  flowsheet_id <- 10000000:10000009
+  flowsheet_row_epic_id <- as.character(50000000:50000009)
+
+  flowsheet_id_df <- data.frame(flowsheet_question_name, flowsheet_id, flowsheet_row_epic_id)
+
+  synthetic_measurements <- synthetic_procedures %>%
+    slice_sample(n = n * 20, replace = TRUE) %>%
+    rowwise() %>%
+    mutate(
+      lda_id = NA,
+      flowsheet_question_name = sample(flowsheet_question_name, size = 1, prob = flowsheet_probs, replace = TRUE),
+      value = sample(0:200, size=1),
+      measurement_type_id = sample(1:10, size=1),
+      ) %>%
+    ungroup() %>%
+    mutate(recorded_date = as.POSIXct(
+      runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date)),
+      origin = "1970-01-01", tz="UTC"
+    )) %>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures, admission_date, operation_date, discharge_date, mrn))%>%
+    left_join(flowsheet_id_df)
+
+  synthetic_measurements <- synthetic_measurements %>%
+    mutate(anaesthesia_csn = if_else(runif(n()) < 0.8, NA, anaesthesia_csn)) %>%
+    mutate(operation_csn  = if_else(runif(n()) < 0.9, NA, operation_csn)) %>%
+    mutate(case_id  = if_else(runif(n()) < 0.9, NA, case_id )) %>%
+    mutate(lda_id   = if_else(runif(n()) < 0.5, NA, lda_id  ))
+
+  arrow::write_parquet(synthetic_measurements, path_measurements)
+  }
 
 }
