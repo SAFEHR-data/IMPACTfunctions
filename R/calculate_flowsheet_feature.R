@@ -67,7 +67,7 @@ calculate_flowsheet_feature <- function(dataset,
     cli::cli_abort("{.arg link_column} must be one of {.val admission_csn}, {.val anaesthesia_csn}, or {.val operation_csn}.")
   }
 
-  # Flowsheet consistency check (skip for binary, count, list — units irrelevant)
+  # Flowsheet consistency check (skip for binary, count, list - units irrelevant)
 
     flowsheets_present <- unique(flowsheet %>% select(flowsheet_row_epic_id) %>% collect())
 

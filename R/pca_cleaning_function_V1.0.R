@@ -22,7 +22,7 @@
 #   STEP 8: Fit bolus + background rate at each reset via small grid search
 #   STEP 9: Segment-level background rate (reset-to-reset) from aggregate data
 #   STEP 10: Per-interval dose components + reliability checks + final selection
-#            then EWMA/±2SD gating to reject outlier candidates and choose dose_best_estimate
+#            then EWMA/+/-2SD gating to reject outlier candidates and choose dose_best_estimate
 #
 # =============================================================================
 
@@ -39,7 +39,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
   bg_ml_grid            <- c(0, 0.5, 1.0, 1.5, 2.0)  # candidate background rates (mL/hr) for grid search
 
   # ---------------------------------------------------------------------------
-  # Small utilities used later (Steps 6–10)
+  # Small utilities used later (Steps 6-10)
   # ---------------------------------------------------------------------------
   `%||%` <- function(a, b) if (is.null(a)) b else a
 
@@ -456,7 +456,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
   # STEP 5: Incremental number of doses given (presses) per row
   # ===========================================================================
   # n_given is a cumulative counter. Convert to per-interval increments; after reset,
-  # take the raw value as that interval’s increment.
+  # take the raw value as that interval's increment.
   pcas_wide_step5 <- pcas_wide_step4 %>%
     group_by(mrn, admission_csn, medication) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
@@ -517,7 +517,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
     )
 
   # ===========================================================================
-  # STEP 7: Validate bolus with short forward windows (1–4 rows)
+  # STEP 7: Validate bolus with short forward windows (1-4 rows)
   # ===========================================================================
   # For each reset, compute per-press dose over windows of 1..4 rows after reset.
   # Prefer reservoir-derived dose if reservoir drops exist; otherwise use admin totals.
@@ -608,8 +608,8 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
   #   - otherwise incremental admin dose totals
   #
   # Includes extra logic:
-  #   - priming removal (first interval after a new bag with “looks like priming” pattern)
-  #   - “snap” to 1.0 or 1.5 mg in mg-drugs when ratios strongly suggest those
+  #   - priming removal (first interval after a new bag with "looks like priming" pattern)
+  #   - "snap" to 1.0 or 1.5 mg in mg-drugs when ratios strongly suggest those
   #   - soft penalties to prefer common bg rates and continuity with previous reset bolus
   pcas_wide_step8 <- pcas_wide_step7 %>%
     group_by(mrn, admission_csn, medication) %>%
@@ -722,7 +722,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
         bg_zero_cap <- if (length(zero_nopress_nodose_idx) > 0) { if (mg_drug) 0.10 else 2 } else { Inf }
 
         # Low-press hint:
-        # If with ≤1 press intervals the residual implies ~0.5 mL/hr consistently, suggest bg=0.5.
+        # If with <=1 press intervals the residual implies ~0.5 mL/hr consistently, suggest bg=0.5.
         b_seed <- df$bolus_dose_validated[i]
         if (!is.finite(b_seed)) b_seed <- if (mg_drug) 1.0 else 20
         lp_idx <- which(is.finite(hours_each) & hours_each > 0 &
@@ -871,7 +871,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
              .after = bolus_dose_validated_window)
 
   # ===========================================================================
-  # STEP 9: Segment-level background (reset → next reset)
+  # STEP 9: Segment-level background (reset -> next reset)
   # ===========================================================================
   # For each segment (defined by pump_reset), compute aggregate observed dose and
   # infer a background rate for the segment. This provides a "global" background
@@ -1068,7 +1068,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
       ),
       bag_vol_limit_ml = 100,
 
-      # heuristic: allow multiple bags if the interval is long (≈1 bag per 8h gap)
+      # heuristic: allow multiple bags if the interval is long (~1 bag per 8h gap)
       multi_bag_factor = dplyr::case_when(
         !is.finite(interval_hours) ~ 1,
         interval_hours <= 0        ~ 1,
@@ -1183,8 +1183,8 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
           reservoir_plausibility_flag
       ),
 
-      # Volume–Model agreement:
-      # If volume-derived mass and model-derived mass agree within ±10%,
+      # Volume-Model agreement:
+      # If volume-derived mass and model-derived mass agree within +/-10%,
       # average them as an extra candidate (mv_mean).
       mv_agree = is.finite(dose_volume_mass) & is.finite(dose_model_mass) & {
         mv_mean_tmp <- (dose_volume_mass + dose_model_mass) / 2
@@ -1229,7 +1229,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
     ungroup()
 
   # ===========================================================================
-  # EWMA/±2SD-gated final selection (post-processing on Step 10 candidates)
+  # EWMA/+/-2SD-gated final selection (post-processing on Step 10 candidates)
   # ===========================================================================
   # Purpose:
   #   Use a rolling EWMA model of dose/hour to reject implausible spikes (especially
@@ -1238,9 +1238,9 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
   # Core idea:
   #   - Maintain EWMA mean and EWMA second moment of *chosen* rate (dose/hour).
   #   - For each interval, compute candidate rates and discard those outside the band:
-  #        mu ± max(2*sd, 0.25*|mu|, abs_floor_rate)
+  #        mu +/- max(2*sd, 0.25*|mu|, abs_floor_rate)
   #   - Then choose best estimate by an "inlier" logic:
-  #        * if ≥2 inlier sources -> mean(inliers)
+  #        * if >=2 inlier sources -> mean(inliers)
   #        * else fallback to the standard preference order (reservoir vs admin etc.)
   pcas_wide_step10 <- pcas_wide_step10 %>%
     dplyr::group_by(mrn, admission_csn, medication) %>%
@@ -1322,7 +1322,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
           }
         }
 
-        # "agree_all" means multiple candidates are tightly consistent (±10%):
+        # "agree_all" means multiple candidates are tightly consistent (+/-10%):
         all_vals <- c(res0, adm0, vol0, mod0)
         all_vals <- all_vals[is.finite(all_vals)]
         agree_all <- length(all_vals) >= 2 &&
@@ -1344,7 +1344,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
           is.finite(ih) && ih > 0 &&
           has_prior()
 
-        # ±2SD (or floor) band definition
+        # +/-2SD (or floor) band definition
         sd_mult   <- 2
         mu <- ema_x
         sd <- sqrt(pmax(ema_x2 - ema_x^2, 0))
@@ -1394,7 +1394,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
 
         # Selection logic:
         #   - immediately after reset/new bag: admin first
-        #   - if ≥2 inliers: mean(inliers)
+        #   - if >=2 inliers: mean(inliers)
         #   - else: fall back to reservoir vs admin/volume/model with reservoir_unreliable logic
         if (isTRUE(df$prefer_admin_firstrow[i]) && is.finite(df$dose_admin_mass[i])) {
           chosen <- df$dose_admin_mass[i]; basis <- "admin(first row)"
@@ -1405,10 +1405,10 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
               is.na(res) && (length(inliers) == 2) &&
               all(names(inliers) %in% c("volume","model")) &&
               (vol > 4*adm) && (mod > 4*adm)) {
-            chosen <- adm; basis <- "admin(override: ≥2 inliers but vol+model >4× admin)"
+            chosen <- adm; basis <- "admin(override: >=2 inliers but vol+model >4x admin)"
           } else {
             chosen <- mean(inliers, na.rm = TRUE)
-            basis  <- if (isTRUE(df$reservoir_unreliable[i])) "mean(≥2 inliers; reservoir unreliable)" else "mean(≥2 inliers)"
+            basis  <- if (isTRUE(df$reservoir_unreliable[i])) "mean(>=2 inliers; reservoir unreliable)" else "mean(>=2 inliers)"
           }
 
         } else if (isTRUE(df$reservoir_unreliable[i])) {
@@ -1526,7 +1526,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
 #   Output is one row per:
 #     (mrn, admission_csn, medication, time_hourly_start, time_hourly_end)
 #   plus:
-#     - dose_best_estimate_hourly (dose distributed evenly across the row’s window)
+#     - dose_best_estimate_hourly (dose distributed evenly across the row's window)
 #     - valid_prescription (TRUE/FALSE) based on MAR timing windows
 #     - matched_orders (comma-separated order_id list when matched)
 #     - still_duplicated (TRUE/FALSE) if multiple meds remain in same hour bucket
@@ -1534,7 +1534,7 @@ compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London")
 # HIGH-LEVEL FLOW
 #   0) Build MAR "validity windows" for PCA meds (IV only) from mar_df
 #   1) Mark first PCA row per admission (to allow theatre-anchored long first interval)
-#   2) Expand each PCA row into hourly buckets (using row_start_time → row_end_time)
+#   2) Expand each PCA row into hourly buckets (using row_start_time -> row_end_time)
 #   3) Match hourly PCA buckets to MAR windows (mrn + medication)
 #   4) Clean duplicate-hour buckets:
 #        - drop explicit zero-dose duplicates
@@ -1683,7 +1683,7 @@ build_pcas_clean_flag <- function(pcas_final,
   # 2) Expand PCA rows to hourly buckets
   # ===========================================================================
   # For each PCA row, define a "row window":
-  #   row_start_time  → row_end_time (hour-ceiled end)
+  #   row_start_time  -> row_end_time (hour-ceiled end)
   #
   # row_start_time rules:
   #   - If this row is the first PCA row in the admission, and interval_hours is
@@ -1884,17 +1884,17 @@ build_pcas_clean_flag <- function(pcas_final,
 # resolve_crossover_duplicates()
 # -----------------------------------------------------------------------------
 # PURPOSE
-#   Resolves remaining duplicate-hour buckets where ≥2 medications overlap in the
+#   Resolves remaining duplicate-hour buckets where >=2 medications overlap in the
 #   SAME hour for the same patient/admission. This is meant to handle "crossover"
 #   periods when one PCA is being stopped and another started, or charting overlap.
 #
 #   The function:
-#     - Finds hours where ≥2 meds exist
+#     - Finds hours where >=2 meds exist
 #     - Within each hour keeps only the top-2 meds (by dose then priority)
 #     - Groups overlapping hours into "episodes" (contiguous, with small-gap bridging)
 #     - Allows the first `allowance_hours` of overlap to remain
 #     - Beyond the allowance band, chooses a winner med for the episode and drops
-#       the losing med’s rows in the beyond-band hours (and optionally inside-band)
+#       the losing med's rows in the beyond-band hours (and optionally inside-band)
 #
 # KEY PARAMETERS
 #   allowance_hours: total overlap hours allowed per episode before trimming
@@ -1934,7 +1934,7 @@ resolve_crossover_duplicates <- function(
   dupe_key <- c(id_keys, "time_hourly_start", "time_hourly_end")
 
   # ---------------------------------------------------------------------------
-  # Identify duplicate hours where ≥2 meds exist in the same hour bucket
+  # Identify duplicate hours where >=2 meds exist in the same hour bucket
   # ---------------------------------------------------------------------------
   dup_hours <- df %>%
     group_by(across(all_of(dupe_key))) %>%
@@ -1958,7 +1958,7 @@ resolve_crossover_duplicates <- function(
 
   # ---------------------------------------------------------------------------
   # Priority table: higher prio numeric means higher preference
-  # (med_priority is ordered highest→lowest by your argument; we reverse seq to match)
+  # (med_priority is ordered highest->lowest by your argument; we reverse seq to match)
   # ---------------------------------------------------------------------------
   prio_tbl <- tibble(medication = med_priority, prio = rev(seq_along(med_priority)))
 
@@ -2087,7 +2087,7 @@ resolve_crossover_duplicates <- function(
     b_band <- band_df$dose_val[band_df$medication == med_b]
 
     # "constant run" penalty in beyond-band:
-    # if a med has ≥const_run_hours of finite values AND all are essentially the same,
+    # if a med has >=const_run_hours of finite values AND all are essentially the same,
     # treat it as suspicious/undesirable for continuation.
     a_const <- (sum(is.finite(a_band)) >= const_run_hours) && (dplyr::n_distinct(a_band[is.finite(a_band)]) <= 1L)
     b_const <- (sum(is.finite(b_band)) >= const_run_hours) && (dplyr::n_distinct(b_band[is.finite(b_band)]) <= 1L)
@@ -2206,8 +2206,8 @@ resolve_crossover_duplicates <- function(
 # summarise_postop_bins()
 # -----------------------------------------------------------------------------
 # PURPOSE
-#   Summarise deduplicated hourly PCA dosing into post-op time bins (e.g. 0–24h,
-#   24–48h, ...), and compute OME (oral morphine equivalent) totals per bin.
+#   Summarise deduplicated hourly PCA dosing into post-op time bins (e.g. 0-24h,
+#   24-48h, ...), and compute OME (oral morphine equivalent) totals per bin.
 #
 # INPUTS
 #   pcas_clean_flag_deduplicated:
@@ -2237,7 +2237,7 @@ resolve_crossover_duplicates <- function(
 # IMPORTANT DETAIL
 #   Binning is done using hours_postop_end computed from time_hourly_end
 #   (i.e., the END of the hour bucket). This makes each hourly dose belong to the
-#   bin corresponding to the hour’s ending time after surgery.
+#   bin corresponding to the hour's ending time after surgery.
 # =============================================================================
 
 summarise_postop_bins <- function(
@@ -2308,7 +2308,7 @@ summarise_postop_bins <- function(
     left_join(anchor_tbl, by = "admission_csn_key") %>%
     mutate(
       # Hours since surgery anchor, using the END of the hour bucket.
-      # Example: the hour 10:00–11:00 is counted at 11:00.
+      # Example: the hour 10:00-11:00 is counted at 11:00.
       hours_postop_end = as.numeric(difftime(time_hourly_end, postop_anchor, units = "hours"))
     ) %>%
     filter(
@@ -2388,8 +2388,8 @@ summarise_postop_bins <- function(
 # -----------------------------------------------------------------------------
 # PURPOSE
 #   Summarise deduplicated hourly PCA dosing into "post-op days" where:
-#     - day_0 runs from the post-op anchor time → next 08:00
-#     - day_1..day_7 run as 08:00 → 08:00 windows
+#     - day_0 runs from the post-op anchor time -> next 08:00
+#     - day_1..day_7 run as 08:00 -> 08:00 windows
 #
 #   Produces:
 #     1) per-medication table with dose_day_* and ome_day_* columns
@@ -2433,9 +2433,9 @@ summarise_postop_bins <- function(
 summarise_postop_days <- function(pcas_clean_flag_deduplicated,
                                   phases,
                                   tz = "Europe/London",
-                                  oxycodone_iv_factor = 4.5,  # IV oxycodone → OME
-                                  morphine_iv_factor  = 3.0,  # IV morphine  → OME
-                                  fentanyl_iv_factor  = 0.3   # mcg fentanyl → mg OME
+                                  oxycodone_iv_factor = 4.5,  # IV oxycodone -> OME
+                                  morphine_iv_factor  = 3.0,  # IV morphine  -> OME
+                                  fentanyl_iv_factor  = 0.3   # mcg fentanyl -> mg OME
 ) {
 
   # ---------------------------------------------------------------------------
