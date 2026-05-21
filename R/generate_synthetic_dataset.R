@@ -1,3 +1,8 @@
+#' get cache
+#'
+#' @return a directory of the cache location
+#' @export
+#'
 get_synthetic_cache_dir <- function() {
   cache_dir <- tools::R_user_dir("IMPACTfunctions", which = "cache")
   if (!dir.exists(cache_dir)) {
@@ -25,6 +30,7 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   if(clear_cache){
     unlink(paste0(cache_dir,"/*"))
+    cli::cli_alert_info("Generating synthetic dataset, please wait...")
   }
 
   ## The procedures table is generated first, then the others from there
@@ -122,11 +128,13 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   ### SYNTHETIC MAR
 
-  path_intraopmar <- file.path(cache_dir, "intraopmar_synthetic.parquet")
+  path_hospitalmar <- file.path(cache_dir, "hospital_synthetic.parquet")
 
-  if (!file.exists(path_intraopmar)){
+  if (!file.exists(path_hospitalmar)){
 
     intra_op_medications <- c("paracetamol", "sodium lactate compound", "propofol", "fentanyl", "ondansetron", "dexamethasone", "remifentanil", "morphine sulfate" )
+    pharmaceutical_class_list <- c("Analgeisa", "Antibiotic")
+    pharmaceutical_subclass_list <- c("Simple analgeisa", "Opioid", "NSAID", "Penicillin", "cephalasporin")
 
   # Each patient will get 5 intra-op meds
   synthetic_intraopmar  <- synthetic_procedures %>%
@@ -134,10 +142,12 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     rowwise() %>%
     mutate(
       simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
       dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
-      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05)),
+      administration_action = sample(c("Given", "See Alternative", "Held", "Dose documented", NA), size = 1, prob = c(0.7, 0.05, 0.05, 0.1, 0.05)),
     )%>%
     ungroup()%>%
     mutate(
@@ -148,24 +158,18 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     )%>%
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures, administration_offset_minutes)) %>%
     mutate(generic_name = toupper(simple_generic_name),
-           medication_name = paste(generic_name, dose, dose_units))
+           medication_name = paste(generic_name, dose, dose_units),
+           operation_csn = NA)
 
-  arrow::write_parquet(synthetic_intraopmar, path_intraopmar)
-  }
+  post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
 
-
-  path_hospitalmar <- file.path(cache_dir, "hospitalmar_synthetic.parquet")
-
-  if (!file.exists(path_hospitalmar)){
-
-    post_op_medications <- c("paracetamol", "enoxaparin","ondansetron", "morphine sulfate", "ibuprofen", "dihydrocodeine","fentanyl", "dihydrocodeine", "lactulose")
-
-  # and 20 post-op meds
-  synthetic_hospitalmar  <- synthetic_procedures %>%
+  synthetic_postopmar  <- synthetic_procedures %>%
     slice_sample(n = n*20, replace = TRUE)%>%
     rowwise() %>%
     mutate(
       simple_generic_name = sample(intra_op_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
       dose = sample(c(5,10,20,50,100,500), size = 1, replace = TRUE),
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
@@ -179,10 +183,88 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
     select(-c(primary_coded_procedure, combined_coded_opcs_procedures)) %>%
     na.omit()%>%
     mutate(generic_name = toupper(simple_generic_name),
-           medication_name = paste(generic_name, dose, dose_units))
+           medication_name = paste(generic_name, dose, dose_units),
+          anaesthesia_csn = NA,
+           operation_csn = NA)
+
+  operative_medications <- c("lidocaine", "prilocain","lidocaine with adrenaline", "saline", "keterolac")
+
+  synthetic_operative_mar  <- synthetic_procedures %>%
+    slice_sample(n = 0.5*n, replace = TRUE)%>%
+    rowwise() %>%
+    mutate(
+      simple_generic_name = sample(operative_medications,size=1, replace = TRUE),
+      pharmaceutical_class = sample(pharmaceutical_class_list,size=1, replace = TRUE),
+      pharmaceutical_subclass = sample(pharmaceutical_subclass_list,size=1, replace = TRUE),
+      dose = sample(c(5,10,20), size = 1, replace = TRUE),
+      dose_units = "mg",
+      administration_route = sample(c("local", "intra-articular"), size=1,  replace = TRUE),
+      administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05))
+    )%>%
+    ungroup()%>%
+    mutate(  # Use n() to match the dataframe row count
+      # Ensure time_to_surgery is numeric (representing hours)
+      administration_offset_minutes = as.integer(rnorm(n = n(), mean = 1, sd=0.3) * 60),
+      administration_date_time = lubridate::with_tz(operation_date + lubridate::minutes(administration_offset_minutes), tzone = "UTC")) %>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures,administration_offset_minutes)) %>%
+    na.omit()%>%
+    mutate(generic_name = toupper(simple_generic_name),
+           medication_name = paste(generic_name, dose, dose_units),
+           anaesthesia_csn = NA)
+
+ synthetic_hospitalmar <- rbind(synthetic_intraopmar, synthetic_postopmar, synthetic_operative_mar)
+
+ synthetic_hospitalmar <- synthetic_hospitalmar %>%
+   mutate(mar_id = sample(c(1000000:2000000), size=nrow(synthetic_hospitalmar), replace = FALSE))
 
   arrow::write_parquet(synthetic_hospitalmar, path_hospitalmar)
   }
 
+
+ # synthetic_measurments
+
+  path_measurements <- file.path(cache_dir, "measurements_synthetic.parquet")
+
+  if (!file.exists(path_measurements)){
+
+  flowsheet_question_name <- c(
+    "Verbal pain score - at rest", "Verbal pain score - on movement",
+    "BP", "Pulse", "Size", "Laterality", "Skin decontamination",
+    "Reason for Art Line", "Orientation", "Placement Date"
+  )
+
+  flowsheet_probs <- c(3021570, 2342216, 6519997, 30411508, 89598, 38876, 66744, 3883, 355959, 930516)
+  flowsheet_probs <- flowsheet_probs / sum(flowsheet_probs)
+
+  flowsheet_id <- 10000000:10000009
+  flowsheet_row_epic_id <- as.character(50000000:50000009)
+
+  flowsheet_id_df <- data.frame(flowsheet_question_name, flowsheet_id, flowsheet_row_epic_id)
+
+  synthetic_measurements <- synthetic_procedures %>%
+    slice_sample(n = n * 20, replace = TRUE) %>%
+    rowwise() %>%
+    mutate(
+      lda_id = NA,
+      flowsheet_question_name = sample(flowsheet_question_name, size = 1, prob = flowsheet_probs, replace = TRUE),
+      value = sample(0:200, size=1),
+      measurement_type_id = sample(1:10, size=1),
+      ) %>%
+    ungroup() %>%
+    mutate(recorded_date = as.POSIXct(
+      runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date)),
+      origin = "1970-01-01", tz="UTC"
+    )) %>%
+    select(-c(primary_coded_procedure, combined_coded_opcs_procedures, admission_date, operation_date, discharge_date, mrn))%>%
+    left_join(flowsheet_id_df)
+
+  synthetic_measurements <- synthetic_measurements %>%
+    mutate(anaesthesia_csn = if_else(runif(n()) < 0.8, NA, anaesthesia_csn)) %>%
+    mutate(operation_csn  = if_else(runif(n()) < 0.9, NA, operation_csn)) %>%
+    mutate(case_id  = if_else(runif(n()) < 0.9, NA, case_id )) %>%
+    mutate(lda_id   = if_else(runif(n()) < 0.5, NA, lda_id  ))
+
+  arrow::write_parquet(synthetic_measurements, path_measurements)
+  }
 
 }

@@ -10,6 +10,7 @@
 #' @param format The format you want the function to return, choose either: **"joined"** or **"table"**
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
+#' @param link_column Which column to use as the primary source of return. Select one option from: `link_column = c(admission_csn, anaesthesia_csn, operation_csn)`
 #' @param overide_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
 #' @param overide_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
 #' @param verbose Print the outputs of the function explicility.
@@ -36,20 +37,23 @@
 #' MAR = post_op_morphine,
 #' format = "joined",
 #' feature = "sum_dose",
-#' feature_name = "morphine_post_op")
+#' feature_name = "morphine_post_op",
+#' overide_dose_check= TRUE)
 #'
 #'
 #' morphine_table <- calculate_medication_feature(dataset,
 #' MAR = post_op_morphine,
 #' format = "table",
 #' feature = "binary",
-#' feature_name = "morphine_post_op")
+#' feature_name = "morphine_post_op",
+#' overide_dose_check= TRUE)
 #'
 calculate_medication_feature <- function(dataset,
                                          MAR,
                                          format,
                                          feature,
                                          feature_name,
+                                         link_column = "admission_csn",
                                          overide_dose_check = FALSE,
                                          overide_route_check = FALSE,
                                          verbose = TRUE){
@@ -57,18 +61,28 @@ calculate_medication_feature <- function(dataset,
   ## Step 3 further filtering and cleaning of data
 
 
-  # We determine the MAR type by the columns. Only the Post-Op MAR has `admissions_csn` and vice versa for anaesthetisa CSN and Intra-opMar
+  # We return the join on the csn of choise determined by the `link_column` entery
 
-  if(all("admission_csn" %in% names(MAR),"anaesthesia_csn" %in% names(MAR))){
-    cli::cli_abort("The {.arg MAR} has both the anaesthesia and admission_csn as columns. You must use {.fun preproccess_MAR} or review GH issues #23 ")
-  }else if("admission_csn" %in% names(MAR)){
-    MAR_type <- "PostOp"
+  if(link_column == "admission_csn"){
     csn_vector_name <- "admission_csn"
-  }else if ("anaesthesia_csn" %in% names(MAR)){
-    MAR_type <- "IntraOp"
+    if(any(duplicated(dataset %>% pull(admission_csn)))){
+      cli::cli_abort("Duplication error. In the dataset provided there is duplicated entries for {.val admission_csn}. \n This will cause an issue when trying to left join and cause duplicaton. \n \n Change {.arg link_column} to a different csn or de-duplicate the rows in {.val dataset} ")
+    }
+
+  }else if(link_column == "anaesthesia_csn"){
     csn_vector_name <- "anaesthesia_csn"
+    if(any(duplicated(dataset %>% pull(anaesthesia_csn)))){
+      cli::cli_abort("Duplication error. In the dataset provided there is duplicated entries for {.val anaesthesia_csn}. \n This will cause an issue when trying to left join and cause duplicaton. \n \n Change {.arg link_column} to a different csn or de-duplicate the rows in {.val dataset} ")
+    }
+
+  }else if(link_column == "operation_csn"){
+    csn_vector_name <- "operation_csn"
+    if(any(duplicated(dataset %>% pull(operation_csn)))){
+      cli::cli_abort("Duplication error. In the dataset provided there is duplicated entries for {.val operation_csn}. \n This will cause an issue when trying to left join and cause duplicaton. \n \n Change {.arg link_column} to a different csn or de-duplicate the rows in {.val dataset} ")
+    }
+
   }else{
-    cli::cli_abort("The {.arg MAR} has neither the anaesthesia and admission_csn as columns. Check input data")
+    cli::cli_abort("The {.arg link_column} is not one of {.val admission_csn}, {.val anaesthesia_csn} or {.val operation_csn}. Check input arguments")
   }
 
   ## Users may want to return a feature (such as an avg or sum dose) across medications that are not comparable. For example (sum dose of an infusion and a discreate medications)
@@ -76,20 +90,21 @@ calculate_medication_feature <- function(dataset,
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
-  if(length(unique(MAR$dose_units, incomparables = TRUE)) == 1){
+  if(length(unique(MAR %>% pull(dose_units))) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
-    if(overide_dose_check){if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")
-      }else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR$dose_units)}}).\n\n If this will not impact your feature then change {.arg overide_unit_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+    if(overide_dose_check){
+      if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
+    }else{
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }
     }
-  }
+
 
   if(length(unique(pull(MAR, route))) == 1){
     if(verbose){cli::cli_alert_success("Routes are all the same!")}
   }else{
-    if(overide_route_check){if(verbose){cli::cli_alert_success("DRoute check overidden. Proceding to return vector with mutiple routes.")
+    if(overide_route_check){if(verbose){cli::cli_alert_success("Route check overidden. Proceding to return vector with mutiple routes.")
       }else{
         cli::cli_abort("Not all routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
       }

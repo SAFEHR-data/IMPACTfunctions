@@ -8,16 +8,15 @@
 }
 \usage{
 preproccess_MAR(
-  MAR,
+  MAR = HospitalMar,
   route_dict = dictionary_medication_route,
   opioid_dict = dictionary_opioid,
   equivelence_dict = dictionary_equivelence,
-  deduplicate_rows = TRUE,
   administered_only = TRUE
 )
 }
 \arguments{
-\item{MAR}{The arrow file of the MAR}
+\item{MAR}{The arrow file of the MAR. defaults to \code{HospitalMar}.}
 
 \item{route_dict}{The route dictionary, defaults to \code{dictionary_medication_route} from the google sheets link below.}
 
@@ -25,18 +24,18 @@ preproccess_MAR(
 
 \item{equivelence_dict}{The equivilence dictonary, defaults to \code{dictionary_equivelence} from the google sheets link below.}
 
-\item{deduplicate_rows}{KEEP TRUE, see GH issue #24}
-
-\item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are \verb{!= "given"}}
+\item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are  \code{"given"} or \code{"Dose Documentation"}. The latter is used to capture to total doses of TIVA medications.}
 }
 \value{
 The origonal MAR arrow table with additional columns and cleaned rows.
 }
 \description{
-Preproccesing of tables to allow other feature extractions functions to run. This left joins the dynamic dictionaries and calculate a value for OME.
+Pre-proccesing of tables to allow other feature extractions functions to run. This left joins the dynamic dictionaries and calculate a value for OME.
 }
 \details{
-If you want to use custom values then replace the dictonary with your custom dictonary. Do not change the col names and they are used for left joining.
+If you want to use custom values then replace the dictionary with your custom dictionary. Do not change the col names and they are used for left joining.
+
+If there are medications for which a opioid-equivelence is not being generated this may be due to the lack of dose unit harmonisation. Please log a github issue to get the dose unit added.
 }
 \examples{
 \dontshow{

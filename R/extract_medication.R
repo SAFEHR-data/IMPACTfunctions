@@ -1,20 +1,32 @@
-#' Title
+#' Extract Medication administrations
 #'
-#' To search the relevant MAR to return features/variables related to the medications
+#' To search the MAR to return features/variables related to the medications.
+#'
+#'  MAR Source
+#'
+#' There are 3 places medications can be recorded as administered (MAR) in the hospital:
+#' 1) The general MAR where the majority of medications are recorded. Use `mar_source = "ward"`.
+#' 2) The anaesthetic MAR that contains the medications recorded by the anaesthetist. Use `mar_source = "anaesthetic"`.
+#' 3) The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon). Use `mar_source = "operation"`.
+#'
+#' Generally you want to use `mar_source = NA` which will not apply any filtering.
+#'
+#' To select a specific MAR source see the parameter options below. Ensure you validate the specific medication used as documentation practices may vary (eg being double recorded)
 #'
 #' Search time windows
 #'
-#' The default behavior of the function is to return the metric of all of the medications on the MAR of intrest, for the admission of intrest. We may want to search with specific timepoints to establise the medication use during a sepcifed periood such as Post op.
+#' The default behaviour of the function is to return the metric of all of the medications on the MAR, for the admission of interest. We may want to search with specific time points to establish the medication use during a specified period such as 3hrs Post op.
 #'
 #' There are 3 easy to use time frames by default but they can be customised further.
-#' If *timeframe* = *"whole_mar* (**The default behavior**) then it will return the feature of the whole MAR for the patients admission.
-#' If *timeframe* = *pre_op* then it will return the sections of the Post-op MAR (Even though it is called post-op it is really the ward MAR which is all medications given outside of theatre) between the admission datetime and the operation datetime.
-#' If *timeframe* = *post_op* then it will return the sections of the Post-op MAR between the admission operation datetime and the discharge datetime.
+#' If *timeframe* = *"whole_mar* (**The default behaviour**) then it will return the feature of the whole MAR for the patients admission.
+#' If *timeframe* = *pre_op* then it will return the section of the MAR between the admission datetime and the operation datetime.
+#' If *timeframe* = *post_op* then it will return the section of the Post-op MAR between the operation datetime and the discharge datetime.
 #' If *timeframe* = *custom* then you may supply the vector of values for t0 and either t1 or 1_int to set a custom time window.
 #'
 #'
 #' @param dataset The procedures set of which to search across.
-#' @param MAR The medication administration record (MAR) to search across, Can be either Intra-Op or Post-Op MAR.
+#' @param MAR The MAR to extract from. Will default to `HospitalMar`.
+#' @param mar_source The source MAR to filter from to filter across both then leave this as `NA`. See section above. Multiple sources can be combined (`mar_source = c("anaesthetic", "operation")`.
 #' @param medication Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.
 #' @param search_column The column which to search the medication string against. See help above.
 #' @param check_search Boolean, Check if the medications and search column provided are valid.
@@ -37,7 +49,8 @@
 #'
 #'
 extract_medication <- function(dataset,
-                               MAR = c(IntraOpMar, HospitalMar),
+                               MAR = HospitalMar,
+                               mar_source = NA,
                                medication = NA,
                                search_column = "simple_generic_name",
                                check_search = TRUE,
@@ -58,48 +71,24 @@ extract_medication <- function(dataset,
     cli::cli_h2("Checking data and variable quality")
   }
 
+
+  # We concatenate the medications strings here to allow the search functions above to recive a vector.
+  if(length(medication)>1){
+    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
+    medication_vector <- paste0(medication, collapse = "|")
+  }
+
   ## Argument checking
   if(nrow(compute(dataset)) < 1 ){
     cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away all patients")}
 
-  if(is.null(medication)){
+  if(all(is.null(medication))){
     if(verbose){cli::cli_alert_info("No medications given to {.arg medication}, Returning all medications.")}
     check_search <- FALSE
     #Turn the meds search off so not to throw an error.
-  }else if(is.na(medication)){
+  }else if(all(is.na(medication))){
     cli::cli_abort("No medication specifed {.arg medication} to search for. Please provide a medication to search for. \n\n If you intended to return all meds then set {.arg medication} = {.val NULL}. ")
-    }
-
-  ## Timeframe checking
-  if(identical(MAR, IntraOpMar)){
-    if(timeframe %in% c("pre_op", "post_op")){cli::cli_abort("Requested {.val timeframe} of {.val {timeframe}} but the {.arg MAR} supplied is the {.val IntraOpMar}. \n \n Please either change the MAR or use {.arg timeframe} = {.val 'whole_mar'} or {.val 'specific'}")}
-    if(verbose){cli::cli_alert_success("Searching in the Intra-Op MAR")}
-    #Set the return vector against the anaesthesia record
-    ## NOTE: this vector is intentionally not exposed to the arguments, its seems the custom use of this may be too advanced.
-    csn_vector_name <- "anaesthesia_csn"
-
-  }else if(identical(MAR, HospitalMar)){
-    if(verbose){cli::cli_alert_success("Searching in the Post-Op MAR")}
-    csn_vector_name <- "admission_csn"
-  }else{
-    cli::cli_abort("Unknown MAR passed. TO use this function you should pass either {.val IntraOpMar} or {.val HospitalMar} to the argument {.arg MAR}. \n \n If you would like to use a different MAR (EG a community MAR) please  {.href [click here](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} to open a github issue. ")
   }
-
-  ## Dataset checking
-  duplicate_rows <- any(dataset %>% pull(any_of(csn_vector_name)) %>% duplicated())
-  if(duplicate_rows & identical(MAR, IntraOpMar)){
-    cli::cli_alert_danger("CAUTION: There are rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching intra-op MAR's. This is because the variable returned will be a sum/avg across mutiple anaesthetic MAR's. Suggest enforcing filter with one procedure per encounter")
-  }else if(duplicate_rows & identical(MAR, HospitalMar)){
-    cli::cli_alert_danger("CAUTION: There are  rows within the dataset provided that have a duplicated value for {.arg {csn_vector_name}}, this may cause errors as you are searching post-op MAR's. Ajny timeframe filtering may return varying windows. Variable may be duplicated across these duplicated rows.")
-  }
-
-  na_csn_rows <- any(dataset %>% pull(any_of(csn_vector_name)) %>% is.na())
-
-  if(na_csn_rows){
-    cli::cli_alert_danger("CAUTION: There are rows within the dataset provided that have {.val NA} in the column {.arg {csn_vector_name}}, this may cause errors as you are searching against a {.val NA} CSN. Reccommend you run {.fn cohort_complete_admissions} in your workflow. \n \n Removing these rows for now. ")
-    dataset <- dataset %>% filter(!is.na(csn_vector_name))
-  }
-
 
 
   ## Assigning time points if used timeframe argument
@@ -110,17 +99,17 @@ extract_medication <- function(dataset,
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching whole MAR per encounter.")}
   }else if(timeframe == "pre_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only pre-operative period.")}
-    t0_col <- dataset %>% select(all_of(csn_vector_name), t0 = admission_date)
-    t1_col <- dataset %>% select(all_of(csn_vector_name), t1 = operation_date)
+    t0_col <- dataset %>% select(admission_csn,anaesthesia_csn, t0 = admission_date)
+    t1_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t1 = operation_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "post_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
-    t0_col <- dataset %>% select(all_of(csn_vector_name), t0 = operation_date)
-    t1_col <- dataset %>% select(all_of(csn_vector_name), t1 = discharge_date)
+    t0_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t0 = operation_date)
+    t1_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t1 = discharge_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "custom"){
     ## Error checking that the timestamps are set properly
-    if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
+    if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching custom time period.")}
     #If timeframe custom, ensure propry t0,t1 and t_int set.
     if(!is.na(t_int) & !is.na(t1)){
       cli::cli_abort("You have tried to supply both a time interval ({.arg t_int}) and a end time ({.arg t_1}). \n \n Supply only one end time variable")
@@ -132,7 +121,7 @@ extract_medication <- function(dataset,
     if(!is.na(t_int)){
 
       timeframe_df <- dataset %>%
-        select(all_of(csn_vector_name), t0 = all_of(t0)) %>%
+        select(admission_csn,anaesthesia_csn, t0 = all_of(t0)) %>%
         collect() %>%
         mutate(
           # Perform R-side arithmetic, then force UTC to match the Arrow schema
@@ -140,22 +129,16 @@ extract_medication <- function(dataset,
         )
 
     }else if(!is.na(t1)){
-      timeframe_df <- dataset %>% select(all_of(csn_vector_name),  t0 = all_of(t0), t1 = all_of(t1))
+      timeframe_df <- dataset %>% select(admission_csn,anaesthesia_csn,,  t0 = all_of(t0), t1 = all_of(t1))
     }else{
-      cli::cli_abort("Hmm, you should have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
+      cli::cli_abort("Hmm, you should not have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
       }
+
+  }else{
+    cli::cli_abort("Incorrect value supplied to {.arg timeframe}. See {.code ?extract_medication} for assistance. ")
 
   }
 
-  if(csn_vector_name == "admission_csn" & timeframe != "whole_mar" ){
-    # ERROR CHECKING - See Github Issue: #21
-    if(typeof(timeframe_df$admission_csn) != typeof(MAR %>% pull(admission_csn))){
-      cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-      timeframe_df$admission_csn <- as.numeric(timeframe_df$admission_csn)
-    }else{
-      cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-      }
-    }
 
   if(verbose){cli::cli_alert_success("Arguments provided to function correct")}
 
@@ -165,16 +148,17 @@ extract_medication <- function(dataset,
     MAR <- preproccess_MAR(MAR)
   }
 
+
   if(check_search){
   #First do a soft check to ensure no misspelling
-  med_check_soft <- search_drug_names(MAR, medication)
+  med_check_soft <- search_drug_names(MAR, medication, verbose = FALSE)
   if(nrow(med_check_soft) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) isnt't in the dataset in any column, \n \n Check for spelling. Use the function {.fun search_drug_names()} to help you check the correct string.")
   }else{
     if(verbose){cli::cli_alert_success("{.val {medication}} found in the MAR")}
   }
 
-  med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE)
+  med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
   if(nrow(med_check_strict) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) didn't have any exact matched in the {.arg search_column} = {.val {search_column}},
                    \n \nThere were some rows of the MAR that matched! Use the function {.fun search_drug_names} to help you check the variables to pass or see the table below:")
@@ -186,11 +170,28 @@ extract_medication <- function(dataset,
 
   # Step 2 - Subsetting
 
-  # We concatenate the medications strings here to allow the search functions above to recive a vector.
-  if(length(medication)>1){
-    if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
-    medication <- paste0(medication, collapse = "|")
+  ## Phases
+
+  if(all(!is.na(mar_source))) {
+    subsets <- list()
+    if ("ward"        %in% mar_source){
+      subsets[["ward"]]        <- MAR %>% filter(encounter_type == "Hospital Encounter")
+      if(verbose){cli::cli_alert_success("Removing medications given on the anesthetic or operation MAR")}
+    }
+    if ("anaesthetic" %in% mar_source){
+      subsets[["anaesthetic"]] <- MAR %>%filter(encounter_type == "Anaesthesia ")
+      if(verbose){cli::cli_alert_success("Selecting only medications given on the anesthetic MAR")}
+    }
+    if ("operation"   %in% mar_source){
+      subsets[["operation"]]  <- MAR %>% filter(encounter_type == "Operation")
+      if(verbose){cli::cli_alert_success("Selecting only medications given on the operation MAR")}
+    }
+    MAR <- purrr::reduce(subsets, union_all)
+  }else{
+    if(verbose){cli::cli_alert_success("Searching all medications administered during inpatient stay")}
   }
+
+
 
   # 2a - Subset for medication
 
@@ -201,8 +202,10 @@ extract_medication <- function(dataset,
   }
 
   # 2b - Subsetting for the patients in the dataset
-  csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
-  subset <- subset %>% filter(get({{csn_vector_name}}) %in% csn_vector)
+  mrn_vector <- dataset %>% pull(mrn) %>% na.omit()
+  subset <- subset %>% filter(mrn %in% mrn_vector)
+  if(verbose){cli::cli_alert_success("Removing MAR from patients not in dataset.")}
+
 
   # 2c - Subsetting for timeframe
 
@@ -215,7 +218,7 @@ extract_medication <- function(dataset,
    ## Rgrettably the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
     df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "one-to-many")
     df <- df %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
-
+    if(verbose){cli::cli_alert_success("Removing Medications given outside of specified timeframe")}
  }
 
   # 2d filtering by route

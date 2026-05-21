@@ -11,6 +11,8 @@ recode_ethnicity(ethnicity_vec, short_names = FALSE)
 }
 \arguments{
 \item{short_names}{Print short name groups}
+
+\item{ethnicity_vector}{The vector or datafame column to convert}
 }
 \value{
 A vector of recoded ethnicities
@@ -21,7 +23,10 @@ A helper function to collapse the ~20 ethnicity groups provided by epic into the
 \details{
 To see the values used in the conversion run \code{recode_ethnicity} to see the function code.
 
-Use the below text in manuscripts to explain how this function works:Ethnicity data was collated and recoded using the Office for National Statistics (ONS) 5 ethnic group classification. Where Ethnicity data was not provided or collected values were marked as missing.
+Use the below text in manuscripts to explain how this function works:
+
+Ethnicity data was collated and recoded using the Office for National Statistics (ONS) 5 ethnic group classification.
+Where Ethnicity data was not provided or collected values were marked as missing.
 }
 \examples{
 demo <- demo \%>\%
