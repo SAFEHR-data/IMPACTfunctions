@@ -1,13 +1,32 @@
+---
+output: github_document
+---
 
 # IMPACTfunctions
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
-The goal of IMPACTfunctions is to help working with the IMPACT peri-operative dataset. 
+The goal of IMPACTfunctions is to help working with the IMPACT peri-operative dataset.
 
 The dataset was built at UCLH with input from CUH NHS trust and others...
+
+
+
+
+## Functionality
+
+| Feature | Functions | Documentation and vignette | Synthetic data | Unit test | Clinically validated |
+|--------------|-------------------|--------------|---------|---------|---------|
+| Subsetting by surgical procedure | `cohort_procedure_coded()` | ✔️ and ✔️ | ✔️ | ❌ | 🔄 in progress |
+| Medication administrations | `search_drug_names`, `extract_medication()` and `calculate_medication_feature()` | ✔️ and ✔️ | ✔️ | ❌ |  |
+| PCA data |  | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
+| Flowsheet data (pain, obs, etc...) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
+
+: Features in Package version: `r desc::desc_get_version()`
 
 ## Installation
 
@@ -25,12 +44,11 @@ gitcreds::gitcreds_set()
 remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
                         auth_token = gitcreds::gitcreds_get()$password)
 
-
 ```
 
 ## FAQ and error troubleshooting
 
-See the `FAQ.md` file or tips on the troubleshooting and expaling errors. 
+See the `FAQ.md` file or tips on the troubleshooting and explaning common errors. Leve a github issue with any more complex issues.
 
 ## Contributing
 
@@ -52,10 +70,8 @@ load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
              verbose = TRUE)
 
 Demographics %>% glimpse()
-
 ```
 
 # Acknowledgments
 
 Package written using the [R packages book](https://r-pkgs.org/preface.html)
-
