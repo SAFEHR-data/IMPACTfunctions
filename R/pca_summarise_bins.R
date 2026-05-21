@@ -26,7 +26,7 @@
 #'   \code{dose_} and \code{ome_}.
 #' }
 #'
-#' @param pcas_clean_flag_deduplicated A data frame or tibble containing hourly resampled and crossover-resolved
+#' @param pca_hourly A data frame or tibble containing hourly resampled and crossover-resolved
 #'   PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{medication}, \code{units},
 #'   \code{time_hourly_start}, \code{time_hourly_end}, and \code{dose_best_estimate_hourly}.
 #' @param phases A data frame containing administrative peroperative or post-anaesthetic milestone logs.
@@ -60,14 +60,14 @@
 #' \dontrun{
 #' # Aggregate cleaned PCA data across 24-hour surgical intervals
 #' binned_pca_summary <- pca_summarise_bins(
-#'   pcas_clean_flag_deduplicated = resolved_hourly_data,
+#'   pca_hourly = pca_hourly,
 #'   phases = surgical_milestones,
 #'   tz = "Europe/London",
 #'   bins_hours = c(0, 24, 48, 72, 96)
 #' )
 #' }
 pca_summarise_bins <- function(
-    pcas_clean_flag_deduplicated,
+    pca_hourly,
     phases = Phases,
     tz = "Europe/London",
     bins_hours = c(0, 24, 48, 72, 96, 120, 146),
@@ -99,7 +99,7 @@ pca_summarise_bins <- function(
   #
   # Then for each admission we take the earliest non-NA anchor across rows.
 
-  phases <- phases %>% filter(admission_csn %in% pcas_clean_flag_deduplicated$admission_csn) %>% collect()
+  phases <- phases %>% filter(admission_csn %in% pca_hourly$admission_csn) %>% collect()
 
   anchor_tbl <- phases %>%
     mutate(
@@ -127,7 +127,7 @@ pca_summarise_bins <- function(
   # then restrict rows to within the maximum requested bin boundary.
   max_bin <- max(bins_hours, na.rm = TRUE)
 
-  df <- pcas_clean_flag_deduplicated %>%
+  df <- pca_hourly %>%
     mutate(
       admission_csn_key  = norm_key(admission_csn),
       time_hourly_start  = suppressWarnings(as.POSIXct(time_hourly_start, tz = tz)),

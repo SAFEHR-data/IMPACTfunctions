@@ -1,4 +1,94 @@
-pca_summarise_days <- function(pcas_clean_flag_deduplicated,
+
+#' Aggregate and Summarise Hourly PCA Consumption into Post-Operative Days
+#'
+#' @description
+#' `pca_summarise_days()` constructs an administrative post-operative clinical
+#' anchoring point per hospital admission, discretizes continuous temporal
+#' sequences into non-uniform post-operative day windows (anchored around a standard
+#' *08:00 shift change*), and aggregates hourly Patient-Controlled Analgesia (PCA)
+#' metrics. It handles raw dosage summation and standardizes therapeutic density via
+#' parametric Oral Morphine Equivalent (OME) conversion factors.
+#'
+#' @details
+#' The processing pipeline implements the following systematic logic:
+#' \enumerate{
+#'   \item \strong{Clinical Post-Op Anchoring:} Discovers a deterministic surgical
+#'   baseline timestamp per encounter by evaluating phase records hierarchically:
+#'   \code{patient_out_of_room} \rightarrow \code{in_recovery} \rightarrow \code{anaesthesia_end}.
+#'   Encounters completely lacking milestone timestamps are pruned from downstream evaluation.
+#'   \item \strong{Asymmetric Boundary Partitioning:} Maps each encounter to an
+#'   asymmetric temporal matrix. Post-operative day 0 (\code{day_0}) represents a
+#'   variable window extending from the exact anchor timestamp up to the immediate
+#'   subsequent 08:00 local time boundary. Subsequent windows (\code{day_1} through
+#'   \code{day_7}) represent fixed, consecutive 24-hour blocks spanning \eqn{[08:00, 08:00)}.
+#'   \item \strong{Interval Assignment:} Maps hourly PCA records to their respective
+#'   day windows using a left-closed, right-open assignment strategy:
+#'   \code{time_hourly_start} \eqn{\ge \text{start}} AND \code{time_hourly_start} \eqn{< \text{end}}.
+#'   \item \strong{Parametric Equianalgesic Standardization:} Aggregates individual
+#'   hourly doses inside each day partition and executes OME conversion using inline
+#'   functional parameters mapping specific medication-unit pairs (Morphine mg,
+#'   Oxycodone mg, and Fentanyl mcg).
+#'   \item \strong{Pivoting and Aggregation:} Reshapes independent metric arrays into
+#'   wide longitudinal vectors prefixed with \code{dose_day_} and \code{ome_day_}.
+#' }
+#'
+#' @param pca_hourly A data frame or tibble containing hourly resampled and
+#'   crossover-resolved PCA entries. Required variables include: \code{mrn},
+#'   \code{admission_csn}, \code{medication}, \code{units}, \code{time_hourly_start},
+#'   and \code{dose_best_estimate_hourly}.
+#' @param phases A data frame or remote database table (\code{tbl_lazy}) containing
+#'   administrative peroperative or post-anaesthetic milestone logs. Must feature variables
+#'   tracking \code{admission_csn}, \code{patient_out_of_room}, \code{in_recovery}, and
+#'   \code{anaesthesia_end}. Note: This table is explicitly evaluated locally via
+#'   \code{dplyr::collect()}.
+#' @param tz A character string specifying the Olson time zone convention used to enforce
+#'   uniform POSIXct parsing and calendar calculations across clinical timestamps.
+#'   Default is \code{"Europe/London"}.
+#' @param oxycodone_iv_factor A numeric multiplier used to convert IV Oxycodone in mg
+#'   to mg Oral Morphine Equivalent. Default is \code{4.5}.
+#' @param morphine_iv_factor A numeric multiplier used to convert IV Morphine in mg
+#'   to mg Oral Morphine Equivalent. Default is \code{3.0}.
+#' @param fentanyl_iv_factor A numeric multiplier used to convert IV Fentanyl in mcg
+#'   to mg Oral Morphine Equivalent. Default is \code{0.3}.
+#' @param output A character string determining the matrix composition returned by the
+#'   function. Must be either \code{"dose"} or \code{"ome"}. Note: Both options
+#'   currently yield the wide per-medication data frame tracking both raw metrics and OMEs.
+#' @param verbose A logical scalar enabling or disabling telemetry tracking and warnings
+#'   during execution. Default is \code{TRUE}.
+#'
+#' @return A data frame formatted in a wide analytical schema—one row per unique
+#'   \code{mrn}, \code{admission_csn}, and \code{medication} combination—exposing
+#'   the following metadata layout:
+#'   \list{
+#'     \item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
+#'     \item{\code{medication}}{The specific analgesic categorical identifier string.}
+#'     \item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
+#'     \item{\code{dose_day_0 ... dose_day_7}}{Dynamic columns tracking raw summed medication totals consumed inside each daily interval.}
+#'     \item{\code{ome_day_0 ... ome_day_7}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical daily boundaries.}
+#'   }
+#'
+#'   If no valid post-operative anchors are detected across the input cohort, a
+#'   warning is issued and an empty named \code{list} containing two structured
+#'   tibbles (\code{days_per_med} and \code{days_ome_by_admission}) is returned.
+#'
+#' @export
+#'
+#' @importFrom dplyr mutate group_by summarise filter left_join inner_join select arrange ungroup first across collect
+#' @importFrom lubridate with_tz as_date days
+#' @importFrom tidyr crossing pivot_wider
+#' @importFrom cli cli_abort
+#'
+#' @examples
+#' \dontrun{
+#' # Partition PCA administration metrics into clinical day windows
+#' pca_summary_daily <- pca_summarise_days(
+#'   pca_hourly = pca_hourly,
+#'   phases = surgical_milestones,
+#'   tz = "Europe/London",
+#'   output = "dose"
+#' )
+#' }
+pca_summarise_days <- function(pca_hourly,
                                   phases = Phases,
                                   tz = "Europe/London",
                                   oxycodone_iv_factor = 4.5,  # IV oxycodone → OME
@@ -14,7 +104,7 @@ pca_summarise_days <- function(pcas_clean_flag_deduplicated,
   #   patient_out_of_room -> in_recovery -> anaesthesia_end
   # Then, for each admission, keep the earliest non-NA candidate.
 
-  phases <- phases %>% filter(admission_csn %in% pcas_clean_flag_deduplicated$admission_csn) %>% collect()
+  phases <- phases %>% filter(admission_csn %in% pca_hourly$admission_csn) %>% collect()
 
    phases_key <- phases %>%
     mutate(
@@ -32,7 +122,7 @@ pca_summarise_days <- function(pcas_clean_flag_deduplicated,
   # 2) Attach postop anchor to PCA data and keep only anchored admissions
   # ---------------------------------------------------------------------------
   # We carry forward only rows that have a matched anchor.
-  pcas <- pcas_clean_flag_deduplicated %>%
+  pcas <- pca_hourly %>%
     mutate(
       admission_csn_key = as.character(admission_csn),
       time_hourly_start = as.POSIXct(time_hourly_start, tz = tz)

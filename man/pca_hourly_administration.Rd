@@ -5,15 +5,16 @@
 \title{Transform and Match PCA Data to Hourly Administration Buckets}
 \usage{
 pca_hourly_administration(
-  clean_pca,
+  pca_dataframe_cleaned = pca_dataframe_cleaned,
   mar_df,
   tz = "Europe/London",
   new_admin_gap_hours = 48,
+  resolve_crossover = TRUE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{clean_pca}{A data frame containing structured, cleaned PCA observations. Must feature
+\item{pca_dataframe_cleaned}{A data frame containing structured, cleaned PCA observations. Must feature
 the columns: \code{mrn}, \code{admission_csn}, \code{medication}, \code{date_time_recorded},
 \code{dose_best_estimate}, \code{dose_best_basis}, \code{units}, \code{concentration_mismatch_flag},
 and \code{interval_hours}.}
@@ -27,7 +28,10 @@ uniform POSIXct parsing across clinical timestamps. Default is \code{"Europe/Lon
 
 \item{new_admin_gap_hours}{A numeric threshold defining the duration boundary (in hours)
 beyond which a subsequent PCA log is treated as a completely distinct, new clinical
-administration episode. Default is \code{48}.}
+administration episode. Default is \code{48}.
+@param resolve_crossover Runs the \code{pca_resolve_crossover()} function within, thus accepting the default values set by the package.
+See the default parameters with \code{?pca_resolve_crossover}.
+Use \code{resolve_crossover = FALSE} and then run the function separaltly on the resulting dataframe to change parametes.}
 }
 \value{
 A data frame containing hourly resampled PCA administration entries with
@@ -73,7 +77,7 @@ zero-dose records and prioritizing MAR-authenticated logs over unverified record
 \examples{
 \dontrun{
 hourly_pcas <- pca_hourly_administration(
-  clean_pca = cleaned_pca_data,
+  pca_dataframe_cleaned = cleaned_pca_data,
   mar_df = post_op_mar,
   tz = "Europe/London",
   new_admin_gap_hours = 48

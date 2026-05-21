@@ -5,7 +5,7 @@
 \title{Aggregate and Summarise Hourly PCA Consumption Into Post-Operative Bins}
 \usage{
 pca_summarise_bins(
-  pcas_clean_flag_deduplicated,
+  pca_hourly,
   phases = Phases,
   tz = "Europe/London",
   bins_hours = c(0, 24, 48, 72, 96, 120, 146),
@@ -14,7 +14,7 @@ pca_summarise_bins(
 )
 }
 \arguments{
-\item{pcas_clean_flag_deduplicated}{A data frame or tibble containing hourly resampled and crossover-resolved
+\item{pca_hourly}{A data frame or tibble containing hourly resampled and crossover-resolved
 PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{medication}, \code{units},
 \code{time_hourly_start}, \code{time_hourly_end}, and \code{dose_best_estimate_hourly}.}
 
@@ -73,7 +73,7 @@ per patient-encounter-medication triplet, exposing wide dynamic vectors prefixed
 \dontrun{
 # Aggregate cleaned PCA data across 24-hour surgical intervals
 binned_pca_summary <- pca_summarise_bins(
-  pcas_clean_flag_deduplicated = resolved_hourly_data,
+  pca_hourly = pca_hourly,
   phases = surgical_milestones,
   tz = "Europe/London",
   bins_hours = c(0, 24, 48, 72, 96)

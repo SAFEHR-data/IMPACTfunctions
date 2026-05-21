@@ -24,7 +24,7 @@
 #'   zero-dose records and prioritizing MAR-authenticated logs over unverified records.
 #' }
 #'
-#' @param clean_pca A data frame containing structured, cleaned PCA observations. Must feature
+#' @param pca_dataframe_cleaned A data frame containing structured, cleaned PCA observations. Must feature
 #'   the columns: \code{mrn}, \code{admission_csn}, \code{medication}, \code{date_time_recorded},
 #'   \code{dose_best_estimate}, \code{dose_best_basis}, \code{units}, \code{concentration_mismatch_flag},
 #'   and \code{interval_hours}.
@@ -36,6 +36,9 @@
 #' @param new_admin_gap_hours A numeric threshold defining the duration boundary (in hours)
 #'   beyond which a subsequent PCA log is treated as a completely distinct, new clinical
 #'   administration episode. Default is `48`.
+#'  @param resolve_crossover Runs the `pca_resolve_crossover()` function within, thus accepting the default values set by the package.
+#'   See the default parameters with `?pca_resolve_crossover`.
+#'   Use `resolve_crossover = FALSE` and then run the function separaltly on the resulting dataframe to change parametes.
 #'
 #' @return A data frame containing hourly resampled PCA administration entries with
 #'   the following structures:
@@ -64,17 +67,18 @@
 #' @examples
 #' \dontrun{
 #' hourly_pcas <- pca_hourly_administration(
-#'   clean_pca = cleaned_pca_data,
+#'   pca_dataframe_cleaned = cleaned_pca_data,
 #'   mar_df = post_op_mar,
 #'   tz = "Europe/London",
 #'   new_admin_gap_hours = 48
 #' )
 #' }
-pca_hourly_administration <- function(clean_pca,
-                                  mar_df,
-                                  tz = "Europe/London",
-                                  new_admin_gap_hours = 48,
-                                  verbose = TRUE) {
+pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_cleaned,
+                                      mar_df,
+                                      tz = "Europe/London",
+                                      new_admin_gap_hours = 48,
+                                      resolve_crossover = TRUE,
+                                      verbose = TRUE) {
 
   if(verbose){cli::cli_h1("Creating PCA hourly administrations")}
   if(verbose){cli::cli_progress_step("Checking inputs")}
@@ -88,9 +92,9 @@ pca_hourly_administration <- function(clean_pca,
     "concentration_mismatch_flag",
     "interval_hours"              # used for first-row anchoring logic
   )
-  miss_pcas <- setdiff(req_pcas_cols, names(clean_pca))
+  miss_pcas <- setdiff(req_pcas_cols, names(pca_dataframe_cleaned))
   if (length(miss_pcas)) {
-    stop("clean_pca missing columns: ", paste(miss_pcas, collapse=", "))
+    stop("pca_dataframe_cleaned missing columns: ", paste(miss_pcas, collapse=", "))
   }
 
   req_mar_cols <- c(
@@ -130,7 +134,7 @@ pca_hourly_administration <- function(clean_pca,
 
   mar_subset <- mar_df %>% filter(administration_route == "Intravenous",
                                   pharmaceutical_class == "Analgesics",
-                                  admission_csn %in% clean_pca$admission_csn,
+                                  admission_csn %in% pca_dataframe_cleaned$admission_csn,
                                   !is.na(administration_date_time)
                                   ) %>% collect()
 
@@ -205,7 +209,7 @@ pca_hourly_administration <- function(clean_pca,
   # ===========================================================================
   # compute_clean_pca may have theatre-anchored interval_hours for the first row.
   # We keep a flag and also carry the first interval_hours for potential use later.
-  clean_pca_aug <- clean_pca %>%
+  clean_pca_aug <- pca_dataframe_cleaned %>%
     arrange(mrn, admission_csn, date_time_recorded) %>%
     group_by(mrn, admission_csn) %>%
     mutate(
@@ -411,8 +415,23 @@ pca_hourly_administration <- function(clean_pca,
     mutate(still_duplicated = dplyr::n() > 1) %>%
     ungroup()
 
-  if(verbose){cli::cli_progress_done("Returning hourly dataset")}
-  # Final output
-  pcas_clean_flag <- pcas_hourly_cleaned_flag
-  return(pcas_clean_flag)
+
+  if(resolve_crossover){
+    cli::cli_progress_step("Resolving crossovers with default parameters")
+    pca_hourly <- pca_resolve_crossover(pca_hourly = pcas_hourly_cleaned_flag)
+    if(verbose){cli::cli_progress_done("Returning hourly dataset")}
+    return(pca_hourly)
+  }else{
+    if(verbose){cli::cli_progress_done("Returning hourly dataset")}
+    cli::cli_alert_warning("CAUTION: Crossovers not resolved! Set `resolve_crossover = TRUE` or run {.fn pca_resolve_crossover} separatly")
+    pca_hourly <- pcas_hourly_cleaned_flag
+    return(pca_hourly)
+    }
+
+
+
+
+
+
+
 }
