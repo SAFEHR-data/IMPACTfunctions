@@ -10,9 +10,9 @@ https://www.ons.gov.uk/census/census2021dictionary/variablesbytopic/ethnicgroupn
 recode_ethnicity(ethnicity_vec, short_names = FALSE)
 }
 \arguments{
-\item{short_names}{Print short name groups}
+\item{ethnicity_vec}{The vector or datafame column to convert}
 
-\item{ethnicity_vector}{The vector or datafame column to convert}
+\item{short_names}{Print short name groups}
 }
 \value{
 A vector of recoded ethnicities
