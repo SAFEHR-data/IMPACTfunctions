@@ -1,6 +1,6 @@
 Package: IMPACTfunctions
 Title: IMPACT peri-operative dataset functions
-Version: 0.0.0.9006
+Version: 0.1.0
 Authors@R: 
     person("Dylan", "Whitaker", , "dylan.whitaker1@nhs.net", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-6619-5846"))
