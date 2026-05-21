@@ -1,0 +1,77 @@
+
+# IMPACTfunctions
+
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml)
+
+<!-- badges: end -->
+
+The goal of IMPACTfunctions is to help working with the IMPACT
+peri-operative dataset.
+
+The dataset was built at UCLH with input from CUH NHS trust and others…
+
+## Functionality
+
+| Feature | Functions | Documentation and vignette | Synthetic data | Unit test | Clinically validated |
+|----|----|----|----|----|----|
+| Subsetting by surgical procedure | `cohort_procedure_coded()` | ✔️ and ✔️ | ✔️ | ❌ | 🔄 in progress |
+| Medication administrations | `search_drug_names`, `extract_medication()` and `calculate_medication_feature()` | ✔️ and ✔️ | ✔️ | ❌ |  |
+| PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
+| Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
+
+Features in Package version: 0.1.0
+
+## Installation
+
+You can install the development version of IMPACTfunctions from
+[GitHub](https://github.com/) with:
+
+``` r
+# As it is a private repo within the SAFEHR-data group you will need a PAT. 
+# Follow this guide to get one: https://uclh.slab.com/posts/git-hub-integration-6s9bw63t
+
+# Then set that to your R session:
+gitcreds::gitcreds_set()
+
+# Install package from github:
+remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
+                        auth_token = gitcreds::gitcreds_get()$password)
+```
+
+## FAQ and error troubleshooting
+
+See the
+[`FAQ.md`](https://github.com/SAFEHR-data/IMPACTfunctions/blob/3-add-pca-function/FAQ.md)
+file or tips on the troubleshooting and explaning common errors. Leve a
+github issue with any more complex issues.
+
+## Contributing
+
+We welcome the help to contribute, see the [SLAB
+article](https://uclh.slab.com/posts/how-to-contribute-to-an-r-package-kkfuh997?shr=a5jb3q7t0av7r0z9e22b36l5)
+on how to add fuctions
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+``` r
+library(arrow)
+library(cli)
+library(dplyr)
+library(IMPACTfunctions)
+
+load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
+             prefix = "SCB_Periop_",
+             suffix ="_20260122.parquet",
+             verbose = TRUE)
+
+Demographics %>% glimpse()
+```
+
+# Acknowledgments
+
+Package written using the [R packages
+book](https://r-pkgs.org/preface.html)
