@@ -29,10 +29,17 @@ Ethnicity data was collated and recoded using the Office for National Statistics
 Where Ethnicity data was not provided or collected values were marked as missing.
 }
 \examples{
+\dontshow{
+list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+library(dplyr)
+library(lubridate)
+}
+ \dontrun{
 demo <- demo \%>\%
 mutate(
 ethnicity_5_group = recode_ethnicity(ethnicity)
 )
+}
 
 
 }

@@ -15,12 +15,14 @@
 #' @return A vector of recoded ethnicities
 #' @export
 #' @source https://www.ons.gov.uk/census/census2021dictionary/variablesbytopic/ethnicgroupnationalidentitylanguageandreligionvariablescensus2021/ethnicgroup/classifications
-#'
+#' @template setup-data
 #' @examples
+#'  \dontrun{
 #' demo <- demo %>%
 #' mutate(
 #' ethnicity_5_group = recode_ethnicity(ethnicity)
 #' )
+#' }
 #'
 #'
 recode_ethnicity <- function(ethnicity_vec, short_names = FALSE) {
