@@ -74,6 +74,7 @@
 #' }
 pca_clean_data <- function(PCA_dataframe = PCAs,
                            phases_dataframe = Phases,
+                           dataset,
                            near_full_threshold = 95,    # reservoir volume (mL) treated as "near full"
                            min_jump_ml = 20,    # minimum positive jump in reservoir volume to call "new bag"
                            priming_allowance_ml = 5,     # allow up to 5mL of post-bag "priming" to be removed once
@@ -86,6 +87,17 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 ){
 
   if(verbose){cli::cli_h1("Cleaning PCA data")}
+
+  if(missing(dataset)){
+    cli::cli_alert_info(c("Proccessing whole PCA dataset, this might take some time... \n \n",
+                        "To speed up the function, use the argument {.arg dataset}. \n",
+                        "This will subset the PCA flowsheet by matching {.val admission_csn} to only proccess the data for your dataset patients")
+    )
+  }else{
+    PCA_dataframe <- PCA_dataframe %>% filter(admission_csn %in% dataset$admission_csn)
+    cli::cli_alert_info("Subsetting for your patient cohort")
+  }
+
   if(verbose){cli::cli_progress_step("Filtering medications")}
   # ===========================================================================
   # STEP 0 (NEW): Derive medication from flowsheet text + filter out unwanted meds
