@@ -9,7 +9,7 @@ extract_medication(
   MAR = HospitalMar,
   mar_source = NA,
   medication = NA,
-  search_column = "simple_generic_name",
+  search_column,
   check_search = TRUE,
   timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
   t0 = NA,
@@ -26,7 +26,7 @@ extract_medication(
 
 \item{MAR}{The MAR to extract from. Will default to \code{HospitalMar}.}
 
-\item{mar_source}{The source MAR to filter from to filter across both then leave this as \code{NA}. See section above. Multiple sources can be combined (\code{mar_source = c("anaesthetic", "operation")}.}
+\item{mar_source}{The source MAR to filter from to filter across both then leave this as \code{NA}. See section above. Multiple sources can be combined (\verb{mar_source = c("Anaesthesia", "Operation"))}.}
 
 \item{medication}{Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.}
 
@@ -61,9 +61,9 @@ MAR Source
 
 There are 3 places medications can be recorded as administered (MAR) in the hospital:
 \enumerate{
-\item The general MAR where the majority of medications are recorded. Use \code{mar_source = "ward"}.
-\item The anaesthetic MAR that contains the medications recorded by the anaesthetist. Use \code{mar_source = "anaesthetic"}.
-\item The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon). Use \code{mar_source = "operation"}.
+\item \code{mar_source = "Hospital Encounter"} -  The general MAR where the majority of medications are recorded.
+\item \code{mar_source = "Anaesthesia"} - The anaesthetic MAR that contains the medications recorded by the anaesthetist.
+\item \code{mar_source = "Operation"} - The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon).
 }
 
 Generally you want to use \code{mar_source = NA} which will not apply any filtering.
