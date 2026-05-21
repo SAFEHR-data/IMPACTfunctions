@@ -31,3 +31,31 @@ To resolve the error you should follow the following steps:
 > 4. Open `data-raw/IMPACT_dicts.R` and run the script (including logging into google) to refresh the data files.
 > 5. Run `check()` to ensure vignetts still build then `use_version()` and open PR against the issue. 
 > 6. Inform users they will need to update the package with the new dictonaries. 
+
+## ERROR MESSAGE: object 'dictionary_IMPACT_schema' not found
+
+This is due to the IMPACT dictionaries not being pulled from the google sheets prior to the build of the version. This means that the package hasnt been build with the dict. 
+
+To resolve the error you should follow the following steps:
+
+1. Log a github urgently - This issue will be effecting everyone who had installed this version of the package
+
+2. Install an older package version as a temporary fix
+
+- Navigate to [the commit history](https://github.com/SAFEHR-data/IMPACTfunctions/commits/main/) for the main branch
+
+- Pick a older committ that will likley work. Look for "Increment version number to ..." and pick one of these
+
+- Copy the full SHA for the commit (the two overlapping boxes to the right)
+
+- Within the `install_github`function add the following and paste the SHA to the `ref` arguement.  
+
+```
+remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
+                        ref = "67a2a6fe3467adc14bd3288e64dc9f5acef40c28"
+                        auth_token = gitcreds::gitcreds_get()$password)
+```
+
+3. Await for the issue to be fixed and then install the latest package version.
+
+

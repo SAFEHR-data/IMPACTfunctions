@@ -57,6 +57,8 @@ load_dataset <- function(
   #Suffix and Prefix check - To check if our provided Suffix and Prefix are suitable
   #We test with the first value of the Dictionary that we can produce it.
 
+  approved_tables_names <- na.omit(unique(dictionary_IMPACT_schema$table_name))
+
   if(any(dictionary_IMPACT_schema[1,] %in% names)){
     #We can cleaned to correctly match the first dict name (usually Demographics)
   }else{
@@ -68,18 +70,20 @@ load_dataset <- function(
 
   #Check the cleaned table names against the dictonary
   if(dictionary_check){
-    if(verbose){cli::cli_h1("Dictonary Check ")}
+    if(verbose){cli::cli_h2("Dictonary Check ")}
     if(verbose){cli::cli_alert("Checking table names from dataset ({.val {head(names, n=2)}}, ...) against the dictonary.")}
     #Check any missing
-    if(any(!dictionary_IMPACT_schema$table_name %in% names)){
-      missing_tables <-  paste0(dictionary_IMPACT_schema[which(!dictionary_IMPACT_schema$table_name %in% names), "table_name"], sep=", ")
+
+
+    if(any(!approved_tables_names %in% names)){
+      missing_tables <-  paste0(dictionary_IMPACT_schema[which(!approved_tables_names %in% names), "table_name"], sep=", ")
       cli::cli_abort("The table {.val {missing_tables}} is in the IMPACT dictionary but is not found in the dataset you provided.
         \n This may be for a number of reasons:
         \n - You have not set the prefix and suffix correctly (scroll up to see warning message if so)
         \n- The dictonary is out of date. If you think this is the case then you can look at the {.href [online IMPACT Schema](dict_url)} and open a {.href [github issue.](github_url_issues)}\n Alternativly, avoid the check with {.arg dictionary_check = FALSE}")}
       #Check for additional tables
-    if(any(!names %in% dictionary_IMPACT_schema$table_name)){
-     additional_tables <-  paste0(names[which(!names %in% dictionary_IMPACT_schema$table_name)], sep=", ")
+    if(any(!names %in% approved_tables_names)){
+     additional_tables <-  paste0(names[which(!names %in% approved_tables_names)], sep=", ")
     cli::cli_abort("The table {.val {additional_tables}} is not in the IMPACT dictionary but is found in the dataset provided.
         \nThis may be because the dataset has been updated by the dictonary itself has not been updated.
         If you think this is the case then you can avoid the check with {.arg dictionary_check} = {.val FALSE}")}
