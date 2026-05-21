@@ -5,7 +5,7 @@
 #'  This functions helps you to understand what your search string is doing and
 #'   which medications may be captures for your feature extraction.
 #'
-#' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `PostOpMar`
+#' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `HospitalMar`
 #' @param medication String of the medication to search. It is case insensitive for the soft search
 #' @param strict_search TO do exact string and column matching. Useful for testing arguments for `extract_medication()` function
 #' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"` to do a hard search only in that column.

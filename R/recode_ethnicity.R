@@ -6,9 +6,10 @@
 #'
 #' Use the below text in manuscripts to explain how this function works:
 #'
-#' > Ethnicity data was collated and recoded using the Office for National Statistics (ONS) 5 ethnic group classification. Where Ethnicity data was not provided or collected values were marked as missing.
+#' Ethnicity data was collated and recoded using the Office for National Statistics (ONS) 5 ethnic group classification.
+#' Where Ethnicity data was not provided or collected values were marked as missing.
 #'
-#' @param ethnicity_vector
+#' @param ethnicity_vector The vector or datafame column to convert
 #' @param short_names Print short name groups
 #'
 #' @return A vector of recoded ethnicities

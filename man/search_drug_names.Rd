@@ -13,7 +13,7 @@ search_drug_names(
 )
 }
 \arguments{
-\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{PostOpMar}}
+\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{HospitalMar}}
 
 \item{medication}{String of the medication to search. It is case insensitive for the soft search}
 
