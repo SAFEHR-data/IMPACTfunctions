@@ -475,7 +475,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # STEP 5: Incremental number of doses given (presses) per row
   # ===========================================================================
   # n_given is a cumulative counter. Convert to per-interval increments; after reset,
-  # take the raw value as that interval’s increment.
+  # take the raw value as that interval's increment.
   pcas_wide_step5 <- pcas_wide_step4 %>%
     group_by(mrn, admission_csn, medication) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
@@ -537,7 +537,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
   if(verbose){cli::cli_progress_step("Checking bolus counts")}
   # ===========================================================================
-  # STEP 7: Validate bolus with short forward windows (1–4 rows)
+  # STEP 7: Validate bolus with short forward windows (1-4 rows)
   # ===========================================================================
   # For each reset, compute per-press dose over windows of 1..4 rows after reset.
   # Prefer reservoir-derived dose if reservoir drops exist; otherwise use admin totals.
@@ -629,8 +629,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   #   - otherwise incremental admin dose totals
   #
   # Includes extra logic:
-  #   - priming removal (first interval after a new bag with “looks like priming” pattern)
-  #   - “snap” to 1.0 or 1.5 mg in mg-drugs when ratios strongly suggest those
+  #   - priming removal (first interval after a new bag with "looks like priming" pattern)
+  #   - "snap" to 1.0 or 1.5 mg in mg-drugs when ratios strongly suggest those
   #   - soft penalties to prefer common bg rates and continuity with previous reset bolus
   pcas_wide_step8 <- pcas_wide_step7 %>%
     group_by(mrn, admission_csn, medication) %>%
@@ -743,7 +743,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
         bg_zero_cap <- if (length(zero_nopress_nodose_idx) > 0) { if (mg_drug) 0.10 else 2 } else { Inf }
 
         # Low-press hint:
-        # If with ≤1 press intervals the residual implies ~0.5 mL/hr consistently, suggest bg=0.5.
+        # If with less than 1 press intervals the residual implies ~0.5 mL/hr consistently, suggest bg=0.5.
         b_seed <- df$bolus_dose_validated[i]
         if (!is.finite(b_seed)) b_seed <- if (mg_drug) 1.0 else 20
         lp_idx <- which(is.finite(hours_each) & hours_each > 0 &
@@ -893,7 +893,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
   if(verbose){cli::cli_progress_step("Carrying over prior segment doses")}
   # ===========================================================================
-  # STEP 9: Segment-level background (reset → next reset)
+  # STEP 9: Segment-level background (reset -> next reset)
   # ===========================================================================
   # For each segment (defined by pump_reset), compute aggregate observed dose and
   # infer a background rate for the segment. This provides a "global" background
@@ -1091,7 +1091,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       ),
       bag_vol_limit_ml = 100,
 
-      # heuristic: allow multiple bags if the interval is long (≈1 bag per 8h gap)
+      # heuristic: allow multiple bags if the interval is long (~1 bag per 8h gap)
       multi_bag_factor = dplyr::case_when(
         !is.finite(interval_hours) ~ 1,
         interval_hours <= 0        ~ 1,
@@ -1206,8 +1206,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
           reservoir_plausibility_flag
       ),
 
-      # Volume–Model agreement:
-      # If volume-derived mass and model-derived mass agree within ±10%,
+      # Volume-Model agreement:
+      # If volume-derived mass and model-derived mass agree within +/-10%,
       # average them as an extra candidate (mv_mean).
       mv_agree = is.finite(dose_volume_mass) & is.finite(dose_model_mass) & {
         mv_mean_tmp <- (dose_volume_mass + dose_model_mass) / 2
@@ -1253,7 +1253,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
   if(verbose){cli::cli_progress_step("Checking values")}
   # ===========================================================================
-  # EWMA/±2SD-gated final selection (post-processing on Step 10 candidates)
+  # EWMA/+/- 2SD-gated final selection (post-processing on Step 10 candidates)
   # ===========================================================================
   # Purpose:
   #   Use a rolling EWMA model of dose/hour to reject implausible spikes (especially
@@ -1262,9 +1262,9 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # Core idea:
   #   - Maintain EWMA mean and EWMA second moment of *chosen* rate (dose/hour).
   #   - For each interval, compute candidate rates and discard those outside the band:
-  #        mu ± max(2*sd, 0.25*|mu|, abs_floor_rate)
+  #        mu +/- max(2*sd, 0.25*|mu|, abs_floor_rate)
   #   - Then choose best estimate by an "inlier" logic:
-  #        * if ≥2 inlier sources -> mean(inliers)
+  #        * if more than 1 inlier sources -> mean(inliers)
   #        * else fallback to the standard preference order (reservoir vs admin etc.)
   pcas_wide_step10 <- pcas_wide_step10 %>%
     dplyr::group_by(mrn, admission_csn, medication) %>%
@@ -1346,7 +1346,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
           }
         }
 
-        # "agree_all" means multiple candidates are tightly consistent (±10%):
+        # "agree_all" means multiple candidates are tightly consistent +/-10%):
         all_vals <- c(res0, adm0, vol0, mod0)
         all_vals <- all_vals[is.finite(all_vals)]
         agree_all <- length(all_vals) >= 2 &&
@@ -1368,7 +1368,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
           is.finite(ih) && ih > 0 &&
           has_prior()
 
-        # ±2SD (or floor) band definition
+        # +/-2SD (or floor) band definition
         sd_mult   <- 2
         mu <- ema_x
         sd <- sqrt(pmax(ema_x2 - ema_x^2, 0))
@@ -1418,7 +1418,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
         # Selection logic:
         #   - immediately after reset/new bag: admin first
-        #   - if ≥2 inliers: mean(inliers)
+        #   - if more than or equal to 2 inliers: mean(inliers)
         #   - else: fall back to reservoir vs admin/volume/model with reservoir_unreliable logic
         if (isTRUE(df$prefer_admin_firstrow[i]) && is.finite(df$dose_admin_mass[i])) {
           chosen <- df$dose_admin_mass[i]; basis <- "admin(first row)"
@@ -1429,10 +1429,10 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
               is.na(res) && (length(inliers) == 2) &&
               all(names(inliers) %in% c("volume","model")) &&
               (vol > 4*adm) && (mod > 4*adm)) {
-            chosen <- adm; basis <- "admin(override: ≥2 inliers but vol+model >4× admin)"
+            chosen <- adm; basis <- "admin(override: 2 or more inliers but vol+model >4x admin)"
           } else {
             chosen <- mean(inliers, na.rm = TRUE)
-            basis  <- if (isTRUE(df$reservoir_unreliable[i])) "mean(≥2 inliers; reservoir unreliable)" else "mean(≥2 inliers)"
+            basis  <- if (isTRUE(df$reservoir_unreliable[i])) "mean(two or more 2 inliers; reservoir unreliable)" else "mean(more than 2 inliers)"
           }
 
         } else if (isTRUE(df$reservoir_unreliable[i])) {
