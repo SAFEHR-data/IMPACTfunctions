@@ -13,7 +13,7 @@ search_drug_names(
 )
 }
 \arguments{
-\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{PostOpMar}}
+\item{MAR}{The arrow table of the MAR of interest. Pick either \code{IntraOpMar} or \code{HospitalMar}}
 
 \item{medication}{String of the medication to search. It is case insensitive for the soft search}
 
@@ -27,7 +27,10 @@ search_drug_names(
 A dataframe summarising the medications matching the search criteria and their frequency.
 }
 \description{
-There is often inconsistency in how a medication name, formulation and group is stored. This may represent old formulations being removed, or not listed correctly. This functions helps you to understand what your search string is doing and which medications may be captures for your feature extraction.
+There is often inconsistency in how a medication name, formulation and group is stored.
+This may represent old formulations being removed, or not listed correctly.
+This functions helps you to understand what your search string is doing and
+which medications may be captures for your feature extraction.
 }
 \examples{
 \dontshow{
@@ -36,8 +39,10 @@ library(dplyr)
 library(lubridate)
 }
 search_drug_names(HospitalMar, "morphine") #Notice that we capture Diamorph as well
-search_drug_names(HospitalMar, "morphine sulfate") # We have now refined our string to remove diamorph but we have also lost the `Morphine 10mg for recovery`
-search_drug_names(HospitalMar, "MORPHINE") #Notice that the search is case insenstive becuase capitilisation is not consistent
+search_drug_names(HospitalMar, "morphine sulfate") # We have now refined our string to
+# remove diamorph but we have also lost the `Morphine 10mg for recovery`
+search_drug_names(HospitalMar, "MORPHINE") #Notice that the search is case
+# insenstive becuase capitilisation is not consistent
 
 search_drug_names(HospitalMar, "fentanyl")
 search_drug_names(HospitalMar, "fentanyl", search_column="simple_generic_name")

@@ -1,0 +1,76 @@
+#' @import dplyr
+#' @import tidyr
+#' @import stringr
+#' @import lubridate
+#' @import purrr
+#' @import tibble
+#' @importFrom stats end na.omit rnorm runif start var
+#' @importFrom utils head tail
+NULL
+
+# Suppress R CMD check warnings about undefined global variables
+utils::globalVariables(c(
+  ".", ".row_id", "Demographics", "HospitalMar", "IntraoperativeMeasurements",
+  "Measurements", "PCA_concentration", "PCA_concentration_unit", "Procedures",
+  "abs_floor_rate_long", "administration_action", "administration_date_time",
+  "administration_instant", "administration_offset_minutes",
+  "administration_route", "admission_csn", "admission_csn_key", "admission_date",
+  "allow_k", "anaesthesia_csn", "anaesthesia_end", "any_valid", "as_date", "as_datetime",
+  "background_dose", "background_dose_seg", "background_dose_unit",
+  "background_rate_final", "background_rate_ml_hr", "background_rate_seg_ml_hr",
+  "bag_mass_limit", "bag_vol_limit_ml", "bg_mass_hr_active",
+  "bg_mass_hr_active_locked", "bg_ml_hr_active", "bin", "bolus_active", "bolus_dose",
+  "bolus_dose_final", "bolus_dose_unit", "bolus_dose_validated",
+  "bolus_dose_validated_window", "bolus_for_segment", "bolus_recalc_basis",
+  "bolus_recalc_flag", "bolus_recalc_window", "both_decreased", "break_seg",
+  "cand_discharge_end", "cand_next_admin_end", "cand_stop_end", "case_id",
+  "ceiling_date", "combined_coded_opcs_procedures", "conc_calc", "conc_locked",
+  "conc_obs", "concentration_mismatch_flag", "date_time_recorded", "day", "day0_end",
+  "day_label", "days", "dictionary_IMPACT_schema", "dictionary_equivelence",
+  "dictionary_medication_route", "dictionary_opioid", "discharge_date",
+  "dn_attempts", "dn_given", "dose", "dose_OME", "dose_admin_incr", "dose_admin_mass",
+  "dose_admin_prev", "dose_administered", "dose_best_basis", "dose_best_estimate",
+  "dose_best_estimate_hourly", "dose_in_expected_unit", "dose_model_mass",
+  "dose_model_mass_raw", "dose_prev", "dose_reservoir", "dose_reservoir_raw",
+  "dose_sum", "dose_units", "dose_val", "dose_volume_mass", "drop_med", "dupe_times",
+  "effective_time", "eligibility_criteria", "encounter_type", "end", "ethnicity",
+  "excluded_drug", "expected_concentration", "fent_elsewhere", "fent_n",
+  "first_in_grp", "first_row_overall_in_adm", "floor_date", "flowsheet_question",
+  "flowsheet_question_name", "flowsheet_row_epic_id", "fs_text", "gap_h", "gap_hours",
+  "generic_name", "head", "hit", "hour_starts", "hourly_dose_best_estimate", "hours",
+  "hours_postop_end", "in_recovery", "incremental_dose_admin",
+  "incremental_n_given", "interval_from_anchor", "interval_hours", "is_active",
+  "is_after_new_bag", "is_fent", "is_fentanyl", "is_first_overall_in_adm", "is_morph",
+  "is_oxy", "keep_row", "lda_id", "line_end", "line_start", "mar_id", "matched_orders",
+  "med_lc", "medication", "medication_name", "medication_raw", "mis",
+  "model_background_component", "model_bolus_component", "model_rate",
+  "morph_elsewhere", "morph_n", "mrn", "multi_bag_factor", "mv_agree", "mv_mean",
+  "mv_over_admin", "n_attempts", "n_attempts_prev", "n_given", "n_given_lag",
+  "n_given_prev", "n_hours", "n_in_bucket", "n_meds_bucket", "na.omit", "neighbor_morph",
+  "neighbor_oxy", "new_bag", "next_any_admin", "next_is_morph", "next_is_oxy",
+  "next_med", "not_obvious_bag", "numeric_value", "ome", "ome_per_unit", "operation_csn",
+  "operation_date", "opt_out_flag", "order_id", "oxy_elsewhere", "oxy_n",
+  "patient_out_of_room", "pca_medication_flag", "pharmaceutical_class",
+  "pharmaceutical_subclass", "pivot_wider", "pmap", "postop_anchor",
+  "postop_anchor_raw", "prev_is_morph", "prev_is_oxy", "prev_med", "prev_t", "prev_time",
+  "primary_coded_procedure", "priming_ml", "prio", "pump_reset", "pump_reset_reason",
+  "recorded_date", "res_curr_missing", "res_delta", "res_delta_ml", "res_drop",
+  "res_drop_adj_ml", "res_drop_raw_ml", "res_increased", "res_is_zero_now", "res_ml",
+  "res_prev", "res_prev_missing", "res_rate", "reservoir_abs_too_low_long",
+  "reservoir_exceeds_bag", "reservoir_implausibly_low_vs_model",
+  "reservoir_missing_prev_or_curr", "reservoir_plausibility_flag",
+  "reservoir_suspect", "reservoir_volume_remaining", "restricted_patient_flag",
+  "rnorm", "route", "route_simple", "row_anchor", "row_end_time", "row_in_segment",
+  "row_start_time", "row_start_time_raw", "runif", "seg_bg_applied",
+  "seg_bg_mass_rate", "seg_bg_mass_rate_raw", "seg_bg_ml_hr", "seg_bg_ml_hr_round",
+  "seg_bg_reason", "seg_bg_unit", "seg_conc_ref", "seg_dose_admin",
+  "seg_dose_reservoir", "seg_expected_bolus_dose", "seg_hours", "seg_len",
+  "seg_obs_dose", "seg_presses", "seg_use_reservoir", "segment_id",
+  "simple_generic_name", "start", "start_end_window_hours", "stop_time", "str_detect",
+  "str_to_lower", "str_to_upper", "tail", "time_hourly_end", "time_hourly_start",
+  "time_valid", "time_valid_end", "time_valid_end_num", "times_to_drop",
+  "times_to_drop_inside", "to_fent_ctx", "to_morph", "to_oxy", "unit_derived",
+  "units_var", "use_long_anchor", "valid_prescription", "value", "var",
+  "vol_admin_incr_ml", "vol_admin_prev", "volume_administered", "with_tz", "ymd_hms",
+  "zero_dose_eps"
+))

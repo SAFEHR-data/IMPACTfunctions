@@ -1,8 +1,11 @@
 #' Helper function to search the MAR
 #'
-#' There is often inconsistency in how a medication name, formulation and group is stored. This may represent old formulations being removed, or not listed correctly. This functions helps you to understand what your search string is doing and which medications may be captures for your feature extraction.
+#'  There is often inconsistency in how a medication name, formulation and group is stored.
+#'  This may represent old formulations being removed, or not listed correctly.
+#'  This functions helps you to understand what your search string is doing and
+#'   which medications may be captures for your feature extraction.
 #'
-#' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `PostOpMar`
+#' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `HospitalMar`
 #' @param medication String of the medication to search. It is case insensitive for the soft search
 #' @param strict_search TO do exact string and column matching. Useful for testing arguments for `extract_medication()` function
 #' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"` to do a hard search only in that column.
@@ -14,8 +17,10 @@
 #'
 #' @examples
 #' search_drug_names(HospitalMar, "morphine") #Notice that we capture Diamorph as well
-#' search_drug_names(HospitalMar, "morphine sulfate") # We have now refined our string to remove diamorph but we have also lost the `Morphine 10mg for recovery`
-#' search_drug_names(HospitalMar, "MORPHINE") #Notice that the search is case insenstive becuase capitilisation is not consistent
+#' search_drug_names(HospitalMar, "morphine sulfate") # We have now refined our string to
+#' # remove diamorph but we have also lost the `Morphine 10mg for recovery`
+#' search_drug_names(HospitalMar, "MORPHINE") #Notice that the search is case
+#' # insenstive becuase capitilisation is not consistent
 #'
 #' search_drug_names(HospitalMar, "fentanyl")
 #' search_drug_names(HospitalMar, "fentanyl", search_column="simple_generic_name")
