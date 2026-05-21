@@ -5,9 +5,9 @@
 #'  MAR Source
 #'
 #' There are 3 places medications can be recorded as administered (MAR) in the hospital:
-#' 1) The general MAR where the majority of medications are recorded. Use `mar_source = "ward"`.
-#' 2) The anaesthetic MAR that contains the medications recorded by the anaesthetist. Use `mar_source = "anaesthetic"`.
-#' 3) The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon). Use `mar_source = "operation"`.
+#' 1) `mar_source = "Hospital Encounter"` -  The general MAR where the majority of medications are recorded.
+#' 2) `mar_source = "Anaesthesia"` - The anaesthetic MAR that contains the medications recorded by the anaesthetist.
+#' 3) `mar_source = "Operation"` - The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon).
 #'
 #' Generally you want to use `mar_source = NA` which will not apply any filtering.
 #'
@@ -26,7 +26,7 @@
 #'
 #' @param dataset The procedures set of which to search across.
 #' @param MAR The MAR to extract from. Will default to `HospitalMar`.
-#' @param mar_source The source MAR to filter from to filter across both then leave this as `NA`. See section above. Multiple sources can be combined (`mar_source = c("anaesthetic", "operation")`.
+#' @param mar_source The source MAR to filter from to filter across both then leave this as `NA`. See section above. Multiple sources can be combined (`mar_source = c("Anaesthesia", "Operation"))`.
 #' @param medication Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.
 #' @param search_column The column which to search the medication string against. See help above.
 #' @param check_search Boolean, Check if the medications and search column provided are valid.
@@ -52,7 +52,7 @@ extract_medication <- function(dataset,
                                MAR = HospitalMar,
                                mar_source = NA,
                                medication = NA,
-                               search_column = "simple_generic_name",
+                               search_column,
                                check_search = TRUE,
                                timeframe = c("whole_mar", "pre_op", "post_op", "custom"),
                                t0 = NA,
@@ -71,7 +71,12 @@ extract_medication <- function(dataset,
     cli::cli_h2("Checking data and variable quality")
   }
 
+  allowed_mar_source <- c("Hospital Encounter", "Anaesthesia", "Operation")
 
+  if(!is.na(mar_source)){
+    if (!any(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} must contain at least one of: {.val {allowed_mar_source}}.")
+    if (!all(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} contains invalid values. Only {.val {allowed_mar_source}} are permitted, check spelling.")
+  }
   # We concatenate the medications strings here to allow the search functions above to recive a vector.
   if(length(medication)>1){
     if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
@@ -155,8 +160,13 @@ extract_medication <- function(dataset,
   if(nrow(med_check_soft) < 1){
     cli::cli_abort("The {.arg medication} provided ({.val {medication}}) isnt't in the dataset in any column, \n \n Check for spelling. Use the function {.fun search_drug_names()} to help you check the correct string.")
   }else{
-    if(verbose){cli::cli_alert_success("{.val {medication}} found in the MAR")}
+    if(verbose){cli::cli_alert_success("Soft search: The string {.val {medication}} was found in the MAR")}
   }
+
+  if(missing(search_column)){
+    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val {search_column}} ")}
+    search_column = "simple_generic_name"
+    }
 
   med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
   if(nrow(med_check_strict) < 1){
@@ -164,25 +174,24 @@ extract_medication <- function(dataset,
                    \n \nThere were some rows of the MAR that matched! Use the function {.fun search_drug_names} to help you check the variables to pass or see the table below:")
     print(med_check_soft)
   }else{
-    if(verbose){cli::cli_alert_success("{.val {medication}} matched values in the column {.val {search_column}}")}
+    if(verbose){cli::cli_alert_success("Strict search: {.val {medication}} matched exct values in the column {.val {search_column}}")}
   }
   }
 
   # Step 2 - Subsetting
 
-  ## Phases
 
   if(all(!is.na(mar_source))) {
     subsets <- list()
-    if ("ward"        %in% mar_source){
+    if ("Hospital Encounter"        %in% mar_source){
       subsets[["ward"]]        <- MAR %>% filter(encounter_type == "Hospital Encounter")
       if(verbose){cli::cli_alert_success("Removing medications given on the anesthetic or operation MAR")}
     }
-    if ("anaesthetic" %in% mar_source){
-      subsets[["anaesthetic"]] <- MAR %>%filter(encounter_type == "Anaesthesia ")
+    if ("Anaesthesia" %in% mar_source){
+      subsets[["anaesthetic"]] <- MAR %>%filter(encounter_type == "Anaesthesia")
       if(verbose){cli::cli_alert_success("Selecting only medications given on the anesthetic MAR")}
     }
-    if ("operation"   %in% mar_source){
+    if ("Operation"   %in% mar_source){
       subsets[["operation"]]  <- MAR %>% filter(encounter_type == "Operation")
       if(verbose){cli::cli_alert_success("Selecting only medications given on the operation MAR")}
     }

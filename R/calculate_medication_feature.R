@@ -18,7 +18,7 @@
 #' @template setup-data
 #' @export
 #' @examples
-#'
+#' \dontrun{
 #'  dataset <- cohort_complete_admissions(Procedures) %>%
 #'  cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 #'
@@ -31,7 +31,8 @@
 #'  timeframe = "custom",
 #'  t0 = "operation_date",
 #'  t1 = "discharge_date",
-#'  verbose = TRUE)
+#'  verbose = TRUE,
+#'  check_search=FALSE)
 #'
 #' dataset <- calculate_medication_feature(dataset,
 #' MAR = post_op_morphine,
@@ -47,6 +48,7 @@
 #' feature = "binary",
 #' feature_name = "morphine_post_op",
 #' overide_dose_check= TRUE)
+#' }
 #'
 calculate_medication_feature <- function(dataset,
                                          MAR,
