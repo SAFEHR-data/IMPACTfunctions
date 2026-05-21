@@ -38,6 +38,11 @@ library(dplyr)
 library(lubridate)
 }
 search_flowsheet_name(Measurements, "heart rate")
-search_flowsheet_name(Measurements, "heart rate", search_column = "flowsheet_question_name")
-search_flowsheet_name(Measurements, "heart rate", search_column = "flowsheet_question_name", strict_search = TRUE)
+
+search_flowsheet_name(Measurements, "heart rate",
+   search_column = "flowsheet_question_name")
+
+search_flowsheet_name(Measurements, "heart rate",
+   search_column = "flowsheet_question_name",
+    strict_search = TRUE)
 }
