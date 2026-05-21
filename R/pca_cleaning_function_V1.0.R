@@ -28,13 +28,6 @@
 
 compute_pcas_final <- function(pcas_raw, phases_df = NULL, tz = "Europe/London") {
 
-  suppressPackageStartupMessages({
-    library(dplyr)
-    library(tidyr)
-    library(stringr)
-    library(lubridate)
-  })
-
   # ---------------------------------------------------------------------------
   # Tunable parameters controlling heuristics
   # ---------------------------------------------------------------------------
@@ -1553,13 +1546,7 @@ build_pcas_clean_flag <- function(pcas_final,
                                   tz = "Europe/London",
                                   new_admin_gap_hours = 48) {
 
-  suppressPackageStartupMessages({
-    require(dplyr)
-    require(tidyr)
-    require(stringr)
-    require(purrr)
-    require(lubridate)
-  })
+
 
   # ---------------------------------------------------------------------------
   # Sanity checks: ensure required columns exist in inputs
@@ -1927,9 +1914,7 @@ resolve_crossover_duplicates <- function(
     drop_on_equal_allowance = FALSE,                   # trim when seg_len == allowance_hours
     drop_within_allowance   = FALSE                    # also drop loser INSIDE the allowed hours
 ) {
-  suppressPackageStartupMessages({
-    library(dplyr); library(tidyr); library(lubridate); library(purrr); library(stringr); library(tibble)
-  })
+
 
   `%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
 
@@ -2267,11 +2252,7 @@ summarise_postop_bins <- function(
       "Fentanyl",  "mcg",  0.30
     )
 ) {
-  suppressPackageStartupMessages({
-    library(dplyr)
-    library(tidyr)
-    library(lubridate)
-  })
+
 
   # ---------------------------------------------------------------------------
   # Helper: safe character key for joining on admission_csn
