@@ -163,8 +163,12 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
         str_detect(qn, "GIVEN VOLUME")        | str_detect(q, "GIVEN VOLUME")        ~ "volume_administered",
         str_detect(qn, "GIVEN AMOUNT")        | str_detect(q, "GIVEN AMOUNT")        ~ "dose_administered",
         str_detect(qn, "RESERVOIR VOLUME")    | str_detect(q, "RESERVOIR VOLUME")    ~ "reservoir_volume_remaining",
-        str_detect(qn, "PCA DOSES GIVEN")     | str_detect(q, "PCA DOSES GIVEN")     ~ "n_given",
-        str_detect(qn, "PCA DOSES ATTEMPTED") | str_detect(q, "PCA DOSES ATTEMPTED") ~ "n_attempts",
+        str_detect(qn, "VOLUME REMAINING")    | str_detect(q, "VOLUME REMAINING")    ~ "reservoir_volume_remaining",
+        str_detect(qn, "DOSES GIVEN")     | str_detect(q, "PCA DOSES GIVEN")     ~ "n_given",
+        str_detect(qn, "DOSES ATTEMPTED") | str_detect(q, "PCA DOSES ATTEMPTED") ~ "n_attempts",
+        # Note that we exlude one flowsheet that cannot be classified: qn = R RX MORPHINE NCA (1MG/ML) - DOSE GIVEN
+        # There are only 45 flowsheet entries for this flowsheet, we will leave out for now
+
         TRUE ~ NA_character_
       ),
 
