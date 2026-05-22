@@ -40,7 +40,7 @@
 #' @source "https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0"
 "dictionary_IMPACT_schema"
 
-#' Dynamic Dicts - Medications Routes
+#' Dynamic Dicts - Medications Route
 #'
 #' We source 4 dictonaries from the online google sheets.
 #' This table is the schema for which we do route conversions against.
