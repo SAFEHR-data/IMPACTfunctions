@@ -21,7 +21,26 @@ The dataset was built at UCLH with input from CUH NHS trust and others…
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.1.0
+Features in Package version: 0.1.0.9000
+
+### Future features
+
+The dataset also contains the following datapoints:
+
+- Blood transfusion administration data
+- Dispensed medication to establish the discharge medications
+- Medication prescriptions to understand the prescribing intention
+  behind meds administration
+- Imaging including the scan type, date and reports and radiologist
+- Bloods including pre-admission/pre-assessment bloods
+- Lines, drains and airways with LDA details, in/out times and
+  flow/volumes
+- Observations - Similar to measurements but what is observed.
+- The anaesthetic and operating room timepoints
+- Operation notes as freetext
+- List of the members of staff involved in each case
+- Patient movements though the hospital with their bedspace at each
+  timepoint.
 
 ## Installation
 

@@ -2,32 +2,32 @@ name: Check Version Increment
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
     paths:
       - 'DESCRIPTION'
       - '**.R'
       - '**.md'
+      - '**.Rmd'
 
 jobs:
   version-check:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - name: Checkout PR Branch
-        uses: actions/checkout@v4
+        uses: ./.github/actions/checkout   # <-- Points locally
         with:
           path: pr-branch
 
       - name: Checkout Base Branch
-        uses: actions/checkout@v4
+        uses: ./.github/actions/checkout   # <-- Points locally
         with:
           ref: ${{ github.base_ref }}
           path: base-branch
 
       - name: Set up R
-        uses: r-lib/actions/setup-r@v2
+        uses: ./.github/actions/setup-r    # <-- Points locally
 
       - name: Compare Versions
         shell: Rscript {0}
