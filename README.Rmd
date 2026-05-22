@@ -26,6 +26,25 @@ The dataset was built at UCLH with input from CUH NHS trust and others...
 
 : Features in Package version: `r desc::desc_get_version()`
 
+### Future features
+
+The dataset also contains the following datapoints:
+
+- Blood transfusion administration data
+- Dispensed medication to establish the discharge medications
+- Medication prescriptions to understand the prescribing intention behind meds administration
+- Imaging including the scan type, date and reports and radiologist
+- Bloods including pre-admission/pre-assessment bloods 
+- Lines, drains and airways with LDA details, in/out times and flow/volumes 
+- Observations - Similar to measurements but what is observed. 
+- The anaesthetic and operating room timepoints 
+- Operation notes as freetext
+- List of the members of staff involved in each case
+- Patient movements though the hospital with their bedspace at each timepoint. 
+
+
+
+
 ## Installation
 
 You can install the development version of IMPACTfunctions from [GitHub](https://github.com/) with:
