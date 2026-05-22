@@ -1,0 +1,55 @@
+name: Check Version Increment
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'DESCRIPTION'
+      - '**.R'
+      - '**.md'
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout PR Branch
+        uses: actions/checkout@v4
+        with:
+          path: pr-branch
+
+      - name: Checkout Base Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base-branch
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Compare Versions
+        shell: Rscript {0}
+        run: |
+          # Read versions using base R utils
+          desc_pr <- utils::packageDescription("pr-branch", fields = "Version")
+          desc_base <- utils::packageDescription("base-branch", fields = "Version")
+
+          # Fallback if DESCRIPTION doesn't exist in base (e.g., initial setup)
+          if (is.na(desc_base)) {
+            message("No base version found. Assuming first release.")
+            quit(status = 0)
+          }
+
+          ver_pr <- numeric_version(desc_pr)
+          ver_base <- numeric_version(desc_base)
+
+          message(sprintf("Base branch version: %s", ver_base))
+          message(sprintf("PR branch version:   %s", ver_pr))
+
+          if (ver_pr <= ver_base) {
+            stop("Error: Package version in DESCRIPTION has not been incremented.", call. = FALSE)
+          } else {
+            message("Success: Version has been incremented.")
+          }
