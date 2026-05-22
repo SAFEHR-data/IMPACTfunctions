@@ -2,11 +2,12 @@ name: Check Version Increment
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
     paths:
       - 'DESCRIPTION'
       - '**.R'
       - '**.md'
+      - '**.Rmd'
 
 jobs:
   version-check:
