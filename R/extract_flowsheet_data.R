@@ -16,11 +16,16 @@
 #' If *timeframe* = *"post_op"* it returns entries between operation datetime and discharge datetime.
 #' If *timeframe* = *"custom"* supply values for `t0` and either `t1` or `t_int`.
 #'
+#' Timeframe CSN
+#'
+#' To allow temporal subsetting for each flowsheet entry we need a t0 and t1 time to execute the logical check against. To generate this we need to left join a timeframe dataframe to the flowsheet data. We do this leftjoin using the `admission_csn` column by default. This may cause issues in cases where `admission_csn` is duplicated within `dataset`.
+#'
 #' @param dataset The procedures dataset to search across.
 #' @param flowsheet The flowsheet to extract from. Defaults to `Measurements`.
 #' @param flowsheet_question_name Name(s) of the flowsheet row(s) to extract. Set to `NULL` to return all rows.
 #' @param check_search Boolean. Validate that the flowsheet names provided exist in the data.
 #' @param timeframe Time window to search within. See details above.
+#' @param timeframe_csn The CSN which to use to join back the timeframe parameters.
 #' @param t0 If subsetting by time, a datetime column name to use as the start time.
 #' @param t_int If subsetting by time, the time interval from `t0`.
 #' @param t1 If subsetting by time, a datetime column name to use as the end time.
@@ -39,6 +44,7 @@ extract_flowsheet_data <- function(
     flowsheet_question_name = NA,
     check_search = TRUE,
     timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
+    timeframe_csn = "admission_csn",
     t0 = NA,
     t_int = NA,
     t1 = NA,
@@ -64,8 +70,14 @@ extract_flowsheet_data <- function(
   }
 
   if (length(flowsheet_question_name) > 1) {
-    if (verbose) cli::cli_alert_info("Vector of flowsheet names provided, returning rows matching any within the vector.")
+    if (verbose) cli::cli_alert_info("A Vector of flowsheet names provided, returning rows matching any within the vector.")
   }
+
+
+  if(dataset %>% select(all_of(timeframe_csn)) %>% duplicated() %>% any()){
+    cli::cli_alert_warning("There is duplication in {.val admission_csn} within {.val dataset}. This may cause duplication in the left join.")
+  }
+
 
   # Timeframe assignment
 
@@ -77,13 +89,13 @@ extract_flowsheet_data <- function(
     timeframe_df <- NA
   } else if (timeframe == "pre_op") {
     if (verbose) cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only pre-operative period.")
-    t0_col <- dataset %>% select(admission_csn, anaesthesia_csn, t0 = admission_date)
-    t1_col <- dataset %>% select(admission_csn, anaesthesia_csn, t1 = operation_date)
+    t0_col <- dataset %>% select(all_of(timeframe_csn), t0 = admission_date)
+    t1_col <- dataset %>% select(all_of(timeframe_csn), t1 = operation_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   } else if (timeframe == "post_op") {
     if (verbose) cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")
-    t0_col <- dataset %>% select(admission_csn, anaesthesia_csn, t0 = operation_date)
-    t1_col <- dataset %>% select(admission_csn, anaesthesia_csn, t1 = discharge_date)
+    t0_col <- dataset %>% select(all_of(timeframe_csn), t0 = operation_date)
+    t1_col <- dataset %>% select(all_of(timeframe_csn), t1 = discharge_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   } else if (timeframe == "custom") {
     if (verbose) cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching custom time period.")
@@ -97,7 +109,7 @@ extract_flowsheet_data <- function(
     if (!is.na(t_int)) {
 
       timeframe_df <- dataset %>%
-        select(admission_csn,anaesthesia_csn, t0 = all_of(t0)) %>%
+        select(all_of(timeframe_csn), t0 = all_of(t0)) %>%
         collect() %>%
         mutate(
           # Perform R-side arithmetic, then force UTC to match the Arrow schema
@@ -106,7 +118,7 @@ extract_flowsheet_data <- function(
 
     } else if (!is.na(t1)) {
       timeframe_df <- dataset %>%
-        select(admission_csn, anaesthesia_csn, t0 = all_of(t0), t1 = all_of(t1))
+        select(all_of(timeframe_csn), t0 = all_of(t0), t1 = all_of(t1))
     } else {
       cli::cli_abort("Unexpected state in timeframe logic. Please {.href [open an issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues)}.")
     }
@@ -119,11 +131,12 @@ extract_flowsheet_data <- function(
   # Validate flowsheet names
 
   if (check_search) {
+    if (verbose) cli::cli_h2("Checking search terms")
     name_check_soft <- search_flowsheet_name(flowsheet, flowsheet_question_name, verbose = FALSE)
     if (sum(name_check_soft$rows) < 1) {
       cli::cli_abort("{.arg flowsheet_question_name} ({.val {flowsheet_question_name}}) not found. Check spelling with {.fun search_flowsheet_name}.")
     } else {
-      if (verbose) cli::cli_alert_success("{.val {flowsheet_question_name}} found in flowsheet")
+      if (verbose) cli::cli_alert_success("The following flowsheets where found: {.val {flowsheet_question_name}}")
     }
 
     name_check_strict <- search_flowsheet_name(
@@ -142,39 +155,44 @@ extract_flowsheet_data <- function(
   }
 
   # Subsetting
+  if (verbose) cli::cli_h2("Subsetting data")
 
   # 2a - Subset for flowsheet rows
   if (is.null(flowsheet_question_name)) {
     subset <- flowsheet
+    if (verbose) cli::cli_alert_success("No specific flowsheet/s specified. Returning all ")
   } else {
     subset <- flowsheet %>% filter(flowsheet_question_name %in% !!flowsheet_question_name)
+    if (verbose) cli::cli_alert_success("Subsetting for specifed flowsheets")
   }
 
   # 2b - Subset for patients in dataset
   csn_vector <- dataset %>% pull(admission_csn) %>% na.omit()
   subset <- subset %>% filter(admission_csn %in% csn_vector)
-  if (verbose) cli::cli_alert_success("Removing flowsheet rows from patients not in dataset.")
+  if (verbose) cli::cli_alert_success("Subsetting for {.val admission_csn} in {.arg dataset}.")
 
   # ERROR CHECKING - See Github Issue: #31
-  if(length(timeframe_df)==1){
+  if(any(names(timeframe_df) %in% "anaesthesia_csn")){
     NULL
     # This is a bit of a bodge but when the datatype of the measuremtns sheet is fixed this whole section can be removed
-  }else if (typeof(subset %>% pull(anaesthesia_csn)) != typeof(timeframe_df %>% pull(anaesthesia_csn))) {
-    cli::cli_alert_danger("KNOWN BUG: {.val anaesthesia_csn} in Measurements is {.val int32} rather than {.val double}. Coercing to match. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/31)}")
-    subset <- subset %>% mutate(anaesthesia_csn = as.double(anaesthesia_csn))
-  } else {
-    cli::cli_alert_success("KNOWN BUG FIXED: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/31)}")
+    if (typeof(subset %>% pull(anaesthesia_csn)) != typeof(timeframe_df %>% pull(anaesthesia_csn))) {
+      cli::cli_alert_danger("KNOWN BUG: {.val anaesthesia_csn} in Measurements is {.val int32} rather than {.val double}. Coercing to match. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/31)}")
+      subset <- subset %>% mutate(anaesthesia_csn = as.double(anaesthesia_csn))
+    } else {
+      cli::cli_alert_success("KNOWN BUG FIXED: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/31)}")
+    }
+
   }
 
   # 2c - Subset for timeframe
   if (timeframe == "whole_flowsheet") {
     df <- subset
   } else {
-    df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "one-to-many")
+    df <- left_join(subset, timeframe_df, by=timeframe_csn, copy = TRUE, relationship = "one-to-many")
     df <- df %>%
       filter(recorded_date  > t0) %>%
       filter(recorded_date  < t1)
-    if (verbose) cli::cli_alert_success("Removing flowsheet rows outside specified timeframe.")
+    if (verbose) cli::cli_alert_success("Subsetting by {.val recorded_date} within {.arg timeframe}.")
   }
 
   return(df)
