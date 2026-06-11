@@ -73,7 +73,7 @@ extract_medication <- function(dataset,
 
   allowed_mar_source <- c("Hospital Encounter", "Anaesthesia", "Operation")
 
-  if(!is.na(mar_source)){
+  if(any(!is.na(mar_source))){
     if (!any(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} must contain at least one of: {.val {allowed_mar_source}}.")
     if (!all(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} contains invalid values. Only {.val {allowed_mar_source}} are permitted, check spelling.")
   }

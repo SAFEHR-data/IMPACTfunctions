@@ -10,6 +10,7 @@ extract_flowsheet_data(
   flowsheet_question_name = NA,
   check_search = TRUE,
   timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
+  timeframe_csn = "admission_csn",
   t0 = NA,
   t_int = NA,
   t1 = NA,
@@ -26,6 +27,8 @@ extract_flowsheet_data(
 \item{check_search}{Boolean. Validate that the flowsheet names provided exist in the data.}
 
 \item{timeframe}{Time window to search within. See details above.}
+
+\item{timeframe_csn}{The CSN which to use to join back the timeframe parameters.}
 
 \item{t0}{If subsetting by time, a datetime column name to use as the start time.}
 
@@ -57,6 +60,10 @@ If \emph{timeframe} = \emph{"whole_flowsheet"} (\strong{default}) it returns all
 If \emph{timeframe} = \emph{"pre_op"} it returns entries between admission datetime and operation datetime.
 If \emph{timeframe} = \emph{"post_op"} it returns entries between operation datetime and discharge datetime.
 If \emph{timeframe} = \emph{"custom"} supply values for \code{t0} and either \code{t1} or \code{t_int}.
+
+Timeframe CSN
+
+To allow temporal subsetting for each flowsheet entry we need a t0 and t1 time to execute the logical check against. To generate this we need to left join a timeframe dataframe to the flowsheet data. We do this leftjoin using the \code{admission_csn} column by default. This may cause issues in cases where \code{admission_csn} is duplicated within \code{dataset}.
 }
 \examples{
 \dontshow{
