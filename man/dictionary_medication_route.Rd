@@ -3,7 +3,7 @@
 \docType{data}
 \name{dictionary_medication_route}
 \alias{dictionary_medication_route}
-\title{Dynamic Dicts - Medications Routes}
+\title{Dynamic Dicts - Medications Route}
 \format{
 \subsection{\code{dictionary_medication_route}}{
 
