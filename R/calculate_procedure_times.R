@@ -1,9 +1,81 @@
-calculate_procedure_times <- function(dataset = NA,
+#' Calculate Consensus Procedure Start and End Times
+#'
+#' @description
+#' Often with the `Phases` table, a number of timestamps can be out of logical order or documented at the wriong time.
+#' This often comes down to errors opening/closing the anaesthetic chart or retrospective/lack of documentation.
+#'
+#' This function looks to establish if there is an error in documentation and establishing the most likely procedure start/end times.
+#'
+#' Outlier detection is done using the width between the series of timestamps for the start and end respectively.
+#' If the width is less than `start/end_width_limit` then a coalese statement picks the first value in order that is not `NA`.
+#' For the `start_time_columns` this searches from the last column and works backwards.
+#' For the `end_time_column` this searches from the first column backwards.
+#' If the temporal spread exceeds the respective `width_limit`, a median time is taken between all of the non-`NA` columns.
+#' (Note that this does include the outlier itself)
+#'
+#' @param dataset Study cohort (optional). If provided, filters the `phases` dataset
+#'   to include only matching `admission_csn` identifiers. This improves performance by only processing a subset of data.
+#' @param phases Surgical phases table.
+#'   Must include columns specified in `start_time_columns`, `end_time_columns`,
+#'   and core identifiers (`mrn`, `admission_csn`, `anaesthesia_csn`). Defaults to `Phases`.
+#' @param start_time_columns Character vector. Column names designating procedural
+#'   initiation milestones. Default sequence: `"anaesthesia_start"`, `"anaesthesia_ready"`,
+#'   `"patient_in_room"`, `"procedure_start"`. If width limit acceptable then will coalesce from the **LAST** column backwards.
+#' @param start_width_limit Numeric. The maximum acceptable duration (in minutes)
+#'   between the earliest and latest start times before triggering fallback median calculation. Default is 90.
+#' @param end_time_columns Character vector. Column names designating procedural
+#'   termination milestones. Default sequence: `"procedure_end"`, `"patient_out_of_room"`,
+#'   `"anaesthesia_end"`, `"in_recovery"`.  If width limit acceptable then will coalesce from the **FIRST** column backwards
+#' @param end_width_limit Numeric. The maximum acceptable duration (in minutes)
+#'   between the earliest and latest end times before triggering fallback median calculation. Default is 60.
+#' @param time_column_suffix Character. An optional suffix string appended to the
+#'   resulting consensus time columns (e.g., `start_time_[suffix]`).
+#' @param diagnostics Logical. If `TRUE` (default), intercepts processing to return a
+#'   list of diagnostic plots evaluating timestamp distribution widths. Useful to tune the function for different cohorts.
+#' @param verbose Logical. If `TRUE` (default), outputs execution alerts and processing
+#'   heuristics to the console via `cli`.
+#'
+#' @return If `diagnostics = TRUE`, returns a `list` containing two diagnostic plots.
+#'   If `diagnostics = FALSE`, returns a processed data frame containing `mrn`,
+#'   `admission_csn`, `anaesthesia_csn`, along with the resolved consensus start and end timestamps.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' library(dplyr)
+#' library(lubridate)
+#'
+#' # Mocking a workflow dataset
+#' mock_phases <- tibble(
+#'   mrn = c("1", "2"),
+#'   admission_csn = c(101, 102),
+#'   anaesthesia_csn = c(201, 202),
+#'   anaesthesia_start = ymd_hms(c("2026-06-15 08:00:00", "2026-06-15 09:00:00")),
+#'   anaesthesia_ready = ymd_hms(c("2026-06-15 08:15:00", "2026-06-15 09:10:00")),
+#'   patient_in_room   = ymd_hms(c("2026-06-15 08:20:00", "2026-06-15 09:15:00")),
+#'   procedure_start   = ymd_hms(c("2026-06-15 08:30:00", "2026-06-15 11:30:00")), # Case 2 out of limit
+#'   procedure_end     = ymd_hms(c("2026-06-15 10:00:00", "2026-06-15 13:00:00")),
+#'   patient_out_of_room = ymd_hms(c("2026-06-15 10:10:00", "2026-06-15 13:15:00")),
+#'   anaesthesia_end   = ymd_hms(c("2026-06-15 10:15:00", "2026-06-15 13:20:00")),
+#'   in_recovery       = ymd_hms(c("2026-06-15 10:30:00", "2026-06-15 13:45:00"))
+#' )
+#'
+#' # Execute calculation without diagnostics
+#' df_times <- calculate_procedure_times(
+#'   phases = mock_phases,
+#'   diagnostics = FALSE,
+#'   time_column_suffix = "derived"
+#' )
+#' print(df_times)
+#' }
+calculate_procedure_times <- function(dataset,
                                       phases = Phases,
                                       start_time_columns = c("anaesthesia_start","anaesthesia_ready", "patient_in_room", "procedure_start"),
                                       start_width_limit = 90,
                                       end_time_columns = c("procedure_end", "patient_out_of_room","anaesthesia_end", "in_recovery"),
                                       end_width_limit = 60,
+                                      time_column_suffix,
                                       diagnostics = TRUE,
                                       verbose = TRUE){
 
@@ -13,7 +85,7 @@ calculate_procedure_times <- function(dataset = NA,
   # `anaesthesia_end_IMPACT` is free for our pattern-validated output.
   # The raw documented Phases column stays as `anaesthesia_end`.
 
-  if(!is.na(dataset)){
+  if(!missing(dataset)){
     phases <- phases %>% filter(admission_csn %in% pull(dataset, admission_csn))
     if(verbose){cli::cli_alert_info("{.arg dataset} provided, proccesing {.arg phases} for only these patients")}
   }
@@ -37,8 +109,10 @@ calculate_procedure_times <- function(dataset = NA,
   if(diagnostics){
 
     cli::cli_alert_success("Returning the diagnostic plots. See {.fn ?calculate_procedure_times} for for  ")
-   result <- list(calculate_procedure_times_diagnostics_plot(phases, "start_width"),
-    calculate_procedure_times_diagnostics_plot(phases, "end_width"))
+   result <- list(
+     calculate_procedure_times_diagnostics_plot(phases, "start_width", width_limit = start_width_limit),
+    calculate_procedure_times_diagnostics_plot(phases, "end_width", width_limit = end_width_limit)
+    )
 
    return(result)
   }
@@ -47,32 +121,36 @@ calculate_procedure_times <- function(dataset = NA,
     mutate(start_width_acceptable = ifelse(start_width <= as.period(start_width_limit, unit = "mins"), TRUE, FALSE),
            end_width_acceptable = ifelse(end_width <= as.period(end_width_limit, unit = "mins"), TRUE, FALSE),)
 
-  ## To do to edit and review this to add the end time then return the rable
+
+  if(verbose){
+    cli::cli_alert_info("For each procedure checking if any outlier times. \nIf no outliers then coalesceing down (skipping) {.val NA} values) the columns: {.val {rev(start_time_columns)}}. \n If outlier detected taking the median time of columns")
+    cli::cli_alert_info("\nIf no outliers then coalesceing down the columns (skipping) {.val NA} values) {.val {end_time_columns}}. \n If outlier detected taking the median time of columns")
+
+     }
 
   phases <- phases %>% rowwise() %>%
     mutate(
       start_time = case_when(
-        start_width_acceptable  ~ reduce(pick(all_of(start_time_columns)), coalesce),
+        start_width_acceptable  ~ reduce(pick(all_of(rev(start_time_columns))), coalesce,),
         !start_width_acceptable ~ median(c_across(all_of(start_time_columns)), na.rm = TRUE),
         .default                = NA_POSIXct_
-      )
+      ),
+      end_time = case_when(
+          end_width_acceptable  ~ reduce(pick(all_of(end_time_columns)), coalesce, .dir = "backward"),
+          !end_width_acceptable ~ median(c_across(all_of(end_time_columns)), na.rm = TRUE),
+          .default                = NA_POSIXct_
+        )
     ) %>% ungroup()
 
 
+  phases <- phases %>% select(all_of(columns), start_time, end_time)
 
-### To do - Develop out this piece with an intelligent aspect to remove the outlier and then recalculate the median.
+  if(!missing(time_column_suffix)){
+    phases <- phases %>%
+      rename_with(~paste0(.,"_" , time_column_suffix), .cols = !all_of(columns))
+  }
 
-  phases %>% filter(!start_width_acceptable) %>%
-    mutate(
-      across(
-        all_of(start_time_columns),
-        ~ if_else(
-          abs(as.numeric(difftime(.x, start_time, units = "mins"))) > start_width_limit,
-          as.POSIXct(NA), # Ensure the NA injected matches the <dttm> class
-          .x
-        )
-      )
-    ) %>% View()
+return(phases)
 
 }
 
@@ -82,7 +160,8 @@ calculate_procedure_times <- function(dataset = NA,
 
 
 calculate_procedure_times_diagnostics_plot <- function(phases = phases,
-                                                       column_string
+                                                       column_string,
+                                                       width_limit
                                                        ){
 
   phases <- phases %>%
@@ -153,6 +232,18 @@ calculate_procedure_times_diagnostics_plot <- function(phases = phases,
       theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
             panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())+
       xlim(c(0, quants$Med*5))
+
+    if(!missing(width_limit)){
+      p_density <- p_density +
+        geom_vline(xintercept = width_limit, color = "green", linetype = "dashed", linewidth = 0.5) +
+        annotate("text",
+                 x = width_limit,
+                 # Positioned slightly higher on the y-axis to prevent label collisions if values are close
+                 y = rep(0, 4),
+                 label = paste0(column_string, "_limit set at ", width_limit),
+                 vjust = -0.5, hjust = -0.1, angle = 90, color = "green", size = 3.2)
+
+    }
 
     # 4. Vertically align and stack plots (3:1 ratio)
     plot <- p_density / p_box + plot_layout(heights = c(3, 1))
