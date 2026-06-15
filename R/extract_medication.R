@@ -111,6 +111,7 @@ extract_medication <- function(dataset,
         joining_column = "admission_csn"
       }
 
+    }
   }
 
   ## Assigning time points if used time frame argument
