@@ -95,13 +95,14 @@ extract_medication <- function(dataset,
     cli::cli_abort("No medication specifed {.arg medication} to search for. Please provide a medication to search for. \n\n If you intended to return all meds then set {.arg medication} = {.val NULL}. ")
   }
 
-  if(all(!is.na(mar_source))) {
+  if(length(mar_source)==1) {
     if ("Hospital Encounter" == mar_source){
       joining_column = "admission_csn"
     }else if ("Anaesthesia" == mar_source){
       joining_column = "anaesthesia_csn"
     }else if ("Operation" ==  mar_source){
       joining_column = "case_id"
+    }
     }else{
 
       if(length(pull(dataset, admission_csn) %>% duplicated()) !=0){
@@ -112,7 +113,7 @@ extract_medication <- function(dataset,
       }
 
     }
-  }
+
 
   ## Assigning time points if used time frame argument
   if(missing(timeframe)){
