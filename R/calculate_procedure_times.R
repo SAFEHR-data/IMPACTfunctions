@@ -86,7 +86,9 @@ calculate_procedure_times <- function(dataset,
   # The raw documented Phases column stays as `anaesthesia_end`.
 
   if(!missing(dataset)){
-    phases <- phases %>% filter(admission_csn %in% pull(dataset, admission_csn))
+    phases <- phases %>% filter(admission_csn %in% pull(dataset, admission_csn) |
+                                  mrn %in% pull(dataset, mrn) |
+                                  anaesthesia_csn %in% pull(dataset, anaesthesia_csn))
     if(verbose){cli::cli_alert_info("{.arg dataset} provided, proccesing {.arg phases} for only these patients")}
   }
 
@@ -95,7 +97,6 @@ calculate_procedure_times <- function(dataset,
     dplyr::collect()
 
   phases <- phases %>%
-    head(n = 1000) %>%
     rowwise() %>%
     mutate(start_min = min(c_across(all_of(start_time_columns)), na.rm = TRUE),
            start_max = max(c_across(all_of(start_time_columns)), na.rm = TRUE),
