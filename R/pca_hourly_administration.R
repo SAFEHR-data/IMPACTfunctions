@@ -25,7 +25,7 @@
 #' }
 #'
 #' @param pca_dataframe_cleaned A data frame containing structured, cleaned PCA observations. Must feature
-#'   the columns: \code{mrn}, \code{admission_csn}, \code{medication}, \code{date_time_recorded},
+#'   the columns: \code{mrn}, \code{admission_csn}, \code{simple_generic_name}, \code{date_time_recorded},
 #'   \code{dose_best_estimate}, \code{dose_best_basis}, \code{units}, \code{concentration_mismatch_flag},
 #'   and \code{interval_hours}.
 #' @param mar_df A data frame containing raw or parsed Medication Administration Record (MAR) logs.
@@ -44,7 +44,7 @@
 #'   the following structures:
 #'   \list{
 #'     \item{\code{mrn}, \code{admission_csn}}{Standardized character string patient/encounter keys.}
-#'     \item{\code{medication}}{Standardized character mapping label (\code{"Morphine"}, \code{"Oxycodone"}, or \code{"Fentanyl"}).}
+#'     \item{\code{simple_generic_name}}{Standardized character mapping label (\code{"Morphine"}, \code{"Oxycodone"}, or \code{"Fentanyl"}).}
 #'     \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
 #'     \item{\code{date_time_recorded}}{The original raw timestamp recorded in the EHR logs.}
 #'     \item{\code{time_hourly_start}, \code{time_hourly_end}}{\code{POSIXct} boundaries explicitly boxing the localized hour interval.}
@@ -87,7 +87,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
   # Sanity checks: ensure required columns exist in inputs
   # ---------------------------------------------------------------------------
   req_pcas_cols <- c(
-    "mrn","admission_csn","medication","date_time_recorded",
+    "mrn","admission_csn","simple_generic_name","date_time_recorded",
     "dose_best_estimate","dose_best_basis","units",
     "concentration_mismatch_flag",
     "interval_hours"              # used for first-row anchoring logic
@@ -162,14 +162,14 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
     # Keep only PCA meds, IV route, and rows with a timestamp %>%
     # Map MAR medication text -> standardized medication labels
     mutate(
-      medication = case_when(
-        str_detect(str_to_lower(medication_raw), "morphine") ~ "Morphine",
-        str_detect(str_to_lower(medication_raw), "oxycod")   ~ "Oxycodone",
-        str_detect(str_to_lower(medication_raw), "fent")     ~ "Fentanyl",
+      simple_generic_name = case_when(
+        str_detect(str_to_lower(medication_raw), "morphine") ~ "morphine sulfate",
+        str_detect(str_to_lower(medication_raw), "oxycod")   ~ "oxycodone hydrochloride",
+        str_detect(str_to_lower(medication_raw), "fent")     ~ "fentanyl",
         TRUE ~ NA_character_
       )
     ) %>%
-    filter(!is.na(medication)) %>%
+    filter(!is.na(simple_generic_name)) %>%
     # Start of validity: 1 hour before admin, floored to the hour
     mutate(time_valid = floor_date(administration_instant - hours(1), "hour")) %>%
     arrange(mrn, case_id, admission_csn, anaesthesia_csn, administration_instant) %>%
@@ -199,7 +199,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
     ) %>%
     select(
       mrn, case_id, admission_csn, anaesthesia_csn, operation_csn, mar_id,
-      medication, medication_raw, administration_instant,
+      simple_generic_name, medication_raw, administration_instant,
       time_valid, time_valid_end
     )
 
@@ -235,7 +235,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
   #
   # Then floor row_start_time to an hour boundary.
   pcas_with_row_start <- clean_pca_aug %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       prev_time = dplyr::lag(date_time_recorded),
@@ -303,7 +303,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
     ) %>%
     tidyr::unnest(hour_starts) %>%
     transmute(
-      mrn, admission_csn, medication, units,
+      mrn, admission_csn, simple_generic_name, units,
       date_time_recorded,
       time_hourly_start = hour_starts,
       time_hourly_end   = hour_starts + hours(1),
@@ -311,17 +311,17 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
       dose_best_basis,
       concentration_mismatch_flag
     ) %>%
-    arrange(mrn, admission_csn, medication, time_hourly_start)
+    arrange(mrn, admission_csn, simple_generic_name, time_hourly_start)
 
   if(verbose){cli::cli_progress_step("Matching flowsheet data to MAR")}
   # ===========================================================================
   # 3) MAR matching
   # ===========================================================================
-  # Build a lightweight matching table and join by (mrn, medication).
+  # Build a lightweight matching table and join by (mrn, simple_generic_name).
   # A hit occurs when the hour bucket END falls within [time_valid, time_valid_end].
   mar_for_match <- mar_check %>%
     transmute(
-      mrn, medication, mar_id,
+      mrn, simple_generic_name, mar_id,
       time_valid     = as.POSIXct(time_valid,     tz = tz),
       time_valid_end = as.POSIXct(time_valid_end, tz = tz)
     )
@@ -332,7 +332,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
 
   # For each hourly PCA row, determine if it matches any MAR window.
   hits_mrn <- pcas_with_id %>%
-    left_join(mar_for_match, by = c("mrn", "medication")) %>%
+    left_join(mar_for_match, by = c("mrn", "simple_generic_name")) %>%
     mutate(
       hit = !is.na(mar_id) &
         !is.na(time_hourly_end) & !is.na(time_valid) & !is.na(time_valid_end) &
@@ -407,7 +407,7 @@ pca_hourly_administration <- function(pca_dataframe_cleaned = pca_dataframe_clea
     non_dupe_rows %>% select(-.row_id),
     dupes_step2_keep %>% select(-.row_id)
   ) %>%
-    arrange(mrn, admission_csn, medication, time_hourly_start, time_hourly_end)
+    arrange(mrn, admission_csn, simple_generic_name, time_hourly_start, time_hourly_end)
 
   # Flag remaining duplicates after cleaning
   pcas_hourly_cleaned_flag <- pcas_hourly_cleaned %>%
