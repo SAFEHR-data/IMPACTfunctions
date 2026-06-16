@@ -63,7 +63,7 @@ calculate_medication_feature <- function(dataset,
   ## Step 3 further filtering and cleaning of data
 
 
-  # We return the join on the csn of choise determined by the `link_column` entery
+  # We return the join on the csn of choice determined by the `link_column` entery
 
   if(link_column == "admission_csn"){
     csn_vector_name <- "admission_csn"
