@@ -2,7 +2,7 @@ name: Check Version Increment
 
 on:
   pull_request:
-    branches: [ main, master, dev ]
+    branches: [ main, master ]
     paths:
       - 'DESCRIPTION'
       - '**.R'
