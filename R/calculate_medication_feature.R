@@ -125,6 +125,10 @@ calculate_medication_feature <- function(dataset,
     result <-  data.frame(csn_vector) %>%
       mutate(match_status = csn_vector %in% MAR_df[[csn_vector_name]])
 
+    if(!all(result$match_status)){
+      cli::cli_alert_warning("No patients have a positive result. Check your arguments.")
+    }
+
 
   }else if(feature == "sum_dose"){
 
@@ -135,6 +139,10 @@ calculate_medication_feature <- function(dataset,
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       summarise(result = sum(dose, na.rm = FALSE)) %>%
       collect()
+
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
 
   }else if(feature == "sum_ome"){
 
@@ -148,11 +156,19 @@ calculate_medication_feature <- function(dataset,
       summarise(result = sum(ome, na.rm = TRUE)) %>%
       collect()
 
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
+
   }else if(feature == "count"){
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       summarise(result = n()) %>%
       collect()
+
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
 
   }
 
