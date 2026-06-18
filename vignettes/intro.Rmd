@@ -114,6 +114,8 @@ rm(dataset_1)
 
 tonsillectomy <- cohort_procedure_codes(Procedures, cohort_name = "Tonsillectomy", include_OPCS = c("F34", "F35"))
 
+df <- tonsillectomy %>% collect()
+
 ```
 
 ```{r}

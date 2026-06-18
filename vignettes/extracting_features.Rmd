@@ -18,7 +18,9 @@ knitr::opts_chunk$set(
 
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-library(IMPACTfunctions)
+#library(IMPACTfunctions)
+library(devtools)
+load_all()
 library(arrow)
 library(dplyr)
 ```
@@ -53,6 +55,7 @@ We will load the most recent 100 patients for example
 dataset <- cohort_complete_admissions(Procedures) %>% cohort_procedure_codes( cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
 
 df <- dataset %>% collect()
+
 
 ```
 
@@ -116,10 +119,10 @@ We note that the extract_medications function uses the preproccess_mar function 
 
 ```{r}
 
-morphine <- extract_medication(dataset,
-                                       MAR = HospitalMar,
-                                       medication = medication
-                                       )
+morphine <- extract_medication(dataset = df,
+                               MAR = HospitalMar,
+                               medication = medication
+                               )
 
 morphine %>% collect() %>% head()
 ```
@@ -130,9 +133,10 @@ We can use the t_0, t_int and t_1 to provide custom time points to subset betwee
 ```{r}
 
 
-post_op_morphine <- extract_medication(dataset,
+post_op_morphine <- extract_medication(dataset = df,
                                        MAR = HospitalMar,
                                        medication = medication,
+                                       search_column = "simple_generic_name",
                                        timeframe = "custom",
                                        t0 = "operation_date",
                                        t1 = "discharge_date",
@@ -141,12 +145,13 @@ post_op_morphine <- extract_medication(dataset,
 post_op_morphine_3hr <- extract_medication(dataset,
                                        MAR = HospitalMar,
                                        medication = medication,
+                                       search_column = "simple_generic_name",
                                        timeframe = "custom",
                                        t0 = "operation_date",
                                        t_int = lubridate::hours(3),
                                        verbose = TRUE)
 
-post_op_morphine_3hr %>% collect()
+post_op_morphine_3hr <- post_op_morphine_3hr %>% collect()
 
 
 ```
@@ -156,10 +161,10 @@ post_op_morphine_3hr %>% collect()
 ```{r}
 
 
-calculate_medication_feature(dataset = df, 
-                             MAR = post_op_morphine %>% collect(),
+df <- calculate_medication_feature(dataset = df, 
+                             MAR = post_op_morphine,
                              feature = "sum_ome",
-                             feature_name = "Moprhine",
+                             feature_name = "summed_ome",
                              format = "joined",
                              overide_dose_check  = TRUE)
 
@@ -277,10 +282,11 @@ dataset <- cohort_complete_admissions(Procedures) %>%
  heart_rate <- extract_flowsheet_data(dataset = Procedures,
    flowsheet = Measurements,
     flowsheet_question_name = "Pulse",
-    timeframe = "whole_flowsheet"
+    timeframe = "whole_flowsheet",
+   
    )
  
-  dataset <- calculate_flowsheet_feature(dataset,
+  df <- calculate_flowsheet_feature(df,
     flowsheet = heart_rate,
     format = "joined",
     feature = "mean_values",
@@ -290,7 +296,7 @@ dataset <- cohort_complete_admissions(Procedures) %>%
   hr_table <- calculate_flowsheet_feature(dataset,
     flowsheet = heart_rate,
     format = "table",
-    feature = "mean_values",
+    feature = "list_values",
     feature_name = "post_op_hr_values")
 
 
