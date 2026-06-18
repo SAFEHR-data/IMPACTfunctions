@@ -48,7 +48,8 @@ Other cohort_enforce:
 \code{\link{cohort_enforce_dates_ordered}()},
 \code{\link{cohort_enforce_discharged}()},
 \code{\link{cohort_enforce_opt_out}()},
-\code{\link{cohort_enforce_procedure_coded}()}
+\code{\link{cohort_enforce_procedure_coded}()},
+\code{\link{cohort_enforce_single_procedure}()}
 }
 \concept{cohort_enforce}
 \keyword{internal}

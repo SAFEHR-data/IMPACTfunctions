@@ -15,7 +15,7 @@ pca_hourly_administration(
 }
 \arguments{
 \item{pca_dataframe_cleaned}{A data frame containing structured, cleaned PCA observations. Must feature
-the columns: \code{mrn}, \code{admission_csn}, \code{medication}, \code{date_time_recorded},
+the columns: \code{mrn}, \code{admission_csn}, \code{simple_generic_name}, \code{date_time_recorded},
 \code{dose_best_estimate}, \code{dose_best_basis}, \code{units}, \code{concentration_mismatch_flag},
 and \code{interval_hours}.}
 
@@ -38,7 +38,7 @@ A data frame containing hourly resampled PCA administration entries with
 the following structures:
 \list{
 \item{\code{mrn}, \code{admission_csn}}{Standardized character string patient/encounter keys.}
-\item{\code{medication}}{Standardized character mapping label (\code{"Morphine"}, \code{"Oxycodone"}, or \code{"Fentanyl"}).}
+\item{\code{simple_generic_name}}{Standardized character mapping label (\code{"Morphine"}, \code{"Oxycodone"}, or \code{"Fentanyl"}).}
 \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
 \item{\code{date_time_recorded}}{The original raw timestamp recorded in the EHR logs.}
 \item{\code{time_hourly_start}, \code{time_hourly_end}}{\code{POSIXct} boundaries explicitly boxing the localized hour interval.}

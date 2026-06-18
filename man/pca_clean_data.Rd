@@ -49,11 +49,11 @@ uniform POSIXct parsing across clinical timestamps. Default is \code{"Europe/Lon
 }
 \value{
 A data frame in a wide format (one row per unique \code{mrn}, \code{admission_csn},
-\code{date_time_recorded}, and \code{medication} combination) containing the following columns:
+\code{date_time_recorded}, and \code{simple_generic_name} combination) containing the following columns:
 \list{
 \item{\code{mrn}, \code{admission_csn}, \code{case_id}}{Standardized character string patient/encounter keys.}
 \item{\code{date_time_recorded}}{A unified \code{POSIXct} timestamp denoting record execution time.}
-\item{\code{medication}}{A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).}
+\item{\code{simple_generic_name}}{A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).}
 \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
 \item{\code{n_attempts}, \code{n_given}}{Resolved cumulative integers tracking patient demands and delivered boluses.}
 \item{\code{dose_administered}, \code{volume_administered}}{Aggregated amounts administered at the observation window.}

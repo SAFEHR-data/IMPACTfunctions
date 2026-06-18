@@ -9,13 +9,14 @@ pca_summarise_bins(
   phases = Phases,
   tz = "Europe/London",
   bins_hours = c(0, 24, 48, 72, 96, 120, 146),
-  ome_conv = tibble::tribble(~medication, ~units, ~ome_per_unit, "Morphine", "mg", 3,
-    "Oxycodone", "mg", 4.5, "Fentanyl", "mcg", 0.3)
+  ome_conv = tibble::tribble(~simple_generic_name, ~units, ~ome_per_unit,
+    "morphine sulfate", "mg", 3, "oxycodone hydrochloride", "mg", 4.5, "fentanyl", "mcg",
+    0.3)
 )
 }
 \arguments{
 \item{pca_hourly}{A data frame or tibble containing hourly resampled and crossover-resolved
-PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{medication}, \code{units},
+PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{simple_generic_name}, \code{units},
 \code{time_hourly_start}, \code{time_hourly_end}, and \code{dose_best_estimate_hourly}.}
 
 \item{phases}{A data frame containing administrative peroperative or post-anaesthetic milestone logs.
@@ -29,15 +30,15 @@ uniform POSIXct parsing across clinical timestamps. Default is \code{"Europe/Lon
 post-operative tracking arrays. Default is \code{c(0, 24, 48, 72, 96, 120, 146)}.}
 
 \item{ome_conv}{A data frame or tibble establishing equianalgesic multipliers relative to core
-clinical dosing scales. Must contain mapping columns: \code{medication}, \code{units}, and \code{ome_per_unit}.
+clinical dosing scales. Must contain mapping columns: \code{simple_generic_name}, \code{units}, and \code{ome_per_unit}.
 Default contains standard institutional conversion metrics for Morphine, Oxycodone, and Fentanyl.}
 }
 \value{
 A data frame formatted in a wide schema—one row per unique \code{mrn}, \code{admission_csn},
-and \code{medication} combination—exposing the following metadata layout:
+and \code{simple_generic_name} combination—exposing the following metadata layout:
 \list{
 \item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
-\item{\code{medication}}{The specific analgesic categorical identifier string.}
+\item{\code{simple_generic_name}}{The specific analgesic categorical identifier string.}
 \item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
 \item{\code{dose_*.h}}{Dynamic columns tracking raw summed medication totals consumed inside each interval break.}
 \item{\code{ome_*.h}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical boundaries.}
