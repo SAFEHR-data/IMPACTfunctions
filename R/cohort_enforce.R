@@ -289,3 +289,45 @@ cohort_enforce_opt_out <- function(procedures_table,
   }
 
 }
+
+#' Eligibility criteria: Remove procedures after the index (first) procedure of the encounter.
+#'
+#' A number of functions rely on a single surgical procedure per hospital encounter. This is due to the difficulties with left joins not directly linked to the  anaesthetic_csn.
+#' See Data schema for exact details on how the flag is triggered.
+#'
+#' @inheritParams cohort_enforce_family
+#' @family cohort_enforce
+#' @export
+#'
+cohort_enforce_single_procedure <- function(procedures_table,
+                                            diagnostics = FALSE){
+
+  prior <- nrow(procedures_table)
+  procedures_table_filtered <- procedures_table %>% group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup()
+  filtered <- prior - nrow(procedures_table_filtered)
+
+  if(verbose){
+    cli::cli_alert("Filtering out {.val {filtered}} procedures that are not index (first procedure of encounter). ")
+  }
+
+  if(add_to_eligability_criteria){
+    eligibility_criteria_add(type = "Exclusion",
+                             text = "Procedures subsequent to index procedure",
+                             function_name = "cohort_enforce_single_procedure()",
+                             function_filter = "group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup()",
+                             n_prior = prior,
+                             n_filtered = filtered)
+  }
+
+  if(diagnostics){
+    return(list("included" = procedures_table_filtered,
+                "excluded" =  procedures_table %>% dplyr::filter(!case_id %in% (procedures_table_filtered %>% pull(case_id, as_vector = FALSE))))
+    )
+  }else{
+    return(procedures_table_filtered)
+  }
+
+}
+
+
+
