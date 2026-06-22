@@ -27,6 +27,8 @@
 #'   raw PCA flowsheet records from the EHR.
 #' @param phases_dataframe A data frame mapping patient clinical operational phases
 #'   (utilized within downstream optimization steps).
+#' @param dataset Study cohort (optional). If provided, filters the `phases_dataframe` dataset
+#'   to include only matching `admission_csn` identifiers. This improves performance by only processing a subset of data.
 #' @param near_full_threshold A numeric value establishing the lower volumetric boundary
 #'   (in mL) above which an infusion reservoir is classified as "near full". Default is `95`.
 #' @param min_jump_ml A numeric value defining the minimum positive volumetric delta (in mL)
@@ -42,18 +44,18 @@
 #'   Default is `c(0, 0.5, 1.0, 1.5, 2.0)`.
 #' @param tz A character string specifying the Olson time zone convention used to enforce
 #'   uniform POSIXct parsing across clinical timestamps. Default is `"Europe/London"`.
+#' @param verbose Logical. If `TRUE` (default), outputs execution alerts and processing
+#'   heuristics to the console via `cli`.
 #'
 #' @return A data frame in a wide format (one row per unique `mrn`, `admission_csn`,
 #'   `date_time_recorded`, and `simple_generic_name` combination) containing the following columns:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}, \code{case_id}}{Standardized character string patient/encounter keys.}
-#'     \item{\code{date_time_recorded}}{A unified \code{POSIXct} timestamp denoting record execution time.}
-#'     \item{\code{simple_generic_name}}{A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).}
-#'     \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
-#'     \item{\code{n_attempts}, \code{n_given}}{Resolved cumulative integers tracking patient demands and delivered boluses.}
-#'     \item{\code{dose_administered}, \code{volume_administered}}{Aggregated amounts administered at the observation window.}
-#'     \item{\code{reservoir_volume_remaining}}{The chronologically resolved residual volume within the pump reservoir.}
-#'   }
+#' * `mrn`, `admission_csn`, `case_id`: Standardized character string patient/encounter keys.
+#' * `date_time_recorded`: A unified `POSIXct` timestamp denoting record execution time.
+#' * `simple_generic_name`: A cleaned character identifier (`"morphine"`, `"oxycodone"`, or `"fentanyl"`).
+#' * `units`: The localized unit label assigned to the dosage metrics.
+#' * `n_attempts`, `n_given`: Resolved cumulative integers tracking patient demands and delivered boluses.
+#' * `dose_administered`, `volume_administered`: Aggregated amounts administered at the observation window.
+#' * `reservoir_volume_remaining`: The chronologically resolved residual volume within the pump reservoir.
 #'
 #' @export
 #'

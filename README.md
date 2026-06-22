@@ -21,7 +21,7 @@ The dataset was built at UCLH with input from CUH NHS trust and others…
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.1.0.9000
+Features in Package version: 0.1.0.9002
 
 ### Future features
 
@@ -54,6 +54,10 @@ You can install the development version of IMPACTfunctions from
 # Then set that to your R session:
 gitcreds::gitcreds_set()
 
+#If using a virtual machine:
+Sys.setenv(https_proxy="") 
+Sys.setenv(http_proxy="")
+
 # Install package from github:
 remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
                         auth_token = gitcreds::gitcreds_get()$password)
@@ -62,7 +66,7 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 ## FAQ and error troubleshooting
 
 See the
-[`FAQ.md`](https://github.com/SAFEHR-data/IMPACTfunctions/blob/3-add-pca-function/FAQ.md)
+[`FAQ.md`](https://github.com/SAFEHR-data/IMPACTfunctions/blob/main/FAQ.md)
 file or tips on the troubleshooting and explaning common errors. Leve a
 github issue with any more complex issues.
 

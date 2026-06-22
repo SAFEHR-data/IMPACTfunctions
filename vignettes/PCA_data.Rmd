@@ -10,13 +10,14 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE # Don't evalute the code blocks below as we do not have PCA data synthetic
 )
 ```
 
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-devtools::load_all()
+library(IMPACTfunctions)
 library(arrow)
 library(dplyr)
 ```
@@ -57,6 +58,7 @@ df <- rbind(c1, c2)
 
 ```
 
+> NOTE: The PCA synthetic data is not avalible at presnet. The code blocks below do not run so produce no results. This code should work with a real dataset. 
 
 
 # How to use PCA (Patient Controlled Analgesia) functions. 
@@ -72,7 +74,7 @@ James Bedford has written an impressed and detailed set of functions to proccess
 
 Below is a diagram that helps to explain the flow of data though the various functions.
 
-![](./vignettes/pca_flow_diagram.png)
+![](pca_flow_diagram.png)
 
 The initial phase ingest raw flowsheet inputs and clinical datasets to enforce structural integrity. The `pca_clean_data()` function parses structural metadata, removes duplicate charting artifacts, normalises clinical timestamps, and filters extraneous rows to isolate valid PCA events.
 

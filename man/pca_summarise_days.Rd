@@ -51,17 +51,17 @@ during execution. Default is \code{TRUE}.}
 A data frame formatted in a wide analytical schema—one row per unique
 \code{mrn}, \code{admission_csn}, and \code{simple_generic_name} combination—exposing
 the following metadata layout:
-\list{
-\item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
-\item{\code{simple_generic_name}}{The specific analgesic categorical identifier string.}
-\item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
-\item{\code{dose_day_0 ... dose_day_7}}{Dynamic columns tracking raw summed medication totals consumed inside each daily interval.}
-\item{\code{ome_day_0 ... ome_day_7}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical daily boundaries.}
-}
+\itemize{
+\item \code{mrn}, \code{admission_csn}, \code{admission_csn_key}: Standardized and normalized patient/encounter keys.
+\item \code{simple_generic_name}: The specific analgesic categorical identifier string.
+\item \code{postop_anchor}: The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.
+\item \verb{dose_day_0 ... dose_day_7}: Dynamic columns tracking raw summed medication totals consumed inside each daily interval.
+\item \verb{ome_day_0 ... ome_day_7}: Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical daily boundaries
 
 If no valid post-operative anchors are detected across the input cohort, a
 warning is issued and an empty named \code{list} containing two structured
 tibbles (\code{days_per_med} and \code{days_ome_by_admission}) is returned.
+}
 }
 \description{
 \code{pca_summarise_days()} constructs an administrative post-operative clinical
@@ -76,7 +76,7 @@ The processing pipeline implements the following systematic logic:
 \enumerate{
 \item \strong{Clinical Post-Op Anchoring:} Discovers a deterministic surgical
 baseline timestamp per encounter by evaluating phase records hierarchically:
-\code{patient_out_of_room} \rightarrow \code{in_recovery} \rightarrow \code{anaesthesia_end}.
+\code{patient_out_of_room} -> \code{in_recovery} -> \code{anaesthesia_end}.
 Encounters completely lacking milestone timestamps are pruned from downstream evaluation.
 \item \strong{Asymmetric Boundary Partitioning:} Maps each encounter to an
 asymmetric temporal matrix. Post-operative day 0 (\code{day_0}) represents a

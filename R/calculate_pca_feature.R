@@ -17,7 +17,7 @@ calculate_pca_feature <- function(dataset,
   if(!missing(filter_medication)){
     pca_hourly %>% filter(simple_generic_name %in% filter_medication)
     if(nrow(pca_hourly)==0){
-      cli::cli_abort("FIltered out all the rows, please check {.arg filter_medication} are valid")
+      cli::cli_abort("Filtered out all the rows, please check {.arg filter_medication} are valid")
     }
   }
 

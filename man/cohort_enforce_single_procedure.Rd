@@ -4,12 +4,21 @@
 \alias{cohort_enforce_single_procedure}
 \title{Eligibility criteria: Remove procedures after the index (first) procedure of the encounter.}
 \usage{
-cohort_enforce_single_procedure(procedures_table, diagnostics = FALSE)
+cohort_enforce_single_procedure(
+  procedures_table,
+  add_to_eligability_criteria = TRUE,
+  diagnostics = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{procedures_table}{A arrow database binding to the procedures table}
 
+\item{add_to_eligability_criteria}{If we want to add this level of filtering to the \code{eligability_criteria} dataframe}
+
 \item{diagnostics}{To check the eligibility criteria, \code{diagnostics=TRUE} will return the filtered data but also the excluded data}
+
+\item{verbose}{Print outputs of the function}
 }
 \description{
 A number of functions rely on a single surgical procedure per hospital encounter. This is due to the difficulties with left joins not directly linked to the  anaesthetic_csn.

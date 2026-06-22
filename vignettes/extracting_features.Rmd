@@ -18,9 +18,9 @@ knitr::opts_chunk$set(
 
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
-#library(IMPACTfunctions)
-library(devtools)
-load_all()
+library(IMPACTfunctions)
+#library(devtools)
+#load_all()
 library(arrow)
 library(dplyr)
 ```

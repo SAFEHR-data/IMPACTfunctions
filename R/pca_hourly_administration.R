@@ -42,19 +42,17 @@
 #'
 #' @return A data frame containing hourly resampled PCA administration entries with
 #'   the following structures:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}}{Standardized character string patient/encounter keys.}
-#'     \item{\code{simple_generic_name}}{Standardized character mapping label (\code{"Morphine"}, \code{"Oxycodone"}, or \code{"Fentanyl"}).}
-#'     \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
-#'     \item{\code{date_time_recorded}}{The original raw timestamp recorded in the EHR logs.}
-#'     \item{\code{time_hourly_start}, \code{time_hourly_end}}{\code{POSIXct} boundaries explicitly boxing the localized hour interval.}
-#'     \item{\code{dose_best_estimate_hourly}}{Amortized numeric dosage fraction mapping across the specific hour frame.}
-#'     \item{\code{dose_best_basis}}{Character string recording the source math or rationale behind the baseline estimate.}
-#'     \item{\code{concentration_mismatch_flag}}{Logical indicator identifying downstream concentration calculation conflicts.}
-#'     \item{\code{valid_prescription}}{Logical flag indicating whether an active MAR order backed this specific hour frame.}
-#'     \item{\code{matched_orders}}{Character string containing comma-separated MAR order identifiers validating the window.}
-#'     \item{\code{still_duplicated}}{Logical indicator flagging if unresolved multi-medication record collisions remain.}
-#'   }
+#' * `mrn`, `admission_csn`: Standardized character string patient/encounter keys.
+#' * `simple_generic_name`: Standardized character mapping label (`"Morphine"`, `"Oxycodone"`, or `"Fentanyl"`).
+#' * `units`: The localized unit label assigned to the dosage metrics.
+#' * `date_time_recorded`: The original raw timestamp recorded in the EHR logs.
+#' * `time_hourly_start`, `time_hourly_end`: `POSIXct` boundaries explicitly boxing the localized hour interval.
+#' * `dose_best_estimate_hourly`: Amortized numeric dosage fraction mapping across the specific hour frame.
+#' * `dose_best_basis`: Character string recording the source math or rationale behind the baseline estimate.
+#' * `concentration_mismatch_flag`: Logical indicator identifying downstream concentration calculation conflicts.
+#' * `valid_prescription`: Logical flag indicating whether an active MAR order backed this specific hour frame.
+#' * `matched_orders`: Character string containing comma-separated MAR order identifiers validating the window.
+#' * still_duplicated: Logical indicator flagging if unresolved multi-medication record collisions remain.
 #'
 #' @export
 #'

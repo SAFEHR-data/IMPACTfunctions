@@ -24,8 +24,10 @@ Imports:
     lubridate,
     purrr,
     tibble,
-    tidyr
+    tidyr,
+    stats
 Suggests: 
     knitr,
+    patchwork,
     rmarkdown
 VignetteBuilder: knitr

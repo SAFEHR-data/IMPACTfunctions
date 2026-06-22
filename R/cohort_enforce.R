@@ -300,8 +300,9 @@ cohort_enforce_opt_out <- function(procedures_table,
 #' @export
 #'
 cohort_enforce_single_procedure <- function(procedures_table,
+                                            add_to_eligability_criteria=TRUE,
                                             diagnostics = FALSE,
-                                            verbose){
+                                            verbose = FALSE){
 
   prior <- nrow(procedures_table)
   procedures_table_filtered <- procedures_table %>% group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup()

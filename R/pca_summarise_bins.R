@@ -42,13 +42,11 @@
 #'
 #' @return A data frame formatted in a wide schema—one row per unique \code{mrn}, \code{admission_csn},
 #'   and \code{simple_generic_name} combination—exposing the following metadata layout:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
-#'     \item{\code{simple_generic_name}}{The specific analgesic categorical identifier string.}
-#'     \item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
-#'     \item{\code{dose_*.h}}{Dynamic columns tracking raw summed medication totals consumed inside each interval break.}
-#'     \item{\code{ome_*.h}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical boundaries.}
-#'   }
+#' * `mrn`, `admission_csn`, `admission_csn_key`: Standardized and normalized patient/encounter keys.
+#' * `simple_generic_name`: The specific analgesic categorical identifier string.
+#' * `postop_anchor`: The derived `POSIXct` baseline surgical timestamp utilized for lookbacks.
+#' * `dose_*.h`: Dynamic columns tracking raw summed medication totals consumed inside each interval break.
+#' * `ome_*.h`: Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical boundaries.
 #'
 #' @export
 #'

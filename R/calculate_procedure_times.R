@@ -39,6 +39,7 @@
 #'   If `diagnostics = FALSE`, returns a processed data frame containing `mrn`,
 #'   `admission_csn`, `anaesthesia_csn`, along with the resolved consensus start and end timestamps.
 #'
+#' @import patchwork
 #' @export
 #'
 #' @examples
