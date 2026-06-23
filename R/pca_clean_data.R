@@ -157,20 +157,33 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   }
 
 
+ duplicate_join_check <-  PCA_dataframe %>%
+    group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type) %>%
+    summarise(n=n()) %>%
+    arrange(desc(n))
+
+ if(any(duplicate_join_check$n != 1)){
+   cli::cli_alert_danger("Duplication of rows due to left join. Filtering to fix")
+   PCA_dataframe <- PCA_dataframe %>% select(-case_id, -anaesthesia_csn, -operation_csn) %>% distinct()
+
+ }
+
+ ## Remove zero length time rows
+
   # Collapse duplicates at the same (patient/admission/case/time/med/var).
   # Rules:
   #   - dose/volume: sum distinct values (often recorded as cumulative components)
   #   - reservoir: take the "latest" reading by (line_end or effective_time)
   #   - counters: take max (counters are cumulative; max is safest)
-  pcas_collapsed <- pcas_long_keyed %>%
-    group_by(mrn, admission_csn, case_id, effective_time, simple_generic_name, var) %>%
+  pcas_collapsed <- PCA_dataframe %>%
+    group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type) %>%
     reframe(
       value = {
-        vtype <- first(var)
+        vtype <- first(flowsheet_type)
         if (vtype %in% c("dose_administered", "volume_administered")) {
           sum_distinct(numeric_value)
         } else if (vtype == "reservoir_volume_remaining") {
-          pick_time <- coalesce(line_end, effective_time)
+          pick_time <- coalesce(line_end, recorded_date)
           numeric_value[which.max(pick_time)]
         } else {
           if (all(is.na(numeric_value))) NA_real_ else max(numeric_value, na.rm = TRUE)
