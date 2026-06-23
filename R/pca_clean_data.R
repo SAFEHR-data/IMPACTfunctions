@@ -103,7 +103,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     cli::cli_alert_info("Subsetting for your patient cohort")
   }
 
-  if(verbose){cli::cli_progress_step("Filtering medications")}
+  if(verbose){cli::cli_progress_step("Labelling and filtering medications")}
 
   ## Step 1 - Label medications with simple_generic_name and filter out excluded medications
 
@@ -131,34 +131,30 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     cli::cli_abort("DEVELOPER ERROR - RAISE GITHUB ISSUE IF YOU SEE THIS MESSAGE: \n \n Some drugs have not been labeled. Review dataset, excluded medication list or string matching.")
   }
 
-  if(verbose){cli::cli_progress_step("Reformatting flowsheet")}
-  # ===========================================================================
-  # STEP 1: Classify rows into PCA variables, parse times, collapse duplicates
-  # ===========================================================================
-  # Here we:
-  #   1) Create a "flowsheet_type" label that says what each row represents
-  #      (dose, volume, reservoir, attempts, given).
-  #   2) Choose a timestamp for ordering (effective_time).
-  #   3) Convert numeric_value to numeric and keep units.
-  #   4) Collapse multiple entries at the same time/var into one value.
+  if(verbose){cli::cli_progress_step("Labelling flowsheet types")}
+
+ ## Step 2: Create a "flowsheet_type" label that says what each row represents (dose, volume, reservoir, attempts, given).
 
 
-   pcas_long_keyed <- PCA_dataframe %>%
+  PCA_dataframe <- PCA_dataframe %>%
     mutate(
       # Map each flowsheet question to a standardized variable name.
       flowsheet_type = case_when(
-        str_detect(qn, "GIVEN VOLUME")        | str_detect(q, "GIVEN VOLUME")        ~ "volume_administered",
-        str_detect(qn, "GIVEN AMOUNT")        | str_detect(q, "GIVEN AMOUNT")        ~ "dose_administered",
-        str_detect(qn, "RESERVOIR VOLUME")    | str_detect(q, "RESERVOIR VOLUME")    ~ "reservoir_volume_remaining",
-        str_detect(qn, "VOLUME REMAINING")    | str_detect(q, "VOLUME REMAINING")    ~ "reservoir_volume_remaining",
-        str_detect(qn, "DOSES GIVEN")     | str_detect(q, "PCA DOSES GIVEN")     ~ "n_given",
-        str_detect(qn, "DOSES ATTEMPTED") | str_detect(q, "PCA DOSES ATTEMPTED") ~ "n_attempts",
+        str_detect(flowsheet_question_name, "GIVEN VOLUME") ~ "volume_administered",
+        str_detect(flowsheet_question_name, "GIVEN AMOUNT")  ~ "dose_administered",
+        str_detect(flowsheet_question_name, "RESERVOIR VOLUME")  ~ "reservoir_volume_remaining",
+        str_detect(flowsheet_question_name, "VOLUME REMAINING") ~ "reservoir_volume_remaining",
+        str_detect(flowsheet_question_name, "DOSES GIVEN")   ~ "n_given",
+        str_detect(flowsheet_question_name, "DOSES ATTEMPTED")  ~ "n_attempts",
+        str_detect(flowsheet_question_name, "DOSE GIVEN")  ~ "bolus_given",
         # Note that we exlude one flowsheet that cannot be classified: qn = R RX MORPHINE NCA (1MG/ML) - DOSE GIVEN
         # There are only 45 flowsheet entries for this flowsheet, we will leave out for now
         TRUE ~ NA_character_
       ))
 
-
+  if(any(is.na(PCA_dataframe$flowsheet_type))){
+    cli::cli_abort("DEVELOPER ERROR - RAISE GITHUB ISSUE IF YOU SEE THIS MESSAGE: \n \n Some flowsheet_questions have not been labeled. Review dataset, excluded medication list or string matching.")
+  }
 
 
   # Collapse duplicates at the same (patient/admission/case/time/med/var).
