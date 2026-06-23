@@ -165,7 +165,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
    pcas_long_keyed <- PCA_dataframe %>%
     mutate(
-      admission_csn = as.character(admission_csn),
+      admission_csn = admission_csn,
       mrn           = as.character(mrn),
 
       # Uppercase versions for pattern matching.
@@ -1503,7 +1503,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
         patient_out_of_room = if (inherits(patient_out_of_room, "POSIXt")) patient_out_of_room else ymd_hms(patient_out_of_room, tz = tz, quiet = TRUE),
         anaesthesia_end     = if (inherits(anaesthesia_end,     "POSIXt")) anaesthesia_end     else ymd_hms(anaesthesia_end,     tz = tz, quiet = TRUE),
         postop_anchor_raw   = coalesce(in_recovery, patient_out_of_room, anaesthesia_end),
-        admission_csn       = as.character(admission_csn)
+        admission_csn       = admission_csn
       ) %>%
       group_by(admission_csn) %>%
       summarise(

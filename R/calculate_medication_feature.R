@@ -92,25 +92,20 @@ calculate_medication_feature <- function(dataset,
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
-  if(length(unique(MAR %>% pull(dose_units))) == 1){
+  if(overide_dose_check){
+    cli::cli_alert_success("Dose check overidden.")
+  }else if(length(unique(MAR %>% pull(dose_units))) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
-    if(overide_dose_check){
-      if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
-    }else{
       cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
-      }
     }
 
-
-  if(length(unique(pull(MAR, route))) == 1){
+  if(overide_route_check){
+    cli::cli_alert_success("Route check overidden.")
+  }else if(length(unique(pull(MAR, route))) == 1){
     if(verbose){cli::cli_alert_success("Routes are all the same!")}
   }else{
-    if(overide_route_check){if(verbose){cli::cli_alert_success("Route check overidden. Proceding to return vector with mutiple routes.")
-      }else{
-        cli::cli_abort("Not all routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
-      }
-    }
+        cli::cli_abort("Not all medication routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
   }
 
   # 2b - Establishing the value to return against.
@@ -169,6 +164,10 @@ calculate_medication_feature <- function(dataset,
     if(nrow(result) == 1){
       cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
     }
+
+  }else{
+    cli::cli_abort("{.arg feature} not recognised, you have supplied {.arg feature} as {.val {feature}}. \n \n
+                   Ensure that {.arg feature} is one of {.val {c('binary', 'sum_dose', 'sum_ome','count')}}")
 
   }
 
