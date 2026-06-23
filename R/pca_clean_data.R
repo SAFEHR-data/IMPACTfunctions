@@ -84,7 +84,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
                            zero_dose_eps_mcg  = 4,     # dose treated as ~0 for fentanyl (mcg)
                            bg_ml_grid = c(0, 0.5, 1.0, 1.5, 2.0),  # candidate background rates (mL/hr) for grid search
                            tz = "Europe/London",
-                           verbose = TRUE
+                           verbose = TRUE,
+                           diagnostics = TRUE
 
 ){
 
@@ -94,86 +95,58 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     cli::cli_alert_info(c("Proccessing whole PCA dataset, this might take some time... \n \n",
                         "To speed up the function, use the argument {.arg dataset}. \n",
                         "This will subset the PCA flowsheet by matching {.val admission_csn} to only proccess the data for your dataset patients")
-    )
+                         )
+    PCA_dataframe <- PCA_dataframe %>% collect()
+
   }else{
-    PCA_dataframe <- PCA_dataframe %>% filter(admission_csn %in% dataset$admission_csn)
+    PCA_dataframe <- PCA_dataframe %>% filter(admission_csn %in% dataset$admission_csn) %>% collect()
     cli::cli_alert_info("Subsetting for your patient cohort")
   }
 
   if(verbose){cli::cli_progress_step("Filtering medications")}
-  # ===========================================================================
-  # STEP 0 (NEW): Derive medication from flowsheet text + filter out unwanted meds
-  # ===========================================================================
-  # Raw flowsheet includes many PCA/NCA items and other drug mixes (bupivacaine etc.).
-  # We keep only:
-  #   - morphine
-  #   - oxycodone
-  #   - fentanyl
-  # And explicitly exclude:
-  #   - diamorphine
-  #   - bupivacaine / levobupivacaine (incl combos)
-  #   - remifentanil
-  #   - hydromorphone
-  #
-  # This must happen before STEP 1, because later grouping and inference assumes
-  # medication is one of these three.
+
+  ## Step 1 - Label medications with simple_generic_name and filter out excluded medications
+
+  exclude_medications <- c("diamorphine", "bupivacaine", "levobupivacaine", "remifentanil", "hydromorphone")
+
   PCA_dataframe <- PCA_dataframe %>%
     mutate(
-      flowsheet_question_name = as.character(flowsheet_question_name),
-      flowsheet_question      = as.character(flowsheet_question),
-
       # Build a single searchable text field from question name + question.
-      fs_text = str_to_lower(paste0(
-        coalesce(flowsheet_question_name, ""),
-        " ",
-        coalesce(flowsheet_question, "")
-      )),
-
-      # Hard exclude list (denylist) before mapping to the target drugs.
-      excluded_drug = str_detect(
-        fs_text,
-        "diamorphine|bupivacaine|levobupivacaine|remifentanil|hydromorphone"
-      ),
-
+      flowsheet_question_name = str_to_upper(flowsheet_question_name)
+    ) %>%
+    filter(!str_detect(flowsheet_question_name,paste0(exclude_medications, collapse = "|"))
+           ) %>%
       # Map to the 3 drugs of interest (stored as lowercase strings here).
-      simple_generic_name = case_when(
-        !excluded_drug & str_detect(fs_text, "morphine")  ~ "morphine sulfate",
-        !excluded_drug & str_detect(fs_text, "oxycod")    ~ "oxycodone hydrochloride",
-        !excluded_drug & str_detect(fs_text, "fent")      ~ "fentanyl",
+     mutate(simple_generic_name = case_when(
+        str_detect(flowsheet_question_name, "MORPHINE")  ~ "morphine sulfate",
+        str_detect(flowsheet_question_name, "OXYCODONE") ~ "oxycodone hydrochloride",
+        str_detect(flowsheet_question_name, "FENTANYL") ~ "fentanyl",
         TRUE ~ NA_character_
       )
-    ) %>%
-    # Keep only the PCA meds of interest
-    filter(!is.na(simple_generic_name)) %>%
-    # Remove temporary helper columns
-    select(-fs_text, -excluded_drug)
+    )
+
+  # Test if any NA chars generated
+
+  if(any(is.na(PCA_dataframe$simple_generic_name))){
+    cli::cli_abort("DEVELOPER ERROR - RAISE GITHUB ISSUE IF YOU SEE THIS MESSAGE: \n \n Some drugs have not been labeled. Review dataset, excluded medication list or string matching.")
+  }
 
   if(verbose){cli::cli_progress_step("Reformatting flowsheet")}
   # ===========================================================================
   # STEP 1: Classify rows into PCA variables, parse times, collapse duplicates
   # ===========================================================================
   # Here we:
-  #   1) Create a "var" label that says what each row represents
+  #   1) Create a "flowsheet_type" label that says what each row represents
   #      (dose, volume, reservoir, attempts, given).
   #   2) Choose a timestamp for ordering (effective_time).
   #   3) Convert numeric_value to numeric and keep units.
   #   4) Collapse multiple entries at the same time/var into one value.
 
-  # Unable to proceed with arrow, calling into R
-
-  PCA_dataframe <- collect(PCA_dataframe)
 
    pcas_long_keyed <- PCA_dataframe %>%
     mutate(
-      admission_csn = admission_csn,
-      mrn           = as.character(mrn),
-
-      # Uppercase versions for pattern matching.
-      qn  = str_to_upper(coalesce(flowsheet_question_name, "")),
-      q   = str_to_upper(coalesce(flowsheet_question, "")),
-
       # Map each flowsheet question to a standardized variable name.
-      var = case_when(
+      flowsheet_type = case_when(
         str_detect(qn, "GIVEN VOLUME")        | str_detect(q, "GIVEN VOLUME")        ~ "volume_administered",
         str_detect(qn, "GIVEN AMOUNT")        | str_detect(q, "GIVEN AMOUNT")        ~ "dose_administered",
         str_detect(qn, "RESERVOIR VOLUME")    | str_detect(q, "RESERVOIR VOLUME")    ~ "reservoir_volume_remaining",
@@ -182,24 +155,9 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
         str_detect(qn, "DOSES ATTEMPTED") | str_detect(q, "PCA DOSES ATTEMPTED") ~ "n_attempts",
         # Note that we exlude one flowsheet that cannot be classified: qn = R RX MORPHINE NCA (1MG/ML) - DOSE GIVEN
         # There are only 45 flowsheet entries for this flowsheet, we will leave out for now
-
         TRUE ~ NA_character_
-      ),
+      ))
 
-      # Parse timestamps robustly (works if already POSIXct or character).
-      # effective_time prefers recorded_date; if missing, uses line_start.
-      recorded_date = if (inherits(recorded_date, "POSIXt")) recorded_date else ymd_hms(recorded_date, tz = tz, quiet = TRUE),
-      line_start    = if (inherits(line_start,    "POSIXt")) line_start    else ymd_hms(line_start,    tz = tz, quiet = TRUE),
-      line_end      = if (inherits(line_end,      "POSIXt")) line_end      else ymd_hms(line_end,      tz = tz, quiet = TRUE),
-      effective_time = coalesce(recorded_date, line_start),
-
-      # Ensure numeric; keep unit only if non-empty.
-      numeric_value = suppressWarnings(as.numeric(numeric_value)),
-      unit_derived  = na_if(unit_derived, "")
-    ) %>%
-    # Only keep rows we could classify and that have a usable time.
-    filter(!is.na(var)) %>%
-    filter(!is.na(effective_time))
 
 
 
