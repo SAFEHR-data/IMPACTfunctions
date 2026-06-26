@@ -158,53 +158,31 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
 
  duplicate_join_check <-  PCA_dataframe %>%
-    group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type) %>%
+    group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type, value) %>%
     summarise(n=n()) %>%
     arrange(desc(n))
 
  if(any(duplicate_join_check$n != 1)){
    cli::cli_alert_danger("Duplication of rows due to left join. Filtering to fix")
-   PCA_dataframe <- PCA_dataframe %>% select(-case_id, -anaesthesia_csn, -operation_csn) %>% distinct()
-
+   PCA_dataframe <- PCA_dataframe %>% select(-case_id, -anaesthesia_csn, -operation_csn, -line_start, -line_end, -draft_cohort, -nela_cohort, -ortho_cohort, -qi_cohort) %>% distinct()
  }
 
- ## Remove zero length time rows
+ duplicate_join_check <-  PCA_dataframe %>%
+   group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type, value) %>%
+   summarise(n=n()) %>%
+   arrange(desc(n))
 
-  # Collapse duplicates at the same (patient/admission/case/time/med/var).
-  # Rules:
-  #   - dose/volume: sum distinct values (often recorded as cumulative components)
-  #   - reservoir: take the "latest" reading by (line_end or effective_time)
-  #   - counters: take max (counters are cumulative; max is safest)
-  pcas_collapsed <- PCA_dataframe %>%
-    group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type) %>%
-    reframe(
-      value = {
-        vtype <- first(flowsheet_type)
-        if (vtype %in% c("dose_administered", "volume_administered")) {
-          sum_distinct(numeric_value)
-        } else if (vtype == "reservoir_volume_remaining") {
-          pick_time <- coalesce(line_end, recorded_date)
-          numeric_value[which.max(pick_time)]
-        } else {
-          if (all(is.na(numeric_value))) NA_real_ else max(numeric_value, na.rm = TRUE)
-        }
-      },
-      # Choose one unit label for the collapsed row (last non-NA unit).
-      units_var = {
-        tmp <- unit_derived[!is.na(unit_derived)]
-        if (length(tmp)) utils::tail(tmp, 1) else NA_character_
-      }
-    )
+ if((any(duplicate_join_check$n != 1))){
+   cli::cli_abort("Row duplication remains!")
+ }else{
+   cli::cli_alert_success("Rows deduplicated")
+ }
 
-  # Extract a single units value for each timestamp+med row after collapsing.
-  units_by_group <- pcas_collapsed %>%
-    transmute(mrn, admission_csn, effective_time, simple_generic_name, units = units_var) %>%
-    distinct(mrn, admission_csn, effective_time, simple_generic_name, .keep_all = TRUE)
+
 
   # Pivot into one row per timestamp (date_time_recorded) and medication.
   # Result contains attempts, given, dose, volume, reservoir.
-  pcas_wide_step1 <- pcas_collapsed %>%
-    select(-units_var) %>%
+  pcas_wide_step1 <- PCA_dataframe %>%
     pivot_wider(
       names_from  = var,
       values_from = value
