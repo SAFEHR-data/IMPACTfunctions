@@ -174,16 +174,6 @@ calculate_medication_feature <- function(dataset,
   names(result) <- c(csn_vector_name, feature_name)
 
 
-  if(csn_vector_name == "admission_csn"){
-    # ERROR CHECKING - See Github Issue: #21
-    if(typeof(result$admission_csn) != typeof(dataset %>% pull(admission_csn))){
-      cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-      result$admission_csn <- as.character(result$admission_csn)
-    }else{
-      cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-    }
-  }
-
 
   # Return either the feature vector or the feature joined back to the origional dataframe
   if(format == "table"){
