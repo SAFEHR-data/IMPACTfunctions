@@ -12,7 +12,7 @@ peri-operative dataset.
 
 The dataset was built at UCLH with input from CUH NHS trust and others…
 
-## Functionality
+## Functionality and dependancy
 
 | Feature | Functions | Documentation and vignette | Synthetic data | Unit test | Clinically validated |
 |----|----|----|----|----|----|
@@ -21,7 +21,8 @@ The dataset was built at UCLH with input from CUH NHS trust and others…
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.1.0.9002
+Features in Package version: 0.1.0.9003 \| Package compatible with
+IMPACT dataset up to `20260512`
 
 ### Future features
 

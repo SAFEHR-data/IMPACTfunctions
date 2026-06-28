@@ -156,9 +156,9 @@ post_op_morphine_3hr <- post_op_morphine_3hr %>% collect()
 
 ```
 
-> Note: use of the `overide_...` argument
+> Note: use of the `override_...` argument
 >
-> In the code blocks below you will see that all of the `calculate_medication_feature()` use the `overide_dose_check = TRUE`, `overide_route_check = TRUE`. In the synthetic dataset we use a uniform distibution of route to dose units to medication. This means the routes and units will always be mixed. When running this code on real data we recommend keeping them both to `FALSE` unless you explicitly want this. 
+> In the code blocks below you will see that all of the `calculate_medication_feature()` use the `override_dose_check = TRUE`, `override_route_check = TRUE`. In the synthetic dataset we use a uniform distibution of route to dose units to medication. This means the routes and units will always be mixed. When running this code on real data we recommend keeping them both to `FALSE` unless you explicitly want this. 
 
 
 ```{r}
@@ -169,8 +169,8 @@ df <- calculate_medication_feature(dataset = df,
                              feature = "sum_ome",
                              feature_name = "summed_ome",
                              format = "joined",
-                             overide_dose_check  = TRUE,
-                             overide_route_check = TRUE)
+                             override_dose_check  = TRUE,
+                             override_route_check = TRUE)
 
 ```
 From the subsetted medications we can then generate feature vectors of intrest. 
@@ -183,8 +183,8 @@ morphine_table <- calculate_medication_feature(dataset,
                              format = "table",
                              feature = "binary",
                              feature_name = "morphine_post_op",
-                             overide_dose_check =TRUE,
-                             overide_route_check = TRUE)
+                             override_dose_check =TRUE,
+                             override_route_check = TRUE)
 
 morphine_table %>% collect()
 
@@ -198,8 +198,8 @@ dataset <- calculate_medication_feature(dataset,
                              format = "joined",
                              feature = "sum_dose",
                              feature_name = "morphine_post_op",
-                             overide_dose_check = TRUE,
-                             overide_route_check = TRUE)
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE)
 
 morphine_table %>% collect()
 
@@ -213,8 +213,8 @@ calculate_medication_feature(dataset,
                              format = "joined",
                              feature = "sum_ome",
                              feature_name = "morphine_post_op",
-                             overide_dose_check = TRUE,
-                             overide_route_check = TRUE)
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE)
 
 ## NOTICE THE DANAGER ERROR
 ```
@@ -236,8 +236,8 @@ calculate_medication_feature(dataset = dataset,
                              format = "joined",
                              feature = "sum_ome",
                              feature_name = "recovery_ome",
-                             overide_dose_check = TRUE,
-                             overide_route_check = TRUE) %>% collect()
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE) %>% collect()
 
 ```
 
@@ -264,8 +264,8 @@ calculate_medication_feature(dataset = dataset,
   format = "joined",
   feature = "sum_dose",
   feature_name = "morphine_post_op",
-  overide_dose_check= TRUE,
-  overide_route_check = TRUE
+  override_dose_check= TRUE,
+  override_route_check = TRUE
   )
  
  
@@ -274,8 +274,8 @@ calculate_medication_feature(dataset = dataset,
   format = "table",
   feature = "binary",
   feature_name = "morphine_post_op",
-  overide_dose_check= TRUE,
-  overide_route_check = TRUE)
+  override_dose_check= TRUE,
+  override_route_check = TRUE)
 
 
 ```

@@ -11,8 +11,8 @@ calculate_medication_feature(
   feature,
   feature_name,
   link_column = "admission_csn",
-  overide_dose_check = FALSE,
-  overide_route_check = FALSE,
+  override_dose_check = FALSE,
+  override_route_check = FALSE,
   verbose = TRUE
 )
 }
@@ -29,9 +29,9 @@ calculate_medication_feature(
 
 \item{link_column}{Which column to use as the primary source of return. Select one option from: \code{link_column = c(admission_csn, anaesthesia_csn, operation_csn)}}
 
-\item{overide_dose_check}{The function will check to ensure all the units are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different units.}
+\item{override_dose_check}{The function will check to ensure all the units are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different units.}
 
-\item{overide_route_check}{The function will check to ensure all the of the routes are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different routes}
+\item{override_route_check}{The function will check to ensure all the of the routes are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different routes}
 
 \item{verbose}{Print the outputs of the function explicility.}
 }
@@ -68,7 +68,7 @@ MAR = post_op_morphine,
 format = "joined",
 feature = "sum_dose",
 feature_name = "morphine_post_op",
-overide_dose_check= TRUE)
+override_dose_check= TRUE)
 
 
 morphine_table <- calculate_medication_feature(dataset,
@@ -76,7 +76,7 @@ MAR = post_op_morphine,
 format = "table",
 feature = "binary",
 feature_name = "morphine_post_op",
-overide_dose_check= TRUE)
+override_dose_check= TRUE)
 }
 
 }
