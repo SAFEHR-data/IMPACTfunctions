@@ -40,7 +40,7 @@ search_drug_names <- function(MAR = HospitalMar,
 
   if(strict_search & missing(search_column)){
     Possible_col = c("medication_name", "generic_name", "simple_generic_name")
-    cli::cli_abort("You gave tried to do a strict search but not included a column to search in. \n \n Provide the argument {.arg col} with one of following column names: {.val {Possible_col}} ")
+    cli::cli_abort("You gave tried to do a strict search but not included a column to search in. \n \n Provide the argument {.arg search_column} with one of following column names: {.val {Possible_col}} ")
   }
 
   # Generate the summary for all columns
