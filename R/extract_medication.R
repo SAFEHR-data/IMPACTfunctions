@@ -200,7 +200,7 @@ extract_medication <- function(dataset,
 
   if(missing(search_column)){
     search_column <- "simple_generic_name"
-    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val {search_column}} ")}
+    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val 'simple_generic_name'} ")}
     }
 
   med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
