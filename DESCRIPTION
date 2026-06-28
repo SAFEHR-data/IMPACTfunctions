@@ -25,9 +25,9 @@ Imports:
     purrr,
     tibble,
     tidyr,
-    stats
+    stats,
+    patchwork
 Suggests: 
     knitr,
-    patchwork,
     rmarkdown
 VignetteBuilder: knitr
