@@ -27,7 +27,7 @@
 #' }
 #'
 #' @param pca_hourly A data frame or tibble containing hourly resampled and crossover-resolved
-#'   PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{medication}, \code{units},
+#'   PCA entries. Required columns include: \code{mrn}, \code{admission_csn}, \code{simple_generic_name}, \code{units},
 #'   \code{time_hourly_start}, \code{time_hourly_end}, and \code{dose_best_estimate_hourly}.
 #' @param phases A data frame containing administrative peroperative or post-anaesthetic milestone logs.
 #'   Must feature variables tracking \code{admission_csn}, \code{patient_out_of_room}, \code{in_recovery},
@@ -37,18 +37,16 @@
 #' @param bins_hours A numeric vector mapping the localized hour thresholds utilized to segment
 #'   post-operative tracking arrays. Default is `c(0, 24, 48, 72, 96, 120, 146)`.
 #' @param ome_conv A data frame or tibble establishing equianalgesic multipliers relative to core
-#'   clinical dosing scales. Must contain mapping columns: \code{medication}, \code{units}, and \code{ome_per_unit}.
+#'   clinical dosing scales. Must contain mapping columns: \code{simple_generic_name}, \code{units}, and \code{ome_per_unit}.
 #'   Default contains standard institutional conversion metrics for Morphine, Oxycodone, and Fentanyl.
 #'
 #' @return A data frame formatted in a wide schema—one row per unique \code{mrn}, \code{admission_csn},
-#'   and \code{medication} combination—exposing the following metadata layout:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
-#'     \item{\code{medication}}{The specific analgesic categorical identifier string.}
-#'     \item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
-#'     \item{\code{dose_*.h}}{Dynamic columns tracking raw summed medication totals consumed inside each interval break.}
-#'     \item{\code{ome_*.h}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical boundaries.}
-#'   }
+#'   and \code{simple_generic_name} combination—exposing the following metadata layout:
+#' * `mrn`, `admission_csn`, `admission_csn_key`: Standardized and normalized patient/encounter keys.
+#' * `simple_generic_name`: The specific analgesic categorical identifier string.
+#' * `postop_anchor`: The derived `POSIXct` baseline surgical timestamp utilized for lookbacks.
+#' * `dose_*.h`: Dynamic columns tracking raw summed medication totals consumed inside each interval break.
+#' * `ome_*.h`: Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical boundaries.
 #'
 #' @export
 #'
@@ -72,10 +70,10 @@ pca_summarise_bins <- function(
     tz = "Europe/London",
     bins_hours = c(0, 24, 48, 72, 96, 120, 146),
     ome_conv = tibble::tribble(
-      ~medication, ~units, ~ome_per_unit,
-      "Morphine",  "mg",   3.0,
-      "Oxycodone", "mg",   4.5,
-      "Fentanyl",  "mcg",  0.30
+      ~simple_generic_name, ~units, ~ome_per_unit,
+      "morphine sulfate",  "mg",   3.0,
+      "oxycodone hydrochloride", "mg",   4.5,
+      "fentanyl",  "mcg",  0.30
     )
 ) {
 
@@ -175,37 +173,37 @@ pca_summarise_bins <- function(
   # dose_sum: total dose across all hours in that bin
   # dose_OME: dose_sum multiplied by ome_per_unit lookup (if available)
   dose_with_ome <- df_binned %>%
-    group_by(mrn, admission_csn, medication, units, admission_csn_key, postop_anchor, bin) %>%
+    group_by(mrn, admission_csn, simple_generic_name, units, admission_csn_key, postop_anchor, bin) %>%
     summarise(
       dose_sum = sum(dose_best_estimate_hourly, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    left_join(ome_conv, by = c("medication", "units")) %>%
+    left_join(ome_conv, by = c("simple_generic_name", "units")) %>%
     mutate(
       dose_OME = if_else(is.na(ome_per_unit), NA_real_, dose_sum * ome_per_unit)
     )
 
   # -------------------------------------------------------------------------
-  # 5) Wide outputs: one row per (mrn, admission_csn, medication)
+  # 5) Wide outputs: one row per (mrn, admission_csn, simple_generic_name)
   # -------------------------------------------------------------------------
   # We generate:
   #   dose_0-24h, dose_24-48h, ...
   #   ome_0-24h,  ome_24-48h,  ...
   # and keep the postop_anchor used.
   dose_wide <- dose_with_ome %>%
-    select(mrn, admission_csn, medication, admission_csn_key, postop_anchor, bin, dose_sum) %>%
+    select(mrn, admission_csn, simple_generic_name, admission_csn_key, postop_anchor, bin, dose_sum) %>%
     pivot_wider(names_from = bin, values_from = dose_sum, names_prefix = "dose_")
 
   ome_wide <- dose_with_ome %>%
-    select(mrn, admission_csn, medication, admission_csn_key, postop_anchor, bin, dose_OME) %>%
+    select(mrn, admission_csn, simple_generic_name, admission_csn_key, postop_anchor, bin, dose_OME) %>%
     pivot_wider(names_from = bin, values_from = dose_OME, names_prefix = "ome_")
 
   out <- dose_wide %>%
     left_join(
       ome_wide,
-      by = c("mrn", "admission_csn", "medication", "admission_csn_key", "postop_anchor")
+      by = c("mrn", "admission_csn", "simple_generic_name", "admission_csn_key", "postop_anchor")
     ) %>%
-    arrange(mrn, admission_csn, medication)
+    arrange(mrn, admission_csn, simple_generic_name)
 
   return(out)
 }

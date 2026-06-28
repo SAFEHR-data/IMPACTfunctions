@@ -14,7 +14,7 @@
 #' \enumerate{
 #'   \item \strong{Clinical Post-Op Anchoring:} Discovers a deterministic surgical
 #'   baseline timestamp per encounter by evaluating phase records hierarchically:
-#'   \code{patient_out_of_room} \rightarrow \code{in_recovery} \rightarrow \code{anaesthesia_end}.
+#'   \code{patient_out_of_room} -> \code{in_recovery} -> \code{anaesthesia_end}.
 #'   Encounters completely lacking milestone timestamps are pruned from downstream evaluation.
 #'   \item \strong{Asymmetric Boundary Partitioning:} Maps each encounter to an
 #'   asymmetric temporal matrix. Post-operative day 0 (\code{day_0}) represents a
@@ -34,7 +34,7 @@
 #'
 #' @param pca_hourly A data frame or tibble containing hourly resampled and
 #'   crossover-resolved PCA entries. Required variables include: \code{mrn},
-#'   \code{admission_csn}, \code{medication}, \code{units}, \code{time_hourly_start},
+#'   \code{admission_csn}, \code{simple_generic_name}, \code{units}, \code{time_hourly_start},
 #'   and \code{dose_best_estimate_hourly}.
 #' @param phases A data frame or remote database table (\code{tbl_lazy}) containing
 #'   administrative peroperative or post-anaesthetic milestone logs. Must feature variables
@@ -57,15 +57,13 @@
 #'   during execution. Default is \code{TRUE}.
 #'
 #' @return A data frame formatted in a wide analytical schema—one row per unique
-#'   \code{mrn}, \code{admission_csn}, and \code{medication} combination—exposing
+#'   \code{mrn}, \code{admission_csn}, and \code{simple_generic_name} combination—exposing
 #'   the following metadata layout:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}, \code{admission_csn_key}}{Standardized and normalized patient/encounter keys.}
-#'     \item{\code{medication}}{The specific analgesic categorical identifier string.}
-#'     \item{\code{postop_anchor}}{The derived \code{POSIXct} baseline surgical timestamp utilized for lookbacks.}
-#'     \item{\code{dose_day_0 ... dose_day_7}}{Dynamic columns tracking raw summed medication totals consumed inside each daily interval.}
-#'     \item{\code{ome_day_0 ... ome_day_7}}{Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical daily boundaries.}
-#'   }
+#' * `mrn`, `admission_csn`, `admission_csn_key`: Standardized and normalized patient/encounter keys.
+#' * `simple_generic_name`: The specific analgesic categorical identifier string.
+#' * `postop_anchor`: The derived `POSIXct` baseline surgical timestamp utilized for lookbacks.
+#' * `dose_day_0 ... dose_day_7`: Dynamic columns tracking raw summed medication totals consumed inside each daily interval.
+#' * `ome_day_0 ... ome_day_7`: Dynamic columns tracking calculated Oral Morphine Equivalent metrics across identical daily boundaries
 #'
 #'   If no valid post-operative anchors are detected across the input cohort, a
 #'   warning is issued and an empty named \code{list} containing two structured
@@ -184,12 +182,12 @@ pca_summarise_days <- function(pca_hourly,
            time_hourly_start <  end)
 
   # ---------------------------------------------------------------------------
-  # 6) Sum dose per medication per post-op day
+  # 6) Sum dose per simple_generic_name per post-op day
   # ---------------------------------------------------------------------------
   # We sum hourly doses within each (mrn, admission, med, day).
   # units is taken from the first row in that group (expected constant per med).
   dose_by_day <- pcas_days %>%
-    group_by(mrn, admission_csn, medication, day, day_label) %>%
+    group_by(mrn, admission_csn, simple_generic_name, day, day_label) %>%
     summarise(
       dose = sum(dose_best_estimate_hourly, na.rm = TRUE),
       units = dplyr::first(units),
@@ -204,9 +202,9 @@ pca_summarise_days <- function(pca_hourly,
   #   Morphine + mg, Oxycodone + mg, Fentanyl + mcg
   compute_ome <- function(med, units, dose) {
     out <- rep(NA_real_, length(dose))
-    is_morph <- med == "Morphine"
-    is_oxy   <- med == "Oxycodone"
-    is_fent  <- med == "Fentanyl"
+    is_morph <- med == "morphine sulfate"
+    is_oxy   <- med == "oxycodone hydrochloride"
+    is_fent  <- med == "fentanyl"
 
     out[is_morph & units == "mg"]  <- dose[is_morph & units == "mg"]  * morphine_iv_factor
     out[is_oxy   & units == "mg"]  <- dose[is_oxy   & units == "mg"]  * oxycodone_iv_factor
@@ -215,25 +213,25 @@ pca_summarise_days <- function(pca_hourly,
   }
 
   dose_ome_by_day <- dose_by_day %>%
-    mutate(ome = compute_ome(medication, units, dose))
+    mutate(ome = compute_ome(simple_generic_name, units, dose))
 
   # ---------------------------------------------------------------------------
   # 8) Make wide outputs per medication: dose_day_* and ome_day_*
   # ---------------------------------------------------------------------------
   dose_wide <- dose_ome_by_day %>%
-    select(mrn, admission_csn, medication, day_label, dose) %>%
+    select(mrn, admission_csn, simple_generic_name, day_label, dose) %>%
     pivot_wider(names_from = day_label, values_from = dose, names_prefix = "dose_")
 
   ome_wide <- dose_ome_by_day %>%
-    select(mrn, admission_csn, medication, day_label, ome) %>%
+    select(mrn, admission_csn, simple_generic_name, day_label, ome) %>%
     pivot_wider(names_from = day_label, values_from = ome, names_prefix = "ome_")
 
   # Combine dose + ome for each med, and attach the postop_anchor for reference
   days_per_med <- dose_wide %>%
-    full_join(ome_wide, by = c("mrn","admission_csn","medication")) %>%
+    full_join(ome_wide, by = c("mrn","admission_csn","simple_generic_name")) %>%
     left_join(bounds %>% select(mrn, admission_csn, postop_anchor),
               by = c("mrn","admission_csn")) %>%
-    arrange(mrn, admission_csn, medication)
+    arrange(mrn, admission_csn, simple_generic_name)
 
   # ---------------------------------------------------------------------------
   # 9) Collapse to per-admission totals (sum OME across meds)

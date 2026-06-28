@@ -11,8 +11,8 @@
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
 #' @param link_column Which column to use as the primary source of return. Select one option from: `link_column = c(admission_csn, anaesthesia_csn, operation_csn)`
-#' @param overide_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
-#' @param overide_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
+#' @param override_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
+#' @param override_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
 #' @param verbose Print the outputs of the function explicility.
 #' @return Either a table of the vector of interest of the joined dataset left joined.
 #' @template setup-data
@@ -39,7 +39,7 @@
 #' format = "joined",
 #' feature = "sum_dose",
 #' feature_name = "morphine_post_op",
-#' overide_dose_check= TRUE)
+#' override_dose_check= TRUE)
 #'
 #'
 #' morphine_table <- calculate_medication_feature(dataset,
@@ -47,7 +47,7 @@
 #' format = "table",
 #' feature = "binary",
 #' feature_name = "morphine_post_op",
-#' overide_dose_check= TRUE)
+#' override_dose_check= TRUE)
 #' }
 #'
 calculate_medication_feature <- function(dataset,
@@ -56,14 +56,14 @@ calculate_medication_feature <- function(dataset,
                                          feature,
                                          feature_name,
                                          link_column = "admission_csn",
-                                         overide_dose_check = FALSE,
-                                         overide_route_check = FALSE,
+                                         override_dose_check = FALSE,
+                                         override_route_check = FALSE,
                                          verbose = TRUE){
 
   ## Step 3 further filtering and cleaning of data
 
 
-  # We return the join on the csn of choise determined by the `link_column` entery
+  # We return the join on the csn of choice determined by the `link_column` entery
 
   if(link_column == "admission_csn"){
     csn_vector_name <- "admission_csn"
@@ -92,25 +92,20 @@ calculate_medication_feature <- function(dataset,
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
-  if(length(unique(MAR %>% pull(dose_units))) == 1){
+  if(override_dose_check){
+    cli::cli_alert_success("Dose check overidden.")
+  }else if(length(unique(MAR %>% pull(dose_units))) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
-    if(overide_dose_check){
-      if(verbose){cli::cli_alert_success("Dose unit check overidden. Proceding to return vector with mutiple dose units.")}
-    }else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
-      }
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg override_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
     }
 
-
-  if(length(unique(pull(MAR, route))) == 1){
+  if(override_route_check){
+    cli::cli_alert_success("Route check overidden.")
+  }else if(length(unique(pull(MAR, route))) == 1){
     if(verbose){cli::cli_alert_success("Routes are all the same!")}
   }else{
-    if(overide_route_check){if(verbose){cli::cli_alert_success("Route check overidden. Proceding to return vector with mutiple routes.")
-      }else{
-        cli::cli_abort("Not all routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
-      }
-    }
+        cli::cli_abort("Not all medication routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg override_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
   }
 
   # 2b - Establishing the value to return against.
@@ -125,6 +120,10 @@ calculate_medication_feature <- function(dataset,
     result <-  data.frame(csn_vector) %>%
       mutate(match_status = csn_vector %in% MAR_df[[csn_vector_name]])
 
+    if(!all(result$match_status)){
+      cli::cli_alert_warning("No patients have a positive result. Check your arguments.")
+    }
+
 
   }else if(feature == "sum_dose"){
 
@@ -135,6 +134,10 @@ calculate_medication_feature <- function(dataset,
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       summarise(result = sum(dose, na.rm = FALSE)) %>%
       collect()
+
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
 
   }else if(feature == "sum_ome"){
 
@@ -148,26 +151,28 @@ calculate_medication_feature <- function(dataset,
       summarise(result = sum(ome, na.rm = TRUE)) %>%
       collect()
 
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
+
   }else if(feature == "count"){
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       summarise(result = n()) %>%
       collect()
 
+    if(nrow(result) == 1){
+      cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
+    }
+
+  }else{
+    cli::cli_abort("{.arg feature} not recognised, you have supplied {.arg feature} as {.val {feature}}. \n \n
+                   Ensure that {.arg feature} is one of {.val {c('binary', 'sum_dose', 'sum_ome','count')}}")
+
   }
 
   names(result) <- c(csn_vector_name, feature_name)
 
-
-  if(csn_vector_name == "admission_csn"){
-    # ERROR CHECKING - See Github Issue: #21
-    if(typeof(result$admission_csn) != typeof(dataset %>% pull(admission_csn))){
-      cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-      result$admission_csn <- as.character(result$admission_csn)
-    }else{
-      cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-    }
-  }
 
 
   # Return either the feature vector or the feature joined back to the origional dataframe

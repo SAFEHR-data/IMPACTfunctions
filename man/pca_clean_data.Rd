@@ -25,6 +25,9 @@ raw PCA flowsheet records from the EHR.}
 \item{phases_dataframe}{A data frame mapping patient clinical operational phases
 (utilized within downstream optimization steps).}
 
+\item{dataset}{Study cohort (optional). If provided, filters the \code{phases_dataframe} dataset
+to include only matching \code{admission_csn} identifiers. This improves performance by only processing a subset of data.}
+
 \item{near_full_threshold}{A numeric value establishing the lower volumetric boundary
 (in mL) above which an infusion reservoir is classified as "near full". Default is \code{95}.}
 
@@ -46,18 +49,21 @@ Default is \code{c(0, 0.5, 1.0, 1.5, 2.0)}.}
 
 \item{tz}{A character string specifying the Olson time zone convention used to enforce
 uniform POSIXct parsing across clinical timestamps. Default is \code{"Europe/London"}.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), outputs execution alerts and processing
+heuristics to the console via \code{cli}.}
 }
 \value{
 A data frame in a wide format (one row per unique \code{mrn}, \code{admission_csn},
-\code{date_time_recorded}, and \code{medication} combination) containing the following columns:
-\list{
-\item{\code{mrn}, \code{admission_csn}, \code{case_id}}{Standardized character string patient/encounter keys.}
-\item{\code{date_time_recorded}}{A unified \code{POSIXct} timestamp denoting record execution time.}
-\item{\code{medication}}{A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).}
-\item{\code{units}}{The localized unit label assigned to the dosage metrics.}
-\item{\code{n_attempts}, \code{n_given}}{Resolved cumulative integers tracking patient demands and delivered boluses.}
-\item{\code{dose_administered}, \code{volume_administered}}{Aggregated amounts administered at the observation window.}
-\item{\code{reservoir_volume_remaining}}{The chronologically resolved residual volume within the pump reservoir.}
+\code{date_time_recorded}, and \code{simple_generic_name} combination) containing the following columns:
+\itemize{
+\item \code{mrn}, \code{admission_csn}, \code{case_id}: Standardized character string patient/encounter keys.
+\item \code{date_time_recorded}: A unified \code{POSIXct} timestamp denoting record execution time.
+\item \code{simple_generic_name}: A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).
+\item \code{units}: The localized unit label assigned to the dosage metrics.
+\item \code{n_attempts}, \code{n_given}: Resolved cumulative integers tracking patient demands and delivered boluses.
+\item \code{dose_administered}, \code{volume_administered}: Aggregated amounts administered at the observation window.
+\item \code{reservoir_volume_remaining}: The chronologically resolved residual volume within the pump reservoir.
 }
 }
 \description{

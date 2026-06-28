@@ -95,22 +95,56 @@ extract_medication <- function(dataset,
     cli::cli_abort("No medication specifed {.arg medication} to search for. Please provide a medication to search for. \n\n If you intended to return all meds then set {.arg medication} = {.val NULL}. ")
   }
 
-
-  ## Assigning time points if used timeframe argument
-  if(missing(timeframe)){
+  if(all(timeframe == c("whole_mar", "pre_op", "post_op", "custom"))){
     if(verbose){cli::cli_alert_success("No timeframe provided, searching whole MAR per encounter.")}
     timeframe <- "whole_mar"
-  }else if(timeframe == "whole_mar"){
+  }
+
+
+  if(length(mar_source)==1) {
+    if(is.na(mar_source)){
+
+       if(verbose){cli::cli_alert_info("No value provided to {.arg mar_source}. Checking for duplication of csn and then joining on {.val admission_csn}")}
+
+      if(any(dataset %>% pull(admission_csn) %>% duplicated()) & (timeframe != "whole_mar")){
+        cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg timeframe} is not set to {.val whole_mar}. \n
+                              This will cause issues with the join of timeframe. Either select a single value of {.arg mar_source} (and sum/join the second part later) or de-duplicate the dataset. Alternativly, expliclity set {.arg timeframe} to {.val whole_mar} then no temporal subsetting is required.")
+      }else{
+        joining_column = "admission_csn"
+      }
+
+    }else if (mar_source == "Hospital Encounter"){
+      joining_column = "admission_csn"
+    }else if ("Anaesthesia" == mar_source){
+      joining_column = "anaesthesia_csn"
+    }else if ("Operation" ==  mar_source){
+      joining_column = "case_id"
+    }
+  }else{
+
+    if(verbose){cli::cli_alert_info("Vector provided to {.arg mar_source}. Checking for duplication of csn and then joining on {.val admission_csn}")}
+
+    if(any(dataset %>% pull(admission_csn) %>% duplicated()) & (timeframe != "whole_mar")){
+      cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg timeframe} is not set to {.val whole_mar}. \n
+                              This will cause issues with the join of timeframe. Either select a single value of {.arg mar_source} (and sum/join the second part later) or de-duplicate the dataset. Alternativly, expliclity set {.arg timeframe} to {.val whole_mar} then no temporal subsetting is required.")
+    }else{
+      joining_column = "admission_csn"
+    }
+
+  }
+
+  ## Assigning time points if used time frame argument
+  if(timeframe == "whole_mar"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching whole MAR per encounter.")}
   }else if(timeframe == "pre_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only pre-operative period.")}
-    t0_col <- dataset %>% select(admission_csn,anaesthesia_csn, t0 = admission_date)
-    t1_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t1 = operation_date)
+    t0_col <- dataset %>% select(.data[[joining_column]], t0 = admission_date)
+    t1_col <- dataset %>% select(.data[[joining_column]], t1 = operation_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "post_op"){
     if(verbose){cli::cli_alert_success("{.arg timeframe} set to {.val {timeframe}}, searching only post-operative period.")}
-    t0_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t0 = operation_date)
-    t1_col <- dataset %>% select(admission_csn,anaesthesia_csn,, t1 = discharge_date)
+    t0_col <- dataset %>% select(.data[[joining_column]], t0 = operation_date)
+    t1_col <- dataset %>% select(.data[[joining_column]], t1 = discharge_date)
     timeframe_df <- inner_join(t0_col, t1_col) %>% collect()
   }else if(timeframe == "custom"){
     ## Error checking that the timestamps are set properly
@@ -118,15 +152,15 @@ extract_medication <- function(dataset,
     #If timeframe custom, ensure propry t0,t1 and t_int set.
     if(!is.na(t_int) & !is.na(t1)){
       cli::cli_abort("You have tried to supply both a time interval ({.arg t_int}) and a end time ({.arg t_1}). \n \n Supply only one end time variable")
-    }else if( is.na(t0) & is.na(t1) & is.na(t_int) ){
-    cli::cli_alert_danger("CAUTION: you have supplied a start time to subset by but not an end time. Will return from the {.arg t0} timepoint onwards.")
+    }else if( !is.na(t0) & is.na(t1) & is.na(t_int) ){
+    cli::cli_abort("Error: you have supplied a {.arg t0} to subset by but not {.arg t_int} or {.arg t1}. Please provide one or change the {.arg timeframe} argument")
     }
 
     #Assuming test above are passed then we can check if have passed a t_int and then calcualte the t_1
     if(!is.na(t_int)){
 
       timeframe_df <- dataset %>%
-        select(admission_csn,anaesthesia_csn, t0 = all_of(t0)) %>%
+        select(.data[[joining_column]], t0 = all_of(t0)) %>%
         collect() %>%
         mutate(
           # Perform R-side arithmetic, then force UTC to match the Arrow schema
@@ -134,7 +168,7 @@ extract_medication <- function(dataset,
         )
 
     }else if(!is.na(t1)){
-      timeframe_df <- dataset %>% select(admission_csn,anaesthesia_csn,,  t0 = all_of(t0), t1 = all_of(t1))
+      timeframe_df <- dataset %>% select(.data[[joining_column]],  t0 = all_of(t0), t1 = all_of(t1))
     }else{
       cli::cli_abort("Hmm, you should not have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
       }
@@ -143,6 +177,7 @@ extract_medication <- function(dataset,
     cli::cli_abort("Incorrect value supplied to {.arg timeframe}. See {.code ?extract_medication} for assistance. ")
 
   }
+
 
 
   if(verbose){cli::cli_alert_success("Arguments provided to function correct")}
@@ -164,8 +199,8 @@ extract_medication <- function(dataset,
   }
 
   if(missing(search_column)){
-    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val {search_column}} ")}
-    search_column = "simple_generic_name"
+    search_column <- "simple_generic_name"
+    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val 'simple_generic_name'} ")}
     }
 
   med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
@@ -227,6 +262,7 @@ extract_medication <- function(dataset,
    ## Rgrettably the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
     df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "one-to-many")
     df <- df %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
+    df <- df %>% select(-t0, -t1)
     if(verbose){cli::cli_alert_success("Removing Medications given outside of specified timeframe")}
  }
 

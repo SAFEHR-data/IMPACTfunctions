@@ -27,6 +27,8 @@
 #'   raw PCA flowsheet records from the EHR.
 #' @param phases_dataframe A data frame mapping patient clinical operational phases
 #'   (utilized within downstream optimization steps).
+#' @param dataset Study cohort (optional). If provided, filters the `phases_dataframe` dataset
+#'   to include only matching `admission_csn` identifiers. This improves performance by only processing a subset of data.
 #' @param near_full_threshold A numeric value establishing the lower volumetric boundary
 #'   (in mL) above which an infusion reservoir is classified as "near full". Default is `95`.
 #' @param min_jump_ml A numeric value defining the minimum positive volumetric delta (in mL)
@@ -42,18 +44,18 @@
 #'   Default is `c(0, 0.5, 1.0, 1.5, 2.0)`.
 #' @param tz A character string specifying the Olson time zone convention used to enforce
 #'   uniform POSIXct parsing across clinical timestamps. Default is `"Europe/London"`.
+#' @param verbose Logical. If `TRUE` (default), outputs execution alerts and processing
+#'   heuristics to the console via `cli`.
 #'
 #' @return A data frame in a wide format (one row per unique `mrn`, `admission_csn`,
-#'   `date_time_recorded`, and `medication` combination) containing the following columns:
-#'   \list{
-#'     \item{\code{mrn}, \code{admission_csn}, \code{case_id}}{Standardized character string patient/encounter keys.}
-#'     \item{\code{date_time_recorded}}{A unified \code{POSIXct} timestamp denoting record execution time.}
-#'     \item{\code{medication}}{A cleaned character identifier (\code{"morphine"}, \code{"oxycodone"}, or \code{"fentanyl"}).}
-#'     \item{\code{units}}{The localized unit label assigned to the dosage metrics.}
-#'     \item{\code{n_attempts}, \code{n_given}}{Resolved cumulative integers tracking patient demands and delivered boluses.}
-#'     \item{\code{dose_administered}, \code{volume_administered}}{Aggregated amounts administered at the observation window.}
-#'     \item{\code{reservoir_volume_remaining}}{The chronologically resolved residual volume within the pump reservoir.}
-#'   }
+#'   `date_time_recorded`, and `simple_generic_name` combination) containing the following columns:
+#' * `mrn`, `admission_csn`, `case_id`: Standardized character string patient/encounter keys.
+#' * `date_time_recorded`: A unified `POSIXct` timestamp denoting record execution time.
+#' * `simple_generic_name`: A cleaned character identifier (`"morphine"`, `"oxycodone"`, or `"fentanyl"`).
+#' * `units`: The localized unit label assigned to the dosage metrics.
+#' * `n_attempts`, `n_given`: Resolved cumulative integers tracking patient demands and delivered boluses.
+#' * `dose_administered`, `volume_administered`: Aggregated amounts administered at the observation window.
+#' * `reservoir_volume_remaining`: The chronologically resolved residual volume within the pump reservoir.
 #'
 #' @export
 #'
@@ -134,15 +136,15 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       ),
 
       # Map to the 3 drugs of interest (stored as lowercase strings here).
-      medication = case_when(
-        !excluded_drug & str_detect(fs_text, "morphine")  ~ "morphine",
-        !excluded_drug & str_detect(fs_text, "oxycod")    ~ "oxycodone",
+      simple_generic_name = case_when(
+        !excluded_drug & str_detect(fs_text, "morphine")  ~ "morphine sulfate",
+        !excluded_drug & str_detect(fs_text, "oxycod")    ~ "oxycodone hydrochloride",
         !excluded_drug & str_detect(fs_text, "fent")      ~ "fentanyl",
         TRUE ~ NA_character_
       )
     ) %>%
     # Keep only the PCA meds of interest
-    filter(!is.na(medication)) %>%
+    filter(!is.na(simple_generic_name)) %>%
     # Remove temporary helper columns
     select(-fs_text, -excluded_drug)
 
@@ -163,7 +165,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
    pcas_long_keyed <- PCA_dataframe %>%
     mutate(
-      admission_csn = as.character(admission_csn),
+      admission_csn = admission_csn,
       mrn           = as.character(mrn),
 
       # Uppercase versions for pattern matching.
@@ -207,7 +209,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   #   - reservoir: take the "latest" reading by (line_end or effective_time)
   #   - counters: take max (counters are cumulative; max is safest)
   pcas_collapsed <- pcas_long_keyed %>%
-    group_by(mrn, admission_csn, case_id, effective_time, medication, var) %>%
+    group_by(mrn, admission_csn, case_id, effective_time, simple_generic_name, var) %>%
     reframe(
       value = {
         vtype <- first(var)
@@ -229,8 +231,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
   # Extract a single units value for each timestamp+med row after collapsing.
   units_by_group <- pcas_collapsed %>%
-    transmute(mrn, admission_csn, effective_time, medication, units = units_var) %>%
-    distinct(mrn, admission_csn, effective_time, medication, .keep_all = TRUE)
+    transmute(mrn, admission_csn, effective_time, simple_generic_name, units = units_var) %>%
+    distinct(mrn, admission_csn, effective_time, simple_generic_name, .keep_all = TRUE)
 
   # Pivot into one row per timestamp (date_time_recorded) and medication.
   # Result contains attempts, given, dose, volume, reservoir.
@@ -242,13 +244,13 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     ) %>%
     left_join(
       units_by_group,
-      by = c("mrn", "admission_csn", "effective_time", "medication")
+      by = c("mrn", "admission_csn", "effective_time", "simple_generic_name")
     ) %>%
     rename(
       date_time_recorded = effective_time
     ) %>%
     select(
-      mrn, admission_csn, case_id, date_time_recorded, medication, units,
+      mrn, admission_csn, case_id, date_time_recorded, simple_generic_name, units,
       n_attempts, n_given, dose_administered, volume_administered,
       reservoir_volume_remaining
     ) %>%
@@ -273,7 +275,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # disagrees with expected.
   pcas_wide_step2 <- pcas_wide_step1 %>%
     mutate(
-      med_clean = str_to_lower(medication),
+      med_clean = str_to_lower(simple_generic_name),
 
       expected_concentration = case_when(
         str_detect(med_clean, "morphine")  ~ 1,
@@ -321,7 +323,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       )
     ) %>%
     select(
-      mrn, admission_csn, case_id, date_time_recorded, medication, units,
+      mrn, admission_csn, case_id, date_time_recorded, simple_generic_name, units,
       n_attempts, n_given, dose_administered, volume_administered, reservoir_volume_remaining,
       PCA_concentration, PCA_concentration_unit, expected_concentration, concentration_mismatch_flag
     )
@@ -337,7 +339,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     group_by(mrn, admission_csn) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
-      med_lc   = str_to_lower(medication),
+      med_lc   = str_to_lower(simple_generic_name),
       is_fent  = str_detect(med_lc, "fentanyl"),
       fent_n         = sum(is_fent, na.rm = TRUE),
       fent_elsewhere = (fent_n - if_else(is_fent, 1L, 0L)) > 0,
@@ -345,11 +347,11 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       to_fent_ctx = mis & is.finite(PCA_concentration) & PCA_concentration >= 15 & fent_elsewhere,
 
       # Keep originals for audit/debug
-      medication_orig = medication,
+      medication_orig = simple_generic_name,
       units_orig      = units,
 
       # Apply recode when context supports fentanyl
-      medication             = if_else(to_fent_ctx, "Fentanyl", medication),
+      simple_generic_name             = if_else(to_fent_ctx, "fentanyl", simple_generic_name),
       units                  = if_else(to_fent_ctx, "mcg", units),
       PCA_concentration_unit = if_else(to_fent_ctx, "mcg/mL", PCA_concentration_unit)
     ) %>%
@@ -362,7 +364,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     group_by(mrn, admission_csn) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
-      med_lc    = str_to_lower(medication),
+      med_lc    = str_to_lower(simple_generic_name),
       is_morph  = str_detect(med_lc, "morphine"),
       is_oxy    = str_detect(med_lc, "oxycodone"),
 
@@ -372,8 +374,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       oxy_elsewhere   = (oxy_n   - if_else(is_oxy,   1L, 0L)) > 0,
 
       # Look at adjacent rows for medication continuity evidence
-      prev_med       = lag(medication),
-      next_med       = lead(medication),
+      prev_med       = lag(simple_generic_name),
+      next_med       = lead(simple_generic_name),
       prev_is_morph  = str_detect(str_to_lower(coalesce(prev_med, "")), "morphine"),
       next_is_morph  = str_detect(str_to_lower(coalesce(next_med, "")), "morphine"),
       prev_is_oxy    = str_detect(str_to_lower(coalesce(prev_med, "")), "oxycodone"),
@@ -390,23 +392,23 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       to_oxy   = mis & is_morph & is.finite(conc_calc) & conc_calc == 2 & (neighbor_oxy | oxy_elsewhere),
       to_morph = mis & is_oxy   & is.finite(conc_calc) & conc_calc == 1 & (neighbor_morph | (morph_elsewhere & !oxy_elsewhere)),
 
-      medication = case_when(
-        to_oxy   ~ "Oxycodone",
-        to_morph ~ "Morphine",
-        TRUE     ~ medication
+      simple_generic_name = case_when(
+        to_oxy   ~ "oxycodone hydrochloride",
+        to_morph ~ "morphine sulfate",
+        TRUE     ~ simple_generic_name
       ),
 
       # Update concentration units + expected conc after any recode
       PCA_concentration_unit = case_when(
-        str_detect(str_to_lower(medication), "fentanyl") ~ "mcg/mL",
-        str_detect(str_to_lower(medication), "morphine|oxycodone") ~ "mg/mL",
+        str_detect(str_to_lower(simple_generic_name), "fentanyl") ~ "mcg/mL",
+        str_detect(str_to_lower(simple_generic_name), "morphine|oxycodone") ~ "mg/mL",
         TRUE ~ PCA_concentration_unit
       ),
 
       expected_concentration = case_when(
-        str_detect(str_to_lower(medication), "morphine")  ~ 1,
-        str_detect(str_to_lower(medication), "oxycodone") ~ 2,
-        str_detect(str_to_lower(medication), "fentanyl")  ~ 20,
+        str_detect(str_to_lower(simple_generic_name), "morphine")  ~ 1,
+        str_detect(str_to_lower(simple_generic_name), "oxycodone") ~ 2,
+        str_detect(str_to_lower(simple_generic_name), "fentanyl")  ~ 20,
         TRUE ~ expected_concentration
       )
     ) %>%
@@ -423,7 +425,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # Identify likely "bag changes" when reservoir volume jumps upward by >= min_jump_ml
   # AND the resulting volume is near full.
   pcas_wide_step3 <- pcas_wide_step2b %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       res_ml       = reservoir_volume_remaining,
@@ -447,7 +449,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # PCA counters (attempts/given) should be non-decreasing; when both drop, pump
   # was likely reset or a new run started (or counters re-zeroed).
   pcas_wide_step4 <- pcas_wide_step3 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       first_in_grp    = dplyr::row_number() == 1,
@@ -477,7 +479,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # n_given is a cumulative counter. Convert to per-interval increments; after reset,
   # take the raw value as that interval's increment.
   pcas_wide_step5 <- pcas_wide_step4 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       n_given_lag = dplyr::lag(n_given),
@@ -501,7 +503,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # then estimate bolus = dose_administered[j] / n_given[j].
   # Store it at row i (the reset row) as bolus_dose, plus a source offset.
   pcas_wide_step6 <- pcas_wide_step5 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     group_modify(~{
       df <- .x
@@ -509,7 +511,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       n  <- nrow(df)
       df$bolus_dose <- NA_real_
       df$bolus_dose_source_offset <- NA_integer_
-      med_name <- key$medication[[1]]
+      med_name <- key$simple_generic_name[[1]]
       for (i in seq_len(n)) {
         if (df$pump_reset_reason[i] %in% c("first_row","both")) {
           # find next row with positive press count
@@ -527,10 +529,10 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     }) %>%
     ungroup() %>%
     mutate(
-      # bolus dose units depend on medication
+      # bolus dose units depend on simple_generic_name
       bolus_dose_unit = case_when(
-        str_detect(str_to_lower(medication), "fentanyl") ~ "mcg",
-        str_detect(str_to_lower(medication), "morphine|oxycodone") ~ "mg",
+        str_detect(str_to_lower(simple_generic_name), "fentanyl") ~ "mcg",
+        str_detect(str_to_lower(simple_generic_name), "morphine|oxycodone") ~ "mg",
         TRUE ~ NA_character_
       )
     )
@@ -543,7 +545,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # Prefer reservoir-derived dose if reservoir drops exist; otherwise use admin totals.
   # Pick the most frequent rounded per-press value across windows.
   pcas_wide_step7 <- pcas_wide_step6 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       # recompute incremental presses (kept here because window logic uses it)
@@ -568,7 +570,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       drops <- c(NA_real_, res[-1] - res[-length(res)])
       drops <- -pmin(drops, 0)
 
-      med_name <- key$medication[[1]]
+      med_name <- key$simple_generic_name[[1]]
 
       for (i in seq_len(n)) {
         if (df$pump_reset_reason[i] %in% c("first_row","both")) {
@@ -633,7 +635,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   #   - "snap" to 1.0 or 1.5 mg in mg-drugs when ratios strongly suggest those
   #   - soft penalties to prefer common bg rates and continuity with previous reset bolus
   pcas_wide_step8 <- pcas_wide_step7 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     group_modify(~{
       df  <- .x
@@ -645,7 +647,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       df$background_rate_final   <- NA_real_
       df$background_rate_ml_hr   <- NA_real_
       df$background_dose         <- NA_real_
-      df$background_dose_unit    <- ifelse(grepl("fentanyl", tolower(key$medication[[1]])), "mcg/hr", "mg/hr")
+      df$background_dose_unit    <- ifelse(grepl("fentanyl", tolower(key$simple_generic_name[[1]])), "mcg/hr", "mg/hr")
       df$bolus_recalc_flag       <- FALSE
       df$bolus_recalc_basis      <- NA_character_
       df$bolus_recalc_window     <- NA_integer_
@@ -661,7 +663,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
                           df$dose_administered - dose_lag)
       incr_dose <- ifelse(!is.na(incr_dose) & incr_dose < 0, df$dose_administered, incr_dose)
 
-      med_name    <- key$medication[[1]]
+      med_name    <- key$simple_generic_name[[1]]
       mg_drug     <- !grepl("fentanyl", tolower(med_name))
       bg_cap_mass <- upper_bg_rate_by_med(med_name)
 
@@ -899,7 +901,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # infer a background rate for the segment. This provides a "global" background
   # estimate that can override/assist the per-reset grid fit.
   pcas_wide_step9 <- pcas_wide_step8 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       segment_id        = cumsum(coalesce(pump_reset, FALSE)),
@@ -916,7 +918,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       incremental_dose_admin = if_else(!is.na(incremental_dose_admin) & incremental_dose_admin < 0,
                                        dose_administered, incremental_dose_admin)
     ) %>%
-    group_by(mrn, admission_csn, medication, segment_id) %>%
+    group_by(mrn, admission_csn, simple_generic_name, segment_id) %>%
     mutate(
       # Bolus used for segment inference (prefer final/validated/seeded bolus)
       bolus_for_segment = dplyr::first(coalesce(bolus_dose_final, bolus_dose_validated, bolus_dose)),
@@ -953,7 +955,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       seg_bg_ml_hr_round  = if_else(!is.na(seg_bg_ml_hr), round(seg_bg_ml_hr / 0.5) * 0.5, NA_real_),
       seg_bg_mass_rate    = seg_bg_ml_hr_round * seg_conc_ref,
 
-      seg_bg_unit         = if_else(str_detect(str_to_lower(dplyr::first(medication)), "fentanyl"), "mcg/hr", "mg/hr"),
+      seg_bg_unit         = if_else(str_detect(str_to_lower(dplyr::first(simple_generic_name)), "fentanyl"), "mcg/hr", "mg/hr"),
       seg_bg_applied      = !is.na(seg_bg_ml_hr_round) & seg_bg_ml_hr_round >= 0.5,
       seg_bg_reason       = if_else(seg_use_reservoir, "reservoir", "admin")
     ) %>%
@@ -990,7 +992,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   #
   # NOTE: below block includes some explicit comments already in your script and retains them.
   pcas_wide_step10 <- pcas_wide_step9 %>%
-    group_by(mrn, admission_csn, medication) %>%
+    group_by(mrn, admission_csn, simple_generic_name) %>%
     arrange(date_time_recorded, .by_group = TRUE) %>%
     mutate(
       interval_hours = as.numeric(difftime(date_time_recorded, dplyr::lag(date_time_recorded), units = "hours")),
@@ -1022,15 +1024,15 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       vol_admin_incr_ml = if_else(!is.na(vol_admin_incr_ml) & vol_admin_incr_ml < 0,
                                   volume_administered, vol_admin_incr_ml),
 
-      # Locked concentration by medication:
+      # Locked concentration by simple_generic_name:
       # This deliberately ignores any inferred concentration variability to keep Step 10 stable.
       conc_locked = dplyr::case_when(
-        stringr::str_detect(stringr::str_to_lower(medication), "fentanyl")  ~ 20,
-        stringr::str_detect(stringr::str_to_lower(medication), "morphine")  ~ 1,
-        stringr::str_detect(stringr::str_to_lower(medication), "oxycodone") ~ 2,
+        stringr::str_detect(stringr::str_to_lower(simple_generic_name), "fentanyl")  ~ 20,
+        stringr::str_detect(stringr::str_to_lower(simple_generic_name), "morphine")  ~ 1,
+        stringr::str_detect(stringr::str_to_lower(simple_generic_name), "oxycodone") ~ 2,
         TRUE ~ NA_real_
       ),
-      is_fentanyl   = grepl("fentanyl", tolower(medication)),
+      is_fentanyl   = grepl("fentanyl", tolower(simple_generic_name)),
       zero_dose_eps = if_else(is_fentanyl, zero_dose_eps_mcg, zero_dose_eps_mg),
 
       # Priming detection:
@@ -1085,8 +1087,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       # Volume limit fixed at 100 mL/bag.
       bag_mass_limit = dplyr::case_when(
         is_fentanyl ~ 2000,
-        stringr::str_detect(stringr::str_to_lower(medication), "morphine")  ~ 100,
-        stringr::str_detect(stringr::str_to_lower(medication), "oxycodone") ~ 200,
+        stringr::str_detect(stringr::str_to_lower(simple_generic_name), "morphine")  ~ 100,
+        stringr::str_detect(stringr::str_to_lower(simple_generic_name), "oxycodone") ~ 200,
         TRUE ~ NA_real_
       ),
       bag_vol_limit_ml = 100,
@@ -1267,7 +1269,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   #        * if more than 1 inlier sources -> mean(inliers)
   #        * else fallback to the standard preference order (reservoir vs admin etc.)
   pcas_wide_step10 <- pcas_wide_step10 %>%
-    dplyr::group_by(mrn, admission_csn, medication) %>%
+    dplyr::group_by(mrn, admission_csn, simple_generic_name) %>%
     dplyr::arrange(date_time_recorded, .by_group = TRUE) %>%
     dplyr::group_modify(~{
       df  <- .x
@@ -1276,8 +1278,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
       if (n == 0) return(df)
 
       # Derive drug type from group key (avoid mutating df)
-      med_key <- if ("medication" %in% names(key) && length(key$medication) && !is.na(key$medication[[1]])) {
-        as.character(key$medication[[1]])
+      med_key <- if ("simple_generic_name" %in% names(key) && length(key$simple_generic_name) && !is.na(key$simple_generic_name[[1]])) {
+        as.character(key$simple_generic_name[[1]])
       } else NA_character_
 
       # EWMA smoothing: window ~5
@@ -1474,7 +1476,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   # ===========================================================================
   out <- pcas_wide_step10 %>%
     select(
-      mrn, admission_csn, medication,
+      mrn, admission_csn, simple_generic_name,
       date_time_recorded, interval_hours, units,
       PCA_concentration, PCA_concentration_unit, concentration_mismatch_flag,
       new_bag, pump_reset_reason,
@@ -1501,7 +1503,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
         patient_out_of_room = if (inherits(patient_out_of_room, "POSIXt")) patient_out_of_room else ymd_hms(patient_out_of_room, tz = tz, quiet = TRUE),
         anaesthesia_end     = if (inherits(anaesthesia_end,     "POSIXt")) anaesthesia_end     else ymd_hms(anaesthesia_end,     tz = tz, quiet = TRUE),
         postop_anchor_raw   = coalesce(in_recovery, patient_out_of_room, anaesthesia_end),
-        admission_csn       = as.character(admission_csn)
+        admission_csn       = admission_csn
       ) %>%
       group_by(admission_csn) %>%
       summarise(
