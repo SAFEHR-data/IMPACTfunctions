@@ -97,6 +97,7 @@ calculate_procedure_times <- function(dataset,
     dplyr::select(dplyr::all_of(c(columns, start_time_columns, end_time_columns))) %>%
     dplyr::collect()
 
+  if(verbose){cli::cli_alert_info("Checking time clusters for outliers.")}
   phases <- phases %>%
     rowwise() %>%
     mutate(start_min = min(c_across(all_of(start_time_columns)), na.rm = TRUE),
@@ -246,7 +247,8 @@ calculate_procedure_times_diagnostics_plot <- function(phases = phases,
     }
 
     # 4. Vertically align and stack plots (3:1 ratio)
-    patchwork::wrap_plots(c(p_density, p_box), heights = c(3, 1), ncol=1, nrow(2))
+    plots <- list(p_density, p_box)
+    patchwork::wrap_plots(plots, heights = c(3, 1), ncol=1, nrow(2))
 
   return(plot)
 
