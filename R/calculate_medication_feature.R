@@ -113,6 +113,14 @@ calculate_medication_feature <- function(dataset,
 
   csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
 
+  mar_csn_vector <- MAR %>% pull(.data[[csn_vector_name]]) %>% na.omit()
+
+  if(any(!csn_vector %in% mar_csn_vector)){
+    missing_length <- sum(!csn_vector %in% mar_csn_vector)
+    cli::cli_alert_danger("Warning, for {.val {missing_length}} {.val {csn_vector_name}} there were no correspending MAR entries found. This may ead to silent failures where the returned value may be FALSE/0 but rather the csn provided and the CSN on the MAR do not match. ")
+
+  }
+
   if(feature == "binary"){
 
     MAR_df <- MAR %>% collect()
