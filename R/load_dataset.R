@@ -80,7 +80,7 @@ load_dataset <- function(
 
 
     if(any(!approved_tables_names %in% files$name)){
-      missing_tables <-  pull(dictionary_IMPACT_schema[which(!approved_tables_names %in% files$name), "table_name"])
+      missing_tables <- setdiff(approved_tables_names, files$name)
       cli::cli_abort("The table {.val {missing_tables}} is in the IMPACT dictionary but is not found in the dataset you provided.
         \n This may be for a number of reasons:
         \n - You have not set the prefix and suffix correctly (scroll up to see warning message if so)
