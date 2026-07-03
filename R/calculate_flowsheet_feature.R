@@ -69,7 +69,7 @@ calculate_flowsheet_feature <- function(dataset,
 
   # Flowsheet consistency check (skip for binary, count, list - units irrelevant)
 
-    flowsheets_present <- unique(flowsheet %>% select(flowsheet_row_epic_id) %>% collect())
+    flowsheets_present <- unique(flowsheet %>% pull(flowsheet_row_epic_id) )
 
     if (length(flowsheets_present) == 1) {
       if (verbose) cli::cli_alert_success("Single flowsheet extracted. EPIC ID: {.val {flowsheets_present}}.")
@@ -101,8 +101,16 @@ calculate_flowsheet_feature <- function(dataset,
 
     result <- flowsheet %>%
       group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = mean(value, na.rm = TRUE)) %>%
+      summarise(result = mean(as.numeric(value), na.rm = TRUE)) %>%
       collect()
+
+  }else if (feature == "median_values") {
+
+    result <- flowsheet %>%
+      group_by(.data[[csn_vector_name]])%>%
+      collect() %>%
+      summarise(result = median(as.numeric(value), na.rm = TRUE))
+
 
   } else if (feature == "count_of_values") {
 
@@ -116,7 +124,7 @@ calculate_flowsheet_feature <- function(dataset,
     result <- flowsheet %>%
       collect() %>%
       group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = list(value), .groups = "drop")
+      summarise(result = paste0(value, collapse = "|"), .groups = "drop")
 
   } else {
     cli::cli_abort("{.arg feature} must be one of {.val binary}, {.val sum_values}, {.val mean_values}, {.val count_of_values}, or {.val list_values}.")
