@@ -22,7 +22,7 @@ The dataset was built at UCLH with input from CUH NHS trust and others…
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
 Features in Package version: 0.1.0.9003 \| Package compatible with
-IMPACT dataset up to `20260512`
+IMPACT dataset up to `20260624`
 
 ### Future features
 
