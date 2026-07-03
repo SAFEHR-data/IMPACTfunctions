@@ -49,11 +49,11 @@ load_dataset <- function(
   #If suffix or prefix are supplied use these to strip chars from file names to generate names vector.
   if(!missing(prefix) & !missing(suffix)){
     if(verbose){cli::cli_alert("Cleaning file names by removing the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}}")}
-    files$name <- gsub(prefix, "",  gsub(suffix, "", files$name))
+    files$name <- gsub(prefix, "",  gsub(suffix, "", files$name), fixed = TRUE)
     }else if(!missing(prefix)){
-      files$name <- gsub(prefix, "", files$name)
+      files$name <- gsub(prefix, "", files$name, fixed = TRUE)
     }else if(!missing(suffix)){
-      files$name <- gsub(suffix, "", files$name)
+      files$name <- gsub(suffix, "", files$name, fixed = TRUE)
     }else{
       files$name <- files$name
   }
@@ -63,12 +63,12 @@ load_dataset <- function(
 
   approved_tables_names <- na.omit(unique(dictionary_IMPACT_schema$table_name))
 
-  if(any(dictionary_IMPACT_schema[1,] %in% files$name)){
+  if(any(dictionary_IMPACT_schema$table_name[1] %in% files$name)){
     #We can cleaned to correctly match the first dict name (usually Demographics)
   }else{
     cli::cli_alert_warning("Struggaling to clean the file names using the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}} provided... ")
-    demographic_file_name <- files[grepl(dictionary_IMPACT_schema[1,1], files$name),"name"]
-    pre_suf_strings <- stringr::str_split(demographic_file_name,pull(dictionary_IMPACT_schema[1,1]) )
+    demographic_file_name <- files[grepl(dictionary_IMPACT_schema$table_name[1], files$name),"name"]
+    pre_suf_strings <- stringr::str_split(demographic_file_name,pull(dictionary_IMPACT_schema$table_name[1]) )
     cli::cli_alert_info("Looks like your {.arg prefix} should be {.val {pre_suf_strings[[1]][1]}} and the {.arg suffix} {.val {pre_suf_strings[[1]][2]}}. \n \n Without this you will either get non-standard table tables (that will fail many of the onward functions, or trigger the missing table errors with the {.arg dictionary_check=TRUE})    ")
     }
 
@@ -118,7 +118,7 @@ load_dataset <- function(
       df <- df %>% rename(col_rename)
     }
 
-    assign(files[i, "name"], df, envir = globalenv())
+    assign(files$name[i], df, envir = globalenv())
   }
 
   if(verbose){cli::cli_alert_success("Dataset imported!")}
