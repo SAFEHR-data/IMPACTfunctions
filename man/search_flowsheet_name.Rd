@@ -5,7 +5,7 @@
 \title{Helper function to search the flowsheet}
 \usage{
 search_flowsheet_name(
-  flowsheet = c(Measurements, IntraoperativeMeasurements),
+  flowsheet = Measurements,
   string,
   strict_search = FALSE,
   search_column = "flowsheet_question_name",
@@ -13,7 +13,7 @@ search_flowsheet_name(
 )
 }
 \arguments{
-\item{flowsheet}{The arrow table of the flowsheet of interest. Pick either \code{Measurements} or \code{IntraoperativeMeasurements}.}
+\item{flowsheet}{The arrow table of the flowsheet of interest. Defaults to \code{Measurements}.}
 
 \item{string}{String to search for. Case insensitive for soft search.}
 

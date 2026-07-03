@@ -34,10 +34,13 @@ load_dataset <- function(
 
   # Stage 1 - Data discovery and metadata discovery
 
-  files <- list.files(folder_path, pattern = "\\.parquet$")
-  if(length(files) == 0){cli::cli_abort("No parquet files found at {.path {folder_path}}. \nCheck folder path and file formats.")}
+  files <- data.frame(path = list.files(folder_path, full.names = TRUE))
+  # extract the folder/parquet names from the full path
+  files$name <- str_extract(files$path,"[^/]+$")
 
-  if(verbose){cli::cli_alert("{.val {length(files)}} parquet files found in {.path {folder_path}} \n Files: {.val {head(files, n=3)}}, ...")}
+  if(nrow(files) == 0){cli::cli_abort("No Dataset files found at {.path {folder_path}}. \nCheck folder path and file formats.")}
+
+  if(verbose){cli::cli_alert("{.val {nrow(files)}} parquet files/folders found in {.path {folder_path}} \n First 3 Files: {.val {head(files$name, n=3)}}, ...")}
 
   # Stage 2 - Naming tables and check against dictionary
 
@@ -45,13 +48,13 @@ load_dataset <- function(
   #If suffix or prefix are supplied use these to strip chars from file names to generate names vector.
   if(!missing(prefix) & !missing(suffix)){
     if(verbose){cli::cli_alert("Cleaning file names by removing the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}}")}
-    names <- gsub(prefix, "",  gsub(suffix, "", files))
+    files$name <- gsub(prefix, "",  gsub(suffix, "", files$name), fixed = TRUE)
     }else if(!missing(prefix)){
-      names <- gsub(prefix, "", files)
+      files$name <- gsub(prefix, "", files$name, fixed = TRUE)
     }else if(!missing(suffix)){
-      names <- gsub(suffix, "", files)
+      files$name <- gsub(suffix, "", files$name, fixed = TRUE)
     }else{
-    names <- files
+      files$name <- files$name
   }
 
   #Suffix and Prefix check - To check if our provided Suffix and Prefix are suitable
@@ -59,34 +62,36 @@ load_dataset <- function(
 
   approved_tables_names <- na.omit(unique(dictionary_IMPACT_schema$table_name))
 
-  if(any(dictionary_IMPACT_schema[1,] %in% names)){
+  if(any(dictionary_IMPACT_schema$table_name[1] %in% files$name)){
     #We can cleaned to correctly match the first dict name (usually Demographics)
   }else{
     cli::cli_alert_warning("Struggaling to clean the file names using the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}} provided... ")
-    demographic_file_name <- files[grepl(dictionary_IMPACT_schema[1,], names)]
-    pre_suf_strings <- stringr::str_split(demographic_file_name,dictionary_IMPACT_schema[1,] )
+    demographic_file_name <- files[grepl(dictionary_IMPACT_schema$table_name[1], files$name),"name"]
+    pre_suf_strings <- stringr::str_split(demographic_file_name,pull(dictionary_IMPACT_schema$table_name[1]) )
     cli::cli_alert_info("Looks like your {.arg prefix} should be {.val {pre_suf_strings[[1]][1]}} and the {.arg suffix} {.val {pre_suf_strings[[1]][2]}}. \n \n Without this you will either get non-standard table tables (that will fail many of the onward functions, or trigger the missing table errors with the {.arg dictionary_check=TRUE})    ")
     }
 
   #Check the cleaned table names against the dictonary
   if(dictionary_check){
     if(verbose){cli::cli_h2("Dictonary Check ")}
-    if(verbose){cli::cli_alert("Checking table names from dataset ({.val {head(names, n=2)}}, ...) against the dictonary.")}
+    if(verbose){cli::cli_alert("Checking table names from dataset ({.val {head(files$name, n=2)}}, ...) against the IMPACT dictonary.")}
     #Check any missing
 
 
-    if(any(!approved_tables_names %in% names)){
-      missing_tables <-  paste0(dictionary_IMPACT_schema[which(!approved_tables_names %in% names), "table_name"], sep=", ")
+    if(any(!approved_tables_names %in% files$name)){
+      missing_tables <- setdiff(approved_tables_names, files$name)
       cli::cli_abort("The table {.val {missing_tables}} is in the IMPACT dictionary but is not found in the dataset you provided.
         \n This may be for a number of reasons:
         \n - You have not set the prefix and suffix correctly (scroll up to see warning message if so)
-        \n- The dictonary is out of date. If you think this is the case then you can look at the {.href [online IMPACT Schema](dict_url)} and open a {.href [github issue.](github_url_issues)}\n Alternativly, avoid the check with {.arg dictionary_check = FALSE}")}
+        \n- The dictonary is out of date. If you think this is the case then you can look at the {.href [online IMPACT Schema](dict_url)} and open a {.href [github issue.](github_url_issues)}\n Alternativly, avoid the check with {.arg dictionary_check = FALSE}")
+      }
       #Check for additional tables
-    if(any(!names %in% approved_tables_names)){
-     additional_tables <-  paste0(names[which(!names %in% approved_tables_names)], sep=", ")
+    if(any(!files$name %in% approved_tables_names)){
+     additional_tables <-  files$name[which(!files$name %in% approved_tables_names)]
     cli::cli_abort("The table {.val {additional_tables}} is not in the IMPACT dictionary but is found in the dataset provided.
         \nThis may be because the dataset has been updated by the dictonary itself has not been updated.
-        If you think this is the case then you can avoid the check with {.arg dictionary_check} = {.val FALSE}")}
+        If you think this is the case then you can avoid the check with {.arg dictionary_check} = {.val FALSE}")
+    }
   }
 
 
@@ -102,10 +107,8 @@ load_dataset <- function(
   # Stage 3 - Loading data into current R session
 
   if(verbose){cli::cli_alert("Uploading {.val {length(files)}} tables to the R session enviroment")}
-  for(i in 1:length(files)){
-    path <- paste0(folder_path,"/", files[i])
-    df <- arrow::open_dataset(path)
-
+  for(i in 1:nrow(files)){
+    df <- arrow::open_dataset(files[i, "path"])
 
     # If a col name issue is presne then rename
     if(col_rename %in% names(df)){
@@ -114,7 +117,7 @@ load_dataset <- function(
       df <- df %>% rename(col_rename)
     }
 
-    assign(names[i], df, envir = globalenv())
+    assign(files$name[i], df, envir = globalenv())
   }
 
   if(verbose){cli::cli_alert_success("Dataset imported!")}
