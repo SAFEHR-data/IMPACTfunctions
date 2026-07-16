@@ -2,12 +2,6 @@
 #'
 #' Search the flowsheet to return features/variables for the specified measurements.
 #'
-#' Flowsheet Source
-#'
-#' There are 2 flowsheets available:
-#' 1) The general ward measurements flowsheet. Use `flowsheet = Measurements`.
-#' 2) The intraoperative measurements flowsheet. Use `flowsheet = IntraoperativeMeasurements`.
-#'
 #' Search time windows
 #'
 #' The default behaviour is to return all flowsheet entries for the admission of interest.

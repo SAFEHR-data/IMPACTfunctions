@@ -45,14 +45,6 @@ An arrow query of the subset of flowsheet data of interest.
 Search the flowsheet to return features/variables for the specified measurements.
 }
 \details{
-Flowsheet Source
-
-There are 2 flowsheets available:
-\enumerate{
-\item The general ward measurements flowsheet. Use \code{flowsheet = Measurements}.
-\item The intraoperative measurements flowsheet. Use \code{flowsheet = IntraoperativeMeasurements}.
-}
-
 Search time windows
 
 The default behaviour is to return all flowsheet entries for the admission of interest.

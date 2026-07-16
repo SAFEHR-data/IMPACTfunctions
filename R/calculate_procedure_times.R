@@ -55,7 +55,7 @@
 #'   anaesthesia_start = ymd_hms(c("2026-06-15 08:00:00", "2026-06-15 09:00:00")),
 #'   anaesthesia_ready = ymd_hms(c("2026-06-15 08:15:00", "2026-06-15 09:10:00")),
 #'   patient_in_room   = ymd_hms(c("2026-06-15 08:20:00", "2026-06-15 09:15:00")),
-#'   procedure_start   = ymd_hms(c("2026-06-15 08:30:00", "2026-06-15 11:30:00")), # Case 2 out of limit
+#'   procedure_start   = ymd_hms(c("2026-06-15 08:30:00", "2026-06-15 11:30:00")),
 #'   procedure_end     = ymd_hms(c("2026-06-15 10:00:00", "2026-06-15 13:00:00")),
 #'   patient_out_of_room = ymd_hms(c("2026-06-15 10:10:00", "2026-06-15 13:15:00")),
 #'   anaesthesia_end   = ymd_hms(c("2026-06-15 10:15:00", "2026-06-15 13:20:00")),
@@ -97,6 +97,7 @@ calculate_procedure_times <- function(dataset,
     dplyr::select(dplyr::all_of(c(columns, start_time_columns, end_time_columns))) %>%
     dplyr::collect()
 
+  if(verbose){cli::cli_progress_step("Checking time clusters for outliers.")}
   phases <- phases %>%
     rowwise() %>%
     mutate(start_min = min(c_across(all_of(start_time_columns)), na.rm = TRUE),
@@ -110,7 +111,7 @@ calculate_procedure_times <- function(dataset,
 
   if(diagnostics){
 
-    cli::cli_alert_success("Returning the diagnostic plots. See {.fn ?calculate_procedure_times} for for  ")
+    cli::cli_alert_success("Returning the diagnostic plots. See {.fn ?calculate_procedure_times} for more info on the interpretation.")
    result <- list(
      calculate_procedure_times_diagnostics_plot(phases, "start_width", width_limit = start_width_limit),
     calculate_procedure_times_diagnostics_plot(phases, "end_width", width_limit = end_width_limit)
@@ -119,6 +120,7 @@ calculate_procedure_times <- function(dataset,
    return(result)
   }
 
+
   phases <- phases %>%
     mutate(start_width_acceptable = ifelse(start_width <= as.period(start_width_limit, unit = "mins"), TRUE, FALSE),
            end_width_acceptable = ifelse(end_width <= as.period(end_width_limit, unit = "mins"), TRUE, FALSE),)
@@ -126,8 +128,7 @@ calculate_procedure_times <- function(dataset,
 
   if(verbose){
     cli::cli_alert_info("For each procedure checking if any outlier times. \nIf no outliers then coalesceing down (skipping) {.val NA} values) the columns: {.val {rev(start_time_columns)}}. \n If outlier detected taking the median time of columns")
-    cli::cli_alert_info("\nIf no outliers then coalesceing down the columns (skipping) {.val NA} values) {.val {end_time_columns}}. \n If outlier detected taking the median time of columns")
-
+    cli::cli_progress_step("\nIf no outliers then coalesceing down the columns (skipping) {.val NA} values) {.val {end_time_columns}}. \n If outlier detected taking the median time of columns")
      }
 
   phases <- phases %>% rowwise() %>%
@@ -147,6 +148,7 @@ calculate_procedure_times <- function(dataset,
 
   phases <- phases %>% select(all_of(columns), start_time, end_time)
 
+  if(verbose){cli::cli_progress_step("Returning dataset")}
   if(!missing(time_column_suffix)){
     phases <- phases %>%
       rename_with(~paste0(.,"_" , time_column_suffix), .cols = !all_of(columns))
@@ -170,8 +172,6 @@ calculate_procedure_times_diagnostics_plot <- function(phases = phases,
     dplyr::mutate(!!column_string := as.numeric(.data[[column_string]], units = "mins"))
 
 
-    # Run diagnostics to help tune function
-    library(patchwork) # Crucial for clean, aligned multi-plot layouts
 
     # 1. Calculate descriptive statistics for precise annotation
   col_vector <- phases %>% dplyr::pull(.data[[column_string]])
@@ -248,8 +248,9 @@ calculate_procedure_times_diagnostics_plot <- function(phases = phases,
     }
 
     # 4. Vertically align and stack plots (3:1 ratio)
-    plot <- p_density / p_box + plot_layout(heights = c(3, 1))
+    plots <- list(p_density, p_box)
+    final_plot <- patchwork::wrap_plots(plots, heights = c(3, 1), ncol=1, nrow(2))
 
-  return(plot)
+  return(final_plot)
 
 }

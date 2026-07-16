@@ -80,7 +80,7 @@ mock_phases <- tibble(
   anaesthesia_start = ymd_hms(c("2026-06-15 08:00:00", "2026-06-15 09:00:00")),
   anaesthesia_ready = ymd_hms(c("2026-06-15 08:15:00", "2026-06-15 09:10:00")),
   patient_in_room   = ymd_hms(c("2026-06-15 08:20:00", "2026-06-15 09:15:00")),
-  procedure_start   = ymd_hms(c("2026-06-15 08:30:00", "2026-06-15 11:30:00")), # Case 2 out of limit
+  procedure_start   = ymd_hms(c("2026-06-15 08:30:00", "2026-06-15 11:30:00")),
   procedure_end     = ymd_hms(c("2026-06-15 10:00:00", "2026-06-15 13:00:00")),
   patient_out_of_room = ymd_hms(c("2026-06-15 10:10:00", "2026-06-15 13:15:00")),
   anaesthesia_end   = ymd_hms(c("2026-06-15 10:15:00", "2026-06-15 13:20:00")),

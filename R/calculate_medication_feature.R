@@ -11,8 +11,8 @@
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
 #' @param link_column Which column to use as the primary source of return. Select one option from: `link_column = c(admission_csn, anaesthesia_csn, operation_csn)`
-#' @param overide_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
-#' @param overide_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
+#' @param override_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
+#' @param override_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
 #' @param verbose Print the outputs of the function explicility.
 #' @return Either a table of the vector of interest of the joined dataset left joined.
 #' @template setup-data
@@ -39,7 +39,7 @@
 #' format = "joined",
 #' feature = "sum_dose",
 #' feature_name = "morphine_post_op",
-#' overide_dose_check= TRUE)
+#' override_dose_check= TRUE)
 #'
 #'
 #' morphine_table <- calculate_medication_feature(dataset,
@@ -47,7 +47,7 @@
 #' format = "table",
 #' feature = "binary",
 #' feature_name = "morphine_post_op",
-#' overide_dose_check= TRUE)
+#' override_dose_check= TRUE)
 #' }
 #'
 calculate_medication_feature <- function(dataset,
@@ -56,8 +56,8 @@ calculate_medication_feature <- function(dataset,
                                          feature,
                                          feature_name,
                                          link_column = "admission_csn",
-                                         overide_dose_check = FALSE,
-                                         overide_route_check = FALSE,
+                                         override_dose_check = FALSE,
+                                         override_route_check = FALSE,
                                          verbose = TRUE){
 
   ## Step 3 further filtering and cleaning of data
@@ -92,26 +92,34 @@ calculate_medication_feature <- function(dataset,
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
-  if(overide_dose_check){
+  if(override_dose_check){
     cli::cli_alert_success("Dose check overidden.")
   }else if(length(unique(MAR %>% pull(dose_units))) == 1){
     if(verbose){cli::cli_alert_success("Dose units are all the same!")}
   }else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg overide_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg override_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
     }
 
-  if(overide_route_check){
+  if(override_route_check){
     cli::cli_alert_success("Route check overidden.")
   }else if(length(unique(pull(MAR, route))) == 1){
     if(verbose){cli::cli_alert_success("Routes are all the same!")}
   }else{
-        cli::cli_abort("Not all medication routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg overide_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+        cli::cli_abort("Not all medication routes are the same.\n In {.val MAR} there are mutiple routes ({.val {unique(MAR$route)}}).\n\n If this will not impact your feature then change {.arg override_route_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
   }
 
   # 2b - Establishing the value to return against.
   ## Uses the vector that is set above given the type of MAR you are extracting against.
 
   csn_vector <- dataset %>% pull(.data[[csn_vector_name]]) %>% na.omit()
+
+  mar_csn_vector <- MAR %>% pull(.data[[csn_vector_name]]) %>% na.omit()
+
+  if(any(!csn_vector %in% mar_csn_vector)){
+    missing_length <- sum(!csn_vector %in% mar_csn_vector)
+    cli::cli_alert_danger("Warning, for {.val {missing_length}} {.val {csn_vector_name}} there were no correspending MAR entries found. This may ead to silent failures where the returned value may be FALSE/0 but rather the csn provided and the CSN on the MAR do not match. ")
+
+  }
 
   if(feature == "binary"){
 
@@ -173,16 +181,6 @@ calculate_medication_feature <- function(dataset,
 
   names(result) <- c(csn_vector_name, feature_name)
 
-
-  if(csn_vector_name == "admission_csn"){
-    # ERROR CHECKING - See Github Issue: #21
-    if(typeof(result$admission_csn) != typeof(dataset %>% pull(admission_csn))){
-      cli::cli_alert_danger("KNOWN BUG: Datatype dont match for {.var admission_csn}. See {.href [github issue for more info](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-      result$admission_csn <- as.character(result$admission_csn)
-    }else{
-      cli::cli_alert_success("KNOWN BUG FIXED!!: Please close {.href [github issue](https://github.com/SAFEHR-data/IMPACTfunctions/issues/21) }")
-    }
-  }
 
 
   # Return either the feature vector or the feature joined back to the origional dataframe

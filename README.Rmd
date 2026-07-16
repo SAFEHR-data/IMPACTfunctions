@@ -15,7 +15,7 @@ The goal of IMPACTfunctions is to help working with the IMPACT peri-operative da
 The dataset was built at UCLH with input from CUH NHS trust and others...
 
 
-## Functionality
+## Functionality and dependancy
 
 | Feature | Functions | Documentation and vignette | Synthetic data | Unit test | Clinically validated |
 |--------------|-------------------|--------------|---------|---------|---------|
@@ -24,7 +24,9 @@ The dataset was built at UCLH with input from CUH NHS trust and others...
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()`  | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc...) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-: Features in Package version: `r desc::desc_get_version()`
+: Features in Package version: `r desc::desc_get_version()` | Package compatible with IMPACT dataset up to `20260624`
+
+
 
 ### Future features
 

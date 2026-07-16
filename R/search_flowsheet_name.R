@@ -4,7 +4,7 @@
 #' Use this function to understand what your search string captures before passing
 #' arguments to `extract_flowsheet_data()`.
 #'
-#' @param flowsheet The arrow table of the flowsheet of interest. Pick either `Measurements` or `IntraoperativeMeasurements`.
+#' @param flowsheet The arrow table of the flowsheet of interest. Defaults to `Measurements`.
 #' @param string String to search for. Case insensitive for soft search.
 #' @param strict_search Do exact string matching. Useful for testing arguments for `extract_flowsheet_data()`.
 #' @param search_column Defaults to all columns for a soft search. Specify one of `"flowsheet_question_name"` or `"display_name"` for a hard search.
@@ -24,7 +24,7 @@
 #'    search_column = "flowsheet_question_name",
 #'     strict_search = TRUE)
 search_flowsheet_name <- function(
-    flowsheet = c(Measurements, IntraoperativeMeasurements),
+    flowsheet = Measurements,
     string,
     strict_search = FALSE,
     search_column = "flowsheet_question_name",

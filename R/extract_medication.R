@@ -107,7 +107,7 @@ extract_medication <- function(dataset,
        if(verbose){cli::cli_alert_info("No value provided to {.arg mar_source}. Checking for duplication of csn and then joining on {.val admission_csn}")}
 
       if(any(dataset %>% pull(admission_csn) %>% duplicated()) & (timeframe != "whole_mar")){
-        cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg tiemframe} is not set to {.val whole_mar}. \n
+        cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg timeframe} is not set to {.val whole_mar}. \n
                               This will cause issues with the join of timeframe. Either select a single value of {.arg mar_source} (and sum/join the second part later) or de-duplicate the dataset. Alternativly, expliclity set {.arg timeframe} to {.val whole_mar} then no temporal subsetting is required.")
       }else{
         joining_column = "admission_csn"
@@ -125,7 +125,7 @@ extract_medication <- function(dataset,
     if(verbose){cli::cli_alert_info("Vector provided to {.arg mar_source}. Checking for duplication of csn and then joining on {.val admission_csn}")}
 
     if(any(dataset %>% pull(admission_csn) %>% duplicated()) & (timeframe != "whole_mar")){
-      cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg tiemframe} is not set to {.val whole_mar}. \n
+      cli::cli_abort("ERROR There is duplication in the {.val admission_csn} column in {.arg dataset} provided AND {.arg timeframe} is not set to {.val whole_mar}. \n
                               This will cause issues with the join of timeframe. Either select a single value of {.arg mar_source} (and sum/join the second part later) or de-duplicate the dataset. Alternativly, expliclity set {.arg timeframe} to {.val whole_mar} then no temporal subsetting is required.")
     }else{
       joining_column = "admission_csn"
@@ -168,7 +168,7 @@ extract_medication <- function(dataset,
         )
 
     }else if(!is.na(t1)){
-      timeframe_df <- dataset %>% select(.data[[joining_column]],,  t0 = all_of(t0), t1 = all_of(t1))
+      timeframe_df <- dataset %>% select(.data[[joining_column]],  t0 = all_of(t0), t1 = all_of(t1))
     }else{
       cli::cli_abort("Hmm, you should not have been able to trigger this error message. Please {.href [leave a issue on the github](https://github.com/SAFEHR-data/IMPACTfunctions/issues)} called: \"Check timeframe logic of extract_medications()\ \n \n ")
       }
@@ -200,7 +200,7 @@ extract_medication <- function(dataset,
 
   if(missing(search_column)){
     search_column <- "simple_generic_name"
-    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val {search_column}} ")}
+    if(verbose){cli::cli_alert_info("No {.arg search_column} specifed.\n Defaulting to strict search in {.val 'simple_generic_name'} ")}
     }
 
   med_check_strict <- search_drug_names(MAR, medication, search_column = search_column, strict_search = TRUE, verbose = FALSE)
