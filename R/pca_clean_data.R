@@ -135,7 +135,6 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
  ## Step 2: Create a "flowsheet_type" label that says what each row represents (dose, volume, reservoir, attempts, given).
 
-
   PCA_dataframe <- PCA_dataframe %>%
     mutate(
       # Map each flowsheet question to a standardized variable name.
@@ -157,6 +156,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
   }
 
 
+  ## Check for duplication of rows due to left joins in the IMPACT dataset generation SQL.
+
  duplicate_join_check <-  PCA_dataframe %>%
     group_by(mrn, admission_csn, recorded_date, simple_generic_name, flowsheet_type, value) %>%
     summarise(n=n()) %>%
@@ -164,7 +165,7 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
 
  if(any(duplicate_join_check$n != 1)){
    cli::cli_alert_danger("Duplication of rows due to left join. Filtering to fix")
-   PCA_dataframe <- PCA_dataframe %>% select(-case_id, -anaesthesia_csn, -operation_csn, -line_start, -line_end, -draft_cohort, -nela_cohort, -ortho_cohort, -qi_cohort) %>% distinct()
+   PCA_dataframe <- PCA_dataframe %>% select(-case_id, -anaesthesia_csn, -operation_csn, -line_start, -line_end, -yr) %>% distinct()
  }
 
  duplicate_join_check <-  PCA_dataframe %>%
@@ -178,13 +179,19 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
    cli::cli_alert_success("Rows deduplicated")
  }
 
-
+ ## Pick one 'units' per (mrn, admission_csn, anaesthesia_csn, time, medication)
+ units_by_group <- PCA_dataframe %>%
+   distinct(mrn, admission_csn, recorded_date, medication, .keep_all = TRUE) %>%
+   dplyr::transmute(
+     mrn, admission_csn, recorded_date, medication,
+     units = units
+   )
 
   # Pivot into one row per timestamp (date_time_recorded) and medication.
   # Result contains attempts, given, dose, volume, reservoir.
   pcas_wide_step1 <- PCA_dataframe %>%
     pivot_wider(
-      names_from  = var,
+      names_from  = flowsheet_type,
       values_from = value
     ) %>%
     left_join(
@@ -205,6 +212,8 @@ pca_clean_data <- function(PCA_dataframe = PCAs,
     arrange(mrn, admission_csn, date_time_recorded)
 
   if(verbose){cli::cli_progress_step("Calculating drug concentration")}
+
+
   # ===========================================================================
   # STEP 2: Infer concentration + mismatch flag
   # ===========================================================================

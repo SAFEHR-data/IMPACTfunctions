@@ -16,7 +16,8 @@
 #'
 #' @param dataset The procedures dataset to search across.
 #' @param flowsheet The flowsheet to extract from. Defaults to `Measurements`.
-#' @param flowsheet_question_name Name(s) of the flowsheet row(s) to extract. Set to `NULL` to return all rows.
+#' @param search_string Name of flowsheet to search for. Can be single flowsheet or vector. To return all flowsheets fitting the other filter criteria then set to NULL.
+#' @param search_column The column which to search the `search_string` against, defaults to `flowsheet_question_name`. See help above.
 #' @param check_search Boolean. Validate that the flowsheet names provided exist in the data.
 #' @param timeframe Time window to search within. See details above.
 #' @param timeframe_csn The CSN which to use to join back the timeframe parameters.
@@ -31,11 +32,12 @@
 #'
 #' @examples
 #' # dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
-#' # extract_flowsheet_data(dataset, flowsheet = Measurements, flowsheet_question_name = "Heart Rate")
+#' # extract_flowsheet_data(dataset, flowsheet = Measurements, search_string = "Heart Rate")
 extract_flowsheet_data <- function(
     dataset,
     flowsheet = Measurements,
-    flowsheet_question_name = NA,
+    search_string = NA,
+    search_column = flowsheet_question_name,
     check_search = TRUE,
     timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
     timeframe_csn = "admission_csn",
@@ -51,19 +53,20 @@ extract_flowsheet_data <- function(
   }
 
   # Argument checking
-
-  if (nrow(compute(dataset)) < 1) {
+  if(is.null(dataset)){
+    cli::cli_alert("No {.arg dataset} provided. Returning flowsheets for all patietns. Subsetting by time will not work. ")
+  }else if (nrow(compute(dataset)) < 1) {
     cli::cli_abort("No rows in {.arg dataset}. Ensure you have not filtered away all patients.")
   }
 
-  if (all(is.null(flowsheet_question_name))) {
-    if (verbose) cli::cli_alert_info("No {.arg flowsheet_question_name} provided, returning all flowsheet rows.")
+  if (all(is.null(search_string))) {
+    if (verbose) cli::cli_alert_info("No {.arg search_string} provided, returning all flowsheet rows.")
     check_search <- FALSE
-  } else if (all(is.na(flowsheet_question_name))) {
-    cli::cli_abort("No value specified for {.arg flowsheet_question_name}. \n\n If you intended to return all rows set {.arg flowsheet_question_name} = {.val NULL}.")
+  } else if (all(is.na(search_string))) {
+    cli::cli_abort("No value specified for {.arg search_string}. \n\n If you intended to return all rows set {.arg search_string} = {.val NULL}.")
   }
 
-  if (length(flowsheet_question_name) > 1) {
+  if (length(search_string) > 1) {
     if (verbose) cli::cli_alert_info("A Vector of flowsheet names provided, returning rows matching any within the vector.")
   }
 
@@ -126,25 +129,25 @@ extract_flowsheet_data <- function(
 
   if (check_search) {
     if (verbose) cli::cli_h2("Checking search terms")
-    name_check_soft <- search_flowsheet_name(flowsheet, flowsheet_question_name, verbose = FALSE)
+    name_check_soft <- search_flowsheet_name(flowsheet, search_string, verbose = FALSE)
     if (sum(name_check_soft$rows) < 1) {
-      cli::cli_abort("{.arg flowsheet_question_name} ({.val {flowsheet_question_name}}) not found. Check spelling with {.fun search_flowsheet_name}.")
+      cli::cli_abort("{.arg search_string} ({.val {search_string}}) not found. Check spelling with {.fun search_flowsheet_name}.")
     } else {
-      if (verbose) cli::cli_alert_success("The following flowsheets where found: {.val {flowsheet_question_name}}")
+      if (verbose) cli::cli_alert_success("The following flowsheets where found: {.val {search_string}}")
     }
 
     name_check_strict <- search_flowsheet_name(
-      flowsheet, flowsheet_question_name,
-      search_column = "flowsheet_question_name", strict_search = TRUE, verbose = FALSE
+      flowsheet, search_string,
+      search_column = "search_string", strict_search = TRUE, verbose = FALSE
     )
     if (sum(name_check_strict$rows) < 1) {
       cli::cli_abort(
-        "{.val {flowsheet_question_name}} had no exact matches in {.val flowsheet_question_name}.
+        "{.val {search_string}} had no exact matches in {.val search_string}.
          \n\nUse {.fun search_flowsheet_name} to check available values:"
       )
       print(name_check_soft)
     } else {
-      if (verbose) cli::cli_alert_success("{.val {flowsheet_question_name}} matched exactly in {.val flowsheet_question_name}")
+      if (verbose) cli::cli_alert_success("{.val {search_string}} matched exactly in {.val search_string}")
     }
   }
 
@@ -152,11 +155,11 @@ extract_flowsheet_data <- function(
   if (verbose) cli::cli_h2("Subsetting data")
 
   # 2a - Subset for flowsheet rows
-  if (is.null(flowsheet_question_name)) {
+  if (is.null(search_string)) {
     subset <- flowsheet
     if (verbose) cli::cli_alert_success("No specific flowsheet/s specified. Returning all ")
   } else {
-    subset <- flowsheet %>% filter(flowsheet_question_name %in% !!flowsheet_question_name)
+    subset <- flowsheet %>% filter(get({{search_column}}) %in% search_string )
     if (verbose) cli::cli_alert_success("Subsetting for specifed flowsheets")
   }
 
