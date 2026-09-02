@@ -34,6 +34,21 @@ extract_pca_data <- function(dataset,
     mutate(flowsheet_row_epic_id = as.numeric(flowsheet_row_epic_id),
            value = as.numeric(value))
 
+  ### REMOVE ME AFTER TESTING
+  flowsheet_df <- flowsheet_df %>% filter(admission_csn %in% unique(flowsheet_df$admission_csn)[1:50])
+  cli::cli_alert("Remove me after testing")
+
+  ### Prep the pca_flowsheet for the conversions by creating the mutipler, which is the value needed to get the mg per ml
+
+  pca_flowsheet_lookup <- pca_flowsheet_lookup %>%
+    rowwise() %>%
+    mutate(multiplier = str_extract_all(concentration,"\\(?[0-9,.]+\\)?")[[1]]) %>%
+    mutate(multiplier = case_when(
+      str_detect(concentration, "mcg") ~ as.numeric(multiplier)/1000,
+      .default = as.numeric(multiplier)
+    ))
+
+
   flowsheet_df <- flowsheet_df %>%
     select(admission_csn,flowsheet_row_epic_id, first_documented_date, recorded_date, value ) %>%
     left_join(pca_flowsheet_lookup, by= "flowsheet_row_epic_id", relationship = "many-to-many")
@@ -41,11 +56,95 @@ extract_pca_data <- function(dataset,
   if(verbose){cli::cli_progress_done("Gathered data from flowsheets")}
 
   # Check duplication, where there is duplication, keep the row with the most recent documented date
-
   flowsheet_df <- flowsheet_df %>%
     group_by(admission_csn, flowsheet_row_epic_id, recorded_date) %>%
     slice_max(first_documented_date, n= 1, with_ties = FALSE) %>%
     arrange(admission_csn, recorded_date)
+
+  ## Convert the volume given to mg given for direct comparison
+  flowsheet_df <- flowsheet_df %>%
+    mutate(
+    value = case_when(
+      flowsheet_type == "volume_given" ~ (value * as.numeric(multiplier)),
+      .default = value
+    )
+    )
+
+  ### NEW process
+
+  flowsheet_df <- flowsheet_df %>% filter(flowsheet_type %in% c("doses_given","mg_given", "volume_given" ))
+
+  ## Assign the shift start time at 7am or pm.
+  flowsheet_df <- flowsheet_df %>%
+    mutate(shift_start = floor_date(recorded_date - hours(7), "12 hours") + hours(7)) %>%
+    arrange(admission_csn, flowsheet_type, recorded_date)
+
+  ## Calculate the delta of the value before (absolute diff) and the Delta (percetnage diff)
+  ## Calculate the proportion of delta values that are positive
+  ## Detect resets
+  flowsheet_df <- flowsheet_df %>%
+    group_by(admission_csn, flowsheet_type, shift_start) %>%
+    mutate(delta_value = if_else(row_number() == 1, 0, value - lag(value)),
+           Delta_value = if_else(row_number() == 1, 0, (value - lag(value))/value)) %>%
+    ungroup()
+
+  ## Detect resetting values, defined as a drop by over 80%
+
+  flowsheet_df <- flowsheet_df %>%
+    mutate(reset = ifelse(Delta_value <= -0.8, T, F),
+           reset_to_zero = ifelse(value==0, T, F),
+           pre_window_avg = (lag(value, 1) + lag(value, 2) + lag(value, 3)) / 3,
+           post_window_avg = (lead(value, 1) + lead(value, 2) + lead(value, 3)) / 3,
+
+           reset_true = case_when(
+             reset == FALSE ~ NA,
+             post_window_avg >= pre_window_avg * 0.8 ~ FALSE,
+             post_window_avg < pre_window_avg * 0.8 ~ TRUE,
+             .default = NA
+           )) %>%
+    group_by(admission_csn, flowsheet_type) %>%
+    mutate(poportion_positive = sum(delta_value >= 0, na.rm = TRUE) / max(1, n())) %>%
+    group_by(admission_csn, flowsheet_type, shift_start) %>%
+    mutate(
+      shift_poportion_positive = sum(delta_value >= 0, na.rm = TRUE) / max(1, n() - 1),
+
+      ) %>%
+    ungroup()
+
+  flowsheet_df %>% select(value, flowsheet_type, pre_window_avg:last_col()) %>% filter(flowsheet_type=="volume_given")
+
+  threshold_cumulative <- 0.7
+
+  flowsheet_df <- flowsheet_df %>%
+    group_by(admission_csn, flowsheet_type) %>%
+    mutate(
+      doc_type = ifelse(shift_poportion_positive>= threshold_cumulative, "Cumulative", "Incremental")) %>%
+    ungroup()
+
+  doc_type_guesses <- flowsheet_df %>%
+    group_by(admission_csn, flowsheet_type) %>%
+    summarize(flowsheet_doc_type =names(which.max(table(doc_type)))) %>%
+    ungroup()
+
+  flowsheet_df <- flowsheet_df %>%
+    left_join(doc_type_guesses)
+
+  ggplot(flowsheet_df %>% filter(admission_csn == unique(flowsheet_df$admission_csn)[2] ), aes(x= recorded_date, y=value, colour = flowsheet_doc_type, group = flowsheet_type))+
+    geom_line()+
+    geom_point(shape=4, colour="darkgray")+
+    geom_point(data = . %>% filter(reset==TRUE), colour = "orange")+
+    geom_point(data = . %>% filter(reset_to_zero==TRUE), colour="red")+
+    geom_point(data = . %>% filter(reset_true==FALSE), colour="purple", shape = 3)+
+    facet_grid(flowsheet_type~., scales = "free")
+
+
+  ### CLASSIFY THE DOCUMENTATION TYPE
+
+
+
+
+
+
 
   ## For each flowsheet type, calculate the delta from the previous row. For the first recorded row the delta is just 0 as we assume a starting value of 0
 
@@ -73,12 +172,12 @@ extract_pca_data <- function(dataset,
 
   flowsheet_df <- flowsheet_df %>% filter(flowsheet_type == "mg_given")
 
-  positivity_index <- flowsheet_df %>%
+  positivity_index <- test %>%
     group_by(admission_csn, simple_generic_name, flowsheet_type) %>%
     summarise(n_obs = n(),
-              proportion_positive = sum(delta_value > 0)/n_obs,
-              proportion_negative = sum(delta_value < 0)/n_obs,
-              count_negative = count(delta_value <0)
+              #proportion_positive = sum(delta_value > 0)/n_obs,
+              #proportion_negative = sum(delta_value < 0)/n_obs,
+              #count_negative = count(delta_value < 0)
 
     )
 
@@ -157,8 +256,6 @@ extract_pca_data <- function(dataset,
 
   ggplot(positivity_index, aes(x=proportion_negative, ))+
     geom_density()
-
-
 
 
 
