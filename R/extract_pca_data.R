@@ -1,8 +1,15 @@
 extract_pca_data <- function(dataset,
                              flowsheet = Measurements,
                              pca_flowsheet_lookup = dictionary_flowsheet_pca,
-                             verbose=TRUE){
+                             verbose=TRUE,
+                             diagnostics= FALSE){
 
+  if(verbose){
+    cli::cli_h3("Extracting PCA data")
+    cli::cli_progress_step(
+    "Extracting the PCA rows from the master flowsheet table...",
+    msg_done = "PCA data extracted."
+  )}
 
   if(any(is.na(pca_flowsheet_lookup))){
     cli::cli_alert_warning(paste0("Caution: there are NA values in the PCA flowsheet lookup. Some medications may not calcaulte the PCA totals correctly. \n \n Review the relevent sheet of the {.href [dictonary](", dict_url,")}. "))
@@ -15,11 +22,11 @@ extract_pca_data <- function(dataset,
       filter(admission_csn %in% dataset$admission_csn)
 
   }else{
-    cli::cli_alert_warning("You have not provided a study dataset. Will retrive and proccess pca flowsheets for all patients... \nThis may take some time...")
+    cli::cli_alert_warning("You have not provided a study dataset. Will retrive and proccess pca flowsheets for all patients... \n 'This little maneuver's gonna cost you 51 years... - Cooper, Intersteller'")
   }
 
   # Gather all of the flowsheet rows for the patients in dataset
-  if(verbose){cli::cli_progress_done("Gathering data from flowsheets")}
+
 
   flowsheet <- extract_flowsheet_data(flowsheet = flowsheet,
                                       search_string = pca_flowsheet_lookup$flowsheet_row_epic_id,
@@ -27,14 +34,22 @@ extract_pca_data <- function(dataset,
                                       dataset = dataset,
                                       check_search = FALSE,
                                       timeframe = "whole_flowsheet",
-                                      timeframe_csn = "admission_csn")
+                                      timeframe_csn = "admission_csn",
+                                      verbose = FALSE)
 
   flowsheet_df <- flowsheet %>%
     collect() %>%
     mutate(flowsheet_row_epic_id = as.numeric(flowsheet_row_epic_id),
            value = as.numeric(value))
 
+  if (verbose) {cli::cli_progress_done()}
+
   ### Prep the pca_flowsheet for the conversions by creating the mutipler, which is the value needed to get the mg per ml
+
+  if(verbose){ cli::cli_progress_step(
+    "Joining further PCA specific data columns from PCA dictionary...",
+    msg_done = "PCA dictonary joined."
+  )}
 
   pca_flowsheet_lookup <- pca_flowsheet_lookup %>%
     rowwise() %>%
@@ -49,18 +64,32 @@ extract_pca_data <- function(dataset,
     select(admission_csn,flowsheet_row_epic_id, first_documented_date, recorded_date, value ) %>%
     left_join(pca_flowsheet_lookup, by= "flowsheet_row_epic_id", relationship = "many-to-many")
 
-  if(verbose){cli::cli_progress_done("Gathered data from flowsheets")}
+
+  if(verbose){
+    cli::cli_progress_done()
+    cli::cli_alert_success("Returning raw data from flowsheets")
+    }
 
   return(flowsheet_df)
 
-proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a reset
+}
+
+proccess_pca_data <- function(pca_data,
+                              threshold_reset = 0.5, # a drop of x percentage will trigger a reset
                     threshold_cumulative = 0.9, # What percentage of data points should be positive or neutral to conside the documentation type as cumulative
                     verbose = TRUE,
                     diagnostics = FALSE ){
 
 
+  if(verbose){
+    cli::cli_h3("Proccessing PCA data")
+    cli::cli_progress_step(
+    "Cleaning and deduplicating rows...",
+    msg_done = "PCA data cleaned"
+  )}
+
   # Check duplication, where there is duplication, keep the row with the most recent documented date
-  flowsheet_df <- flowsheet_df %>%
+  flowsheet_df <- pca_data %>%
     group_by(admission_csn, flowsheet_row_epic_id, recorded_date) %>%
     slice_max(first_documented_date, n= 1, with_ties = FALSE) %>%
     arrange(admission_csn, recorded_date)
@@ -76,6 +105,13 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
 
 
   flowsheet_df <- flowsheet_df %>% filter(flowsheet_type %in% c("doses_given","mg_given", "volume_given" ))
+
+  if(verbose){
+    cli::cli_progress_done()
+    cli::cli_progress_step(
+      "Generating features...",
+      msg_done = "Features generated"
+    )}
 
   ## Assign the shift start time at 7am or pm.
   flowsheet_df <- flowsheet_df %>%
@@ -115,8 +151,14 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
       ) %>%
     ungroup()
 
-  flowsheet_df %>% select(value, flowsheet_type, pre_window_avg:last_col()) %>% filter(flowsheet_type=="volume_given")
+ # flowsheet_df %>% select(value, flowsheet_type, pre_window_avg:last_col()) %>% filter(flowsheet_type=="volume_given")
 
+  if(verbose){
+    cli::cli_progress_done()
+    cli::cli_progress_step(
+      "Classifying documentation type for flowsheets...",
+      msg_done = "Flowsheets classifed"
+    )}
 
   flowsheet_df <- flowsheet_df %>%
     group_by(admission_csn, flowsheet_type) %>%
@@ -132,18 +174,16 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
   flowsheet_df <- flowsheet_df %>%
     left_join(doc_type_guesses)
 
-  ggplot(flowsheet_df %>% filter(admission_csn == unique(flowsheet_df$admission_csn)[2] ), aes(x= recorded_date, y=value, colour = flowsheet_doc_type, group = flowsheet_type))+
-    geom_line()+
-    geom_point(shape=4, colour="darkgray")+
-    geom_point(data = . %>% filter(reset==TRUE), colour = "orange")+
-    geom_point(data = . %>% filter(reset_to_zero==TRUE), colour="red")+
-    geom_point(data = . %>% filter(reset_true==FALSE), colour="purple", shape = 3)+
-    facet_grid(flowsheet_type~., scales = "free")
-
-
   # Correct the flowsheet values.
   # Where the flowsheet type is Incremental we just calculate the cumulative sum of the each subsequent value.
   # Where the flowsheet type is Cumulative,then we look for a reset signal before adding the previous value to all the subsequent values.
+
+  if(verbose){
+    cli::cli_progress_done()
+    cli::cli_progress_step(
+      "Interpolating data for resets and different documentation...",
+      msg_done = "Flowsheets interpolated"
+    )}
 
 
   flowsheet_df <- flowsheet_df %>%
@@ -189,11 +229,20 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
         "fentanyl",  50
       )
 
+      # There are some flowsheet types (eg "doses_given" that can be recorded with the same medication but on different flowsheets.
+      #Pick the "most common" flowsheet to source this data. )
+      flowsheet_df <- flowsheet_df %>%
+        mutate(simple_generic_name = first(simple_generic_name),
+               .by = c(admission_csn, recorded_date)) %>%
+        mutate(n_id = n(), .by = c(admission_csn, flowsheet_type, flowsheet_row_epic_id, recorded_date, simple_generic_name)) %>%
+        slice_max(n_id, by = c(admission_csn, flowsheet_type, recorded_date, simple_generic_name), with_ties = FALSE) %>%
+        select(-n_id)
+
       flowsheet_wide <- flowsheet_df %>%
         select(admission_csn, recorded_date, flowsheet_type, cumulative_value, simple_generic_name) %>%
-        group_by(admission_csn, recorded_date) %>%
-        mutate(simple_generic_name = first(simple_generic_name)) %>%
-        ungroup() %>%
+        distinct()
+
+      flowsheet_wide <- flowsheet_wide%>%
         pivot_wider(
           id_cols     = c(admission_csn, recorded_date, simple_generic_name),
           names_from  = flowsheet_type,
@@ -210,8 +259,6 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
         ungroup() %>%
         filter(!is.na(dose_increment), dose_increment > 0)
 
-
-
       increments <- increments %>%
         inner_join(candidate_lookup, by = "simple_generic_name", relationship = "many-to-many") %>%
         mutate(sq_error = (mg_increment - dose_increment * mg_per_dose_candidate)^2) %>%
@@ -222,7 +269,6 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
         ungroup() %>%
         rename(mg_per_dose = mg_per_dose_candidate) %>%
         select(admission_csn, simple_generic_name, mg_per_dose)
-
 
       flowsheet_df <- flowsheet_df %>%
       left_join(increments)
@@ -235,6 +281,13 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
 
     # Now we have three sheets, calculate the median trajectory
 
+      if(verbose){
+        cli::cli_progress_done()
+        cli::cli_progress_step(
+          "Producing best estimate of true PCA useage...",
+          msg_done = "Estimates produced"
+        )}
+
     result <- flowsheet_df %>%
       group_by(admission_csn, recorded_date) %>%
       summarise(
@@ -242,47 +295,103 @@ proccess_pca_data(threshold_reset = 0.5, # a drop of x percentage will trigger a
         .groups = "drop"
       )
 
-
-
-    if(verbose){
-      cli::cli_alert_success("Returning corrected flowsheet values")
-    }
+    if(verbose){cli::cli_progress_done()}
 
     if(diagnostics){
+      cli::cli_alert_warning("Returning the list for diagnostics. Use in {.fn pca_diagnostics} only.")
       diagnotic_return <- list(flowsheet_df, result)
       return(diagnotic_return)
     }else{
+      cli::cli_alert_success("Returning pca_dataset")
       return(result)
     }
 }
 
 
-pca_diagnostics <- function(flowsheet_df,
-                            results,
-                            i){
+pca_diagnostics <- function(diagnotic_return) {
 
-  plot_1 <-  ggplot(flowsheet_df %>% filter(admission_csn == unique(flowsheet_df$admission_csn)[i] ), aes(x= recorded_date, y=value, colour = flowsheet_doc_type, group = flowsheet_type))+
-    geom_line()+
-    geom_line(aes(y=cumulative_value), color="black")+
-    geom_point(shape=4, colour="darkgray")+
-    geom_point(data = . %>% filter(reset==TRUE), colour = "orange")+
-    geom_point(data = . %>% filter(reset_to_zero==TRUE), colour="red")+
-    geom_point(data = . %>% filter(reset_true==FALSE), colour="purple", shape = 3)+
-    facet_grid(flowsheet_type~., scales = "free")
+  if (!interactive()) {
+    cli::cli_alert_danger("Not running interactive mode, unable to start diganotic dashboard.")
+    return(invisible())
+  } else if (typeof(diagnotic_return) != "list"){
+    cli::cli_alert_danger("You have not supplied a list, unable to start diganotic dashboard.
+                          Ensure that you use {.arg diagnostic = TRUE} in the {.fn proccess_pca_data} function and pass the output directly to this function.")
+    return(invisible())
+  }
 
 
-  plot_2  <-  ggplot(flowsheet_df %>% filter(admission_csn == unique(flowsheet_df$admission_csn)[i]),
-                     aes(x= recorded_date, y=cumulative_value))+
-    geom_line(aes(colour = flowsheet_type, group = flowsheet_type))+
-    geom_line(data = result %>% filter(admission_csn == unique(flowsheet_df$admission_csn)[i]), aes(y=median_value), linetype=2)
+  flowsheet_df <- diagnotic_return[[1]]
+  results <- diagnotic_return[[2]]
 
-
+  library(shiny)
+  library(ggplot2)
+  library(dplyr)
   library(patchwork)
 
-  plot_1/plot_2
+  csn_list <- unique(flowsheet_df$admission_csn)
 
-  return()
+  ui <- fluidPage(
+    titlePanel("PCA Diagnostics"),
+    fluidRow(
+      column(2, actionButton("dec", "◀ Prev")),
+      column(2, actionButton("inc", "Next ▶")),
+      column(2, actionButton("exit", "Exit", class = "btn-danger")),
+      column(6, h4(textOutput("csn_label")))
+    ),
+    plotOutput("plots", height = "800px")
+  )
+
+  server <- function(input, output, session) {
+
+    i <- reactiveVal(1)
+
+    observeEvent(input$inc, {
+      i(min(i() + 1, length(csn_list)))
+    })
+
+    observeEvent(input$dec, {
+      i(max(i() - 1, 1))
+    })
+
+    observeEvent(input$exit, {
+      stopApp()
+    })
+
+    output$csn_label <- renderText({
+      paste0("CSN ", i(), " of ", length(csn_list), ": ", csn_list[i()])
+    })
+
+    output$plots <- renderPlot({
+
+      current_csn <- csn_list[i()]
+
+      plot_1 <- flowsheet_df %>%
+        filter(admission_csn == current_csn) %>%
+        ggplot(aes(x = recorded_date, y = value, colour = flowsheet_doc_type, group = flowsheet_type)) +
+        geom_line() +
+        geom_line(aes(y = cumulative_value), color = "black") +
+        geom_point(shape = 4, colour = "darkgray") +
+        geom_point(data = . %>% filter(reset == TRUE), colour = "orange") +
+        geom_point(data = . %>% filter(reset_to_zero == TRUE), colour = "red") +
+        geom_point(data = . %>% filter(reset_true == FALSE), colour = "purple", shape = 3) +
+        facet_grid(flowsheet_type ~ ., scales = "free")
+
+      plot_2 <- flowsheet_df %>%
+        filter(admission_csn == current_csn) %>%
+        ggplot(aes(x = recorded_date, y = cumulative_value)) +
+        geom_line(aes(colour = flowsheet_type, group = flowsheet_type)) +
+        geom_line(data = results %>% filter(admission_csn == current_csn), aes(y = median_value), linetype = 2)
+
+      plot_1 / plot_2
+    })
+  }
+
+  runApp(shinyApp(ui, server))
+
+  return(invisible())
 }
+
+
 
 
 
