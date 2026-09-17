@@ -17,6 +17,7 @@ Depends:
 LazyData: true
 Imports: 
     arrow,
+    rlang,
     cli,
     dplyr,
     stringr,

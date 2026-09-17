@@ -23,7 +23,8 @@
 #' }
 #'
 #' @export
-#' @import shiny
+#' @import shiny ggplot2
+#' @importFrom rlang .data
 pca_diagnostics <- function(diagnotic_return) {
 
   if (!interactive()) {
