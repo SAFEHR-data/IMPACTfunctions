@@ -47,7 +47,9 @@ library(lubridate)
 }
 
 dataset <- cohort_complete_admissions(Procedures) \%>\%
-   cohort_procedure_codes(cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48")) \%>\% collect()
+   cohort_procedure_codes(cohort_name = "Hip Arthroplasty",
+    include_OPCS = c("W46", "W47", "W48")) \%>\%
+     collect()
 
  heart_rate <- extract_flowsheet_data(dataset = dataset,
                                       flowsheet = Measurements,
