@@ -285,18 +285,19 @@ There are a range of possible ways to subset the MAR, type `?extract_medication`
 # Extracting flowsheet data
 
 ```{r}
+#| eval: false
 
 dataset <- cohort_complete_admissions(Procedures) %>%
    cohort_procedure_codes(cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48")) %>% collect()
 
- heart_rate <- extract_flowsheet_data(dataset = Procedures,
-   flowsheet = Measurements,
-    flowsheet_question_name = "Pulse",
-    timeframe = "whole_flowsheet",
-   
+ heart_rate <- extract_flowsheet_data(dataset = dataset,
+                                      flowsheet = Measurements,
+                                      search_column =  "flowsheet_question_name",
+                                      search_string =  "Pulse",
+                                      timeframe = "whole_flowsheet"
    )
  
-  df <- calculate_flowsheet_feature(df,
+  dataset <- calculate_flowsheet_feature(dataset,
     flowsheet = heart_rate,
     format = "joined",
     feature = "mean_values",

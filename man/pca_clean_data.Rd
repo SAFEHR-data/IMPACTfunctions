@@ -15,7 +15,8 @@ pca_clean_data(
   zero_dose_eps_mcg = 4,
   bg_ml_grid = c(0, 0.5, 1, 1.5, 2),
   tz = "Europe/London",
-  verbose = TRUE
+  verbose = TRUE,
+  diagnostics = TRUE
 )
 }
 \arguments{

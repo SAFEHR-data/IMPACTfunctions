@@ -307,7 +307,32 @@ proccess_pca_data <- function(pca_data,
     }
 }
 
-
+#' PCA Diagnostics Dashboard
+#'
+#' Launch an interactive Shiny dashboard for exploring PCA diagnostic results.
+#'
+#' @param diagnotic_return A list containing diagnostic output from \code{process_pca_data()}
+#'   generated with \code{diagnostic = TRUE}. Expected to contain flowsheet data
+#'   and PCA results as elements.
+#'
+#' @return Invisibly returns NULL. Launches an interactive Shiny application for
+#'   browsing diagnostic plots by admission CSN.
+#'
+#' @details
+#' The dashboard displays flowsheet timeseries and cumulative values for each
+#' admission case. Navigate between cases using the Previous/Next buttons.
+#'
+#' Requires interactive mode. Will exit with an error if run non-interactively
+#' or if input is not a properly formatted list.
+#'
+#' @examples
+#' \dontrun{
+#' results <- process_pca_data(data, diagnostic = TRUE)
+#' pca_diagnostics(results)
+#' }
+#'
+#' @export
+#' @import shiny
 pca_diagnostics <- function(diagnotic_return) {
 
   if (!interactive()) {
@@ -333,8 +358,8 @@ pca_diagnostics <- function(diagnotic_return) {
   ui <- fluidPage(
     titlePanel("PCA Diagnostics"),
     fluidRow(
-      column(2, actionButton("dec", "◀ Prev")),
-      column(2, actionButton("inc", "Next ▶")),
+      column(2, actionButton("dec", "<- Prev")),
+      column(2, actionButton("inc", "Next ->")),
       column(2, actionButton("exit", "Exit", class = "btn-danger")),
       column(6, h4(textOutput("csn_label")))
     ),

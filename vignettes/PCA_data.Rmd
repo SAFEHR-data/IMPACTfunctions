@@ -68,13 +68,6 @@ A PCA can be set up in Bolus mode (gives a dose when button is pressed) or is In
 There is significant challenges to collate the  data to understand how much PCA a patient has recived within the IMPACT dataset. 
 
 
-# Summary
-
-Below is a diagram that helps to explain the flow of data though the various functions.
-
-![](pca_flow_diagram.png)
-
-The initial phase ingest raw flowsheet inputs and clinical datasets to enforce structural integrity. The `pca_clean_data()` function parses structural metadata, removes duplicate charting artifacts, normalises clinical timestamps, and filters extraneous rows to isolate valid PCA events.
 
 ### Step 1: Gather PCA data
 

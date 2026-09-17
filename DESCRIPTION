@@ -25,9 +25,11 @@ Imports:
     purrr,
     tibble,
     tidyr,
-    stats,
-    patchwork
+    stats
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    shiny,
+    ggplot2,
+    patchwork
 VignetteBuilder: knitr

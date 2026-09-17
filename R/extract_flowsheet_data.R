@@ -136,9 +136,11 @@ extract_flowsheet_data <- function(
       if (verbose) cli::cli_alert_success("The following flowsheets where found: {.val {search_string}}")
     }
 
-    name_check_strict <- search_flowsheet_name(
-      flowsheet, search_string,
-      search_column = "search_string", strict_search = TRUE, verbose = FALSE
+    name_check_strict <- search_flowsheet_name(flowsheet,
+                                               search_string,
+                                               search_column = search_column,
+                                               strict_search = TRUE,
+                                               verbose = FALSE
     )
     if (sum(name_check_strict$rows) < 1) {
       cli::cli_abort(

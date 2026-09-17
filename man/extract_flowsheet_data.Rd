@@ -7,7 +7,8 @@
 extract_flowsheet_data(
   dataset,
   flowsheet = Measurements,
-  flowsheet_question_name = NA,
+  search_string = NA,
+  search_column = flowsheet_question_name,
   check_search = TRUE,
   timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
   timeframe_csn = "admission_csn",
@@ -22,7 +23,9 @@ extract_flowsheet_data(
 
 \item{flowsheet}{The flowsheet to extract from. Defaults to \code{Measurements}.}
 
-\item{flowsheet_question_name}{Name(s) of the flowsheet row(s) to extract. Set to \code{NULL} to return all rows.}
+\item{search_string}{Name of flowsheet to search for. Can be single flowsheet or vector. To return all flowsheets fitting the other filter criteria then set to NULL.}
+
+\item{search_column}{The column which to search the \code{search_string} against, defaults to \code{flowsheet_question_name}. See help above.}
 
 \item{check_search}{Boolean. Validate that the flowsheet names provided exist in the data.}
 
@@ -64,5 +67,5 @@ library(dplyr)
 library(lubridate)
 }
 # dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
-# extract_flowsheet_data(dataset, flowsheet = Measurements, flowsheet_question_name = "Heart Rate")
+# extract_flowsheet_data(dataset, flowsheet = Measurements, search_string = "Heart Rate")
 }
