@@ -18,6 +18,12 @@ get_synthetic_cache_dir <- function() {
 #' The data produces is purely synthetic and uses uniform distributions (such as picking a OPCS code between A01 and Z99) even when values are not feasiable or clinically meaningful.
 #' The tables are then saved as parquet format within the R User cache.
 #'
+#' @details
+#' Generation is seeded (`set.seed()`), so calling this function always produces byte-identical
+#' tables for a given version of this function. This determinism is relied upon by the package's
+#' test suite. The cache is stamped with the installed package version by `load_synthetic_dataset()`,
+#' which forces regeneration whenever the package version changes.
+#'
 #' @param clear_cache Clear the cache and generate synthetic data again.
 #'
 #' @return A series of Parquet files in the cache directory
@@ -27,6 +33,7 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   #### SYNTHETIC DATASET
   cache_dir <- get_synthetic_cache_dir()
+  set.seed(20260101L)
 
   if(clear_cache){
     unlink(paste0(cache_dir,"/*"))
@@ -268,5 +275,7 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
 
   arrow::write_parquet(synthetic_measurements, path_measurements)
   }
+
+  writeLines(as.character(utils::packageVersion("IMPACTfunctions")), file.path(cache_dir, "PACKAGE_VERSION"))
 
 }

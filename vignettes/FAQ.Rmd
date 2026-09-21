@@ -75,3 +75,43 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 
 3. Await for the issue to be fixed and then install the latest package version.
 
+## Developer: Running and adding tests
+
+The package uses [`testthat`](https://testthat.r-lib.org/) (3rd edition). Tests live in `tests/testthat/`, generally one file per `R/` source file (e.g. `R/cohort_enforce.R` -> `tests/testthat/test-cohort_enforce.R`).
+
+### Running tests
+
+Run the whole suite from the package root:
+
+```{r, eval=FALSE}
+devtools::test()
+```
+
+Run a single test file while you're working on it:
+
+```{r, eval=FALSE}
+devtools::load_all()
+testthat::test_file("tests/testthat/test-cohort_enforce.R")
+```
+
+`R CMD check` (so also `devtools::check()` and the `R-CMD-check.yaml` GitHub Action) runs the whole suite automatically via `tests/testthat.R` - no separate CI step is needed.
+
+### Adding a new test file
+
+1. Create `tests/testthat/test-<name of the R file you're testing>.R`, e.g. a new `R/foo.R` gets `tests/testthat/test-foo.R`.
+2. Use the shared fixtures from `tests/testthat/helper-synthetic.R` (`test_procedures`, `test_demographics`, `test_hospitalmar`, `test_measurements`) rather than calling `load_synthetic_dataset()` yourself - they're loaded once per test session and reused across all test files.
+3. Prefer **oracle-style assertions** over hardcoded numbers: compute what you expect independently (e.g. with a plain `dplyr::filter()` on the collected fixture) and check the function's output against that, rather than asserting a fixed row count or value. The synthetic dataset generator is seeded and stamped with the package version (see `generate_synthetic_dataset()`), so it's stable for a given version - but not guaranteed to stay byte-identical once the generator or dataset is updated in a future version. A hardcoded expected count would silently rot when that happens; an oracle-style assertion keeps working.
+4. If your test calls a `cohort_enforce_*()`-style function with `add_to_eligability_criteria = TRUE`, call `local_reset_eligibility_criteria()` (from `helper-synthetic.R`) at the top of the `test_that()` block first. This clears the package's global `eligibility_criteria` tracker before the test and again afterwards, so tests don't leak state into each other or trigger its "applied the same criteria twice" warning.
+5. Run `devtools::test()` before opening a PR.
+
+### Testing against a real dataset locally
+
+Tests that need a real (non-synthetic) IMPACT extract go in a `tests/testthat/test-local-*.R` file, gated by `skip_if_no_local_data()` (see `tests/testthat/helper-local-data.R`). These never run in CI and are skipped for anyone who hasn't opted in. To run them yourself, set (e.g. in a project-level `.Renviron`, which is gitignored):
+
+```
+IMPACTFUNCTIONS_LOCAL_DATA_PATH=/path/to/a/real/IMPACT/extract
+```
+
+Never commit real patient data, or a path that reveals where it lives, to the repository.
+
+
