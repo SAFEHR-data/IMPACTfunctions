@@ -93,11 +93,34 @@ pca_diagnostics <- function(diagnotic_return) {
         geom_point(data = . %>% filter(reset_true == FALSE), colour = "purple", shape = 3) +
         facet_grid(flowsheet_type ~ ., scales = "free")
 
-      plot_2 <- flowsheet_df %>%
-        filter(admission_csn == current_csn) %>%
-        ggplot(aes(x = recorded_date, y = cumulative_value)) +
-        geom_line(aes(colour = flowsheet_type, group = flowsheet_type)) +
-        geom_line(data = results %>% filter(admission_csn == current_csn), aes(y = median_value), linetype = 2)
+      df_results <- results %>%
+        filter(admission_csn == current_csn)
+
+      df_flowsheet <- flowsheet_df %>%
+        filter(admission_csn == current_csn)
+
+      coeff <- max(df_results$cumulative_sum, na.rm = TRUE) / max(df_results$binned_value, na.rm = TRUE)
+
+      plot_2 <- ggplot(df_results, aes(x = recorded_date)) +
+        geom_col(aes(y = binned_value * coeff, fill = "Hourly (binned_dose)"), alpha = 0.5) +
+       # geom_line(aes(y = cumulative_sum, color = "Cumulative (sum)")) +
+        geom_line(aes(y = cumulative_sum, color = "Median (value)"), linetype = 2, colour = 'black') +
+        geom_line(
+          data = df_flowsheet,
+          aes(y = cumulative_value, color = flowsheet_type, group = flowsheet_type)
+        ) +
+        scale_y_continuous(
+          name = "Cumulative Dose / Value",
+          sec.axis = sec_axis(~ . / coeff, name = "Hourly Dose")
+        ) +
+        scale_fill_manual(values = c("Hourly (binned_dose of median)" = "#D55E00")) +
+        theme_minimal() +
+        labs(
+          x = "Recorded Date",
+          color = NULL,
+          fill = NULL
+        ) +
+        theme(legend.position = "bottom")
 
       plot_1 / plot_2
     })

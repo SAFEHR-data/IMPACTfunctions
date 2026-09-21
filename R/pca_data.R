@@ -235,10 +235,10 @@ proccess_pca_data <- function(pca_data,
 
     flowsheet_df <- flowsheet_df %>%
       group_by(admission_csn) %>%
-      complete(flowsheet_type, recorded_date) %>%
+      tidyr::complete(flowsheet_type, recorded_date) %>%
       arrange(recorded_date, .by_group = TRUE) %>%
       group_by(admission_csn, flowsheet_type) %>%
-      fill(cumulative_value, .direction = "downup") %>%
+      tidyr::fill(cumulative_value, .direction = "downup") %>%
       ungroup()
 
 
@@ -270,7 +270,7 @@ proccess_pca_data <- function(pca_data,
         distinct()
 
       flowsheet_wide <- flowsheet_wide%>%
-        pivot_wider(
+        tidyr::pivot_wider(
           id_cols     = c(admission_csn, recorded_date, simple_generic_name),
           names_from  = flowsheet_type,
           values_from = cumulative_value
@@ -316,11 +316,21 @@ proccess_pca_data <- function(pca_data,
         )}
 
     result <- flowsheet_df %>%
-      group_by(admission_csn, recorded_date) %>%
+      group_by(admission_csn, recorded_date, simple_generic_name) %>%
       summarise(
-        median_value = median(cumulative_value, na.rm = TRUE),
+        cumulative_sum = median(cumulative_value, na.rm = TRUE),
         .groups = "drop"
       )
+
+    result <- result %>%
+      group_by(admission_csn, simple_generic_name) %>%
+      tidyr::complete(recorded_date = seq(min(recorded_date), max(recorded_date), by = "1 hour")) %>%
+      arrange(admission_csn, simple_generic_name, recorded_date) %>%
+      mutate(
+        cumulative_sum = zoo::na.approx(cumulative_sum, na.rm = FALSE),
+        binned_value = cumulative_sum - lag(cumulative_sum, default = 0)
+      ) %>%
+      ungroup()
 
     if(verbose){cli::cli_progress_done()}
 
