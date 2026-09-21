@@ -1,4 +1,4 @@
-#' Extract flowsheet data
+#' Filter flowsheet data
 #'
 #' Search the flowsheet to return features/variables for the specified measurements.
 #'
@@ -33,7 +33,7 @@
 #' @examples
 #' # dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
 #' # extract_flowsheet_data(dataset, flowsheet = Measurements, search_string = "Heart Rate")
-extract_flowsheet_data <- function(
+filter_flowsheet_data <- function(
     dataset,
     flowsheet = Measurements,
     search_string = NA,
@@ -195,4 +195,10 @@ extract_flowsheet_data <- function(
   }
 
   return(df)
+}
+
+
+extract_flowsheet_data <- function(...){
+  .Deprecated(new = "filter_flowsheet_data")
+  filter_flowsheet_data()
 }

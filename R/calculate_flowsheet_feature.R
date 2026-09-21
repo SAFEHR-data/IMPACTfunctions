@@ -22,7 +22,7 @@
 #'     include_OPCS = c("W46", "W47", "W48")) %>%
 #'      collect()
 #'
-#'  heart_rate <- extract_flowsheet_data(dataset = dataset,
+#'  heart_rate <- filter_flowsheet_data(dataset = dataset,
 #'                                       flowsheet = Measurements,
 #'                                       search_column =  "flowsheet_question_name",
 #'                                       search_string =  "Pulse",

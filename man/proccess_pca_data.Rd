@@ -24,7 +24,7 @@ proccess_pca_data(
 \item{diagnostics}{Logical. Return list for diagnostic dashboard instead of results.}
 }
 \value{
-If \code{diagnostics = FALSE}: data frame with median PCA usage by admission and date.
+If \code{diagnostics = FALSE}: data frame with cumulative PCA usage and binned totals by admission and hour and drug. All values are given in milligram (mg) regardless of drug.
 If \code{diagnostics = TRUE}: list containing processed flowsheet data and results.
 }
 \description{

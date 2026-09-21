@@ -1,4 +1,4 @@
-#' Extract Medication administrations
+#' Filter Medication administrations
 #'
 #' To search the MAR to return features/variables related to the medications.
 #'
@@ -8,7 +8,7 @@
 #' 1) `mar_source = "Hospital Encounter"` -  The general MAR where the majority of medications are recorded.
 #' 2) `mar_source = "Anaesthesia"` - The anaesthetic MAR that contains the medications recorded by the anaesthetist.
 #' 3) `mar_source = "Operation"` - The operation MAR that contains medications recorded by the scrub team (often injections drawn up by the scrub team and given by the surgeon).
-#'
+#' 4) `mar_source = "PCA"` - A custom option to filter and subset PCA data after `fetch_pca_data()` and `proccess_pca_data()` have been run. THis cannot be used in conjunction with the other options.
 #' Generally you want to use `mar_source = NA` which will not apply any filtering.
 #'
 #' To select a specific MAR source see the parameter options below. Ensure you validate the specific medication used as documentation practices may vary (eg being double recorded)
@@ -26,7 +26,7 @@
 #'
 #' @param dataset The procedures set of which to search across.
 #' @param MAR The MAR to extract from. Will default to `HospitalMar`.
-#' @param mar_source The source MAR to filter from to filter across both then leave this as `NA`. See section above. Multiple sources can be combined (`mar_source = c("Anaesthesia", "Operation"))`.
+#' @param mar_source The source MAR to filter from to filter across both then leave this as `NA`. See section above. Multiple sources can be combined (`mar_source = c("Anaesthesia", "Operation"))`. If filtering PCA data then set `mar_source = "PCA"`. PCA data cannot be combined and filtered with the other MAR sources, this requires two separate `filter_medication()` calls.
 #' @param medication Name of medication to search for. Can be single medication or vector. To return all medications fitting the other filter criteria then set to NULL.
 #' @param search_column The column which to search the medication string against. See help above.
 #' @param check_search Boolean, Check if the medications and search column provided are valid.
@@ -45,10 +45,10 @@
 #' @examples
 #'
 #' #dataset <- cohort_complete_admissions(Procedures, add_to_eligability_criteria = FALSE)
-#' #extract_medication(dataset, MAR = IntraOpMAR, ...)
+#' #filter_medication(dataset, MAR = IntraOpMAR, ...)
 #'
 #'
-extract_medication <- function(dataset,
+filter_medication <- function(dataset,
                                MAR = HospitalMar,
                                mar_source = NA,
                                medication = NA,
@@ -71,12 +71,44 @@ extract_medication <- function(dataset,
     cli::cli_h2("Checking data and variable quality")
   }
 
-  allowed_mar_source <- c("Hospital Encounter", "Anaesthesia", "Operation")
+
+  allowed_mar_source <- c("Hospital Encounter", "Anaesthesia", "Operation", "PCA")
+
 
   if(any(!is.na(mar_source))){
+    #If mar source is not NA, check for valid inputs. Return an error is not
     if (!any(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} must contain at least one of: {.val {allowed_mar_source}}.")
     if (!all(mar_source %in% allowed_mar_source)) cli::cli_abort("You have provided {.arg mar_source} = {.val {mar_source}}. {.arg mar_source} contains invalid values. Only {.val {allowed_mar_source}} are permitted, check spelling.")
   }
+
+  # Check if type PCA data
+
+  if(length(mar_source) == 1){
+
+    if(!is.na(mar_source)){
+
+      if(mar_source == "PCA"){
+        PCA_DATA <- TRUE
+        check_search <- FALSE
+        search_column <- "simple_generic_name"
+       MAR <- rename(MAR, administration_date_time = recorded_date)
+        if(verbose){
+          cli::cli_bullets(c(
+            "i" = "PCA dataframe supplied, this may change some of the options available.",
+            "*" = "Route filtering unavailable",
+            "*" = "Search checking unavailable"
+          ))}
+      }else{
+      PCA_DATA = FALSE
+      }
+   }else {PCA_DATA = FALSE}
+  }else{
+    if("PCA" %in% mar_source){
+      cli::cli_abort("You have tried to supply mutiple {.arg mar_source}, of which one is {.val PCA}. PCA data must be run separalty and combined later. " )
+    }else{PCA_DATA = FALSE}
+  }
+
+
   # We concatenate the medications strings here to allow the search functions above to recive a vector.
   if(length(medication)>1){
     if(verbose){cli::cli_alert_info("You have provided a vector of medications, will do an \"or\" search to return any matching rows.")}
@@ -84,7 +116,11 @@ extract_medication <- function(dataset,
   }
 
   ## Argument checking
-  if(nrow(compute(dataset)) < 1 ){
+  if(is.data.frame(dataset)){
+    #Check to see if dataset is a dataframe object to assess length over or a arrow query to check length over
+    if(nrow(dataset) < 1 ){
+      cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away all patients")}
+  }else if(nrow(compute(dataset)) < 1 ){
     cli::cli_abort("No rows in {.arg dataset} to extract, \n \n Ensure you have not filtered away all patients")}
 
   if(all(is.null(medication))){
@@ -119,6 +155,8 @@ extract_medication <- function(dataset,
       joining_column = "anaesthesia_csn"
     }else if ("Operation" ==  mar_source){
       joining_column = "case_id"
+    }else if ("PCA" == mar_source){
+      joining_column = "admission_csn"
     }
   }else{
 
@@ -184,7 +222,13 @@ extract_medication <- function(dataset,
 
   # Data quality checking
 
-  if(apply_preproccess_MAR){
+  if(PCA_DATA){
+    if(all(c( "cumulative_sum","binned_value") %in% names(MAR))){
+      NULL
+    }else{
+      cli::cli_abort("The PCA MAR supplied doesn't contain the cleaned infered columns. \n Ensure to use {.fn fetch_pca_data} and then {.fn proccess_pca_data} to produce the PCA MAR.")
+    }
+  }else  if(apply_preproccess_MAR){
     MAR <- preproccess_MAR(MAR)
   }
 
@@ -215,8 +259,9 @@ extract_medication <- function(dataset,
 
   # Step 2 - Subsetting
 
-
-  if(all(!is.na(mar_source))) {
+  if(PCA_DATA){
+    if(verbose){cli::cli_alert_success("Searching all PCA administered during inpatient stay")}
+  }else if(all(!is.na(mar_source))) {
     subsets <- list()
     if ("Hospital Encounter"        %in% mar_source){
       subsets[["ward"]]        <- MAR %>% filter(encounter_type == "Hospital Encounter")
@@ -245,11 +290,12 @@ extract_medication <- function(dataset,
     subset <- MAR %>% filter(get({{search_column}}) %in% medication)
   }
 
+  if(PCA_DATA){NULL} else{
   # 2b - Subsetting for the patients in the dataset
   mrn_vector <- dataset %>% pull(mrn) %>% na.omit()
   subset <- subset %>% filter(mrn %in% mrn_vector)
   if(verbose){cli::cli_alert_success("Removing MAR from patients not in dataset.")}
-
+  }
 
   # 2c - Subsetting for timeframe
 
@@ -259,8 +305,8 @@ extract_medication <- function(dataset,
    #We need unique row indexes to do our filtering. Arrow doesnt support row indexing (by its nature of parrallel reading, etc).
    ##Instead we pull our timepoints in the logic section above to make a fixed dataset object where the t0 and t1 times are on the same row as the CSN.
 
-   ## Rgrettably the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
-    df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "one-to-many")
+   ## Rerettably the arrow dpplyr doesnt have the kernals to deal with timeframe periods (as generated by t0 + t_int), thus we now call into memory.
+    df <- left_join(subset, timeframe_df, copy = TRUE, relationship = "many-to-one")
     df <- df %>% filter(administration_date_time > t0) %>% filter(administration_date_time < t1)
     df <- df %>% select(-t0, -t1)
     if(verbose){cli::cli_alert_success("Removing Medications given outside of specified timeframe")}
@@ -268,7 +314,9 @@ extract_medication <- function(dataset,
 
   # 2d filtering by route
 
-  if(!missing(filter_route)){
+  if(PCA_DATA){
+    NULL
+  }else if(!missing(filter_route)){
     if(missing(route_column)){
       cli::cli_abort("You have tried to filter by route but have not included a route column to filter against. \n \n Set {.arg filter_column} to one of {.val route} or {.val route_simple}")
     }
@@ -282,5 +330,9 @@ extract_medication <- function(dataset,
    #return the query
     return(df)
 
+}
 
+extract_medication <- function(...) {
+  .Deprecated(new = "filter_medication")
+  filter_medication(...)
 }

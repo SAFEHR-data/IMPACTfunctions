@@ -87,8 +87,26 @@ calculate_medication_feature <- function(dataset,
     cli::cli_abort("The {.arg link_column} is not one of {.val admission_csn}, {.val anaesthesia_csn} or {.val operation_csn}. Check input arguments")
   }
 
+  ## DETECT PCA dataframes being passed
+
+  if(all(c( "cumulative_sum","binned_value") %in% names(MAR))){
+    PCA_DATA <- TRUE
+    cli::cli_bullets(c(
+      "i" = "Detected a cleaned PCA dataframe, this may change some of the options available.",
+      "*" = "Dose check unavailable",
+      "*" = "Route check unavailable"
+    ))
+    override_dose_check <- TRUE
+    override_route_check <- TRUE
+
+  }else{
+    PCA_DATA <- FALSE
+  }
+
+
   ## Users may want to return a feature (such as an avg or sum dose) across medications that are not comparable. For example (sum dose of an infusion and a discreate medications)
   ## We will do some error checking on `MAR` to warn against this. We can bypass some error checking is we want OME for example.
+
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
@@ -117,7 +135,7 @@ calculate_medication_feature <- function(dataset,
 
   if(any(!csn_vector %in% mar_csn_vector)){
     missing_length <- sum(!csn_vector %in% mar_csn_vector)
-    cli::cli_alert_danger("Warning, for {.val {missing_length}} {.val {csn_vector_name}} there were no correspending MAR entries found. This may ead to silent failures where the returned value may be FALSE/0 but rather the csn provided and the CSN on the MAR do not match. ")
+    cli::cli_alert_danger("Warning, for {.val {missing_length}} {.val {csn_vector_name}} there were no correspending MAR entries found. This may lead to silent failures where the returned value may be FALSE/0 but rather the csn provided and the CSN on the MAR do not match. ")
 
   }
 
@@ -139,9 +157,12 @@ calculate_medication_feature <- function(dataset,
       cli::cli_alert_danger("DANGER: The MAR supplied more than 1 medication or more than 1 route in it but your are requesting a summed dose. This may return a sum acorss different medications or routes.\n \n Consdier revising the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such if you wanted to sum the total paracetmol doses regardless of route")
     }
 
+    if(PCA_DATA){dose_col = "binned_value"}else{dose_col = "dose"}
+
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(dose, na.rm = FALSE)) %>%
-      collect()
+      collect() %>%
+      summarise(result = sum(.data[[dose_col]], na.rm = FALSE))
+
 
     if(nrow(result) == 1){
       cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")
@@ -155,9 +176,11 @@ calculate_medication_feature <- function(dataset,
      cli::cli_alert_danger("DANGER: The MAR supplied only has 1 medication in it but your are requesting and OME.\n \n Consdier remvoing the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such as if you want to calcualute a OME of IV and Oral morphine. ")
    }
 
+   if(PCA_DATA){dose_col = "binned_value_ome"}else{dose_col = "dose"}
+
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
-      summarise(result = sum(ome, na.rm = TRUE)) %>%
-      collect()
+      collect() %>%
+      summarise(result = sum(.data[[dose_col]], na.rm = TRUE))
 
     if(nrow(result) == 1){
       cli::cli_alert_warning("No patients have a summed dose result. Check your arguments.")

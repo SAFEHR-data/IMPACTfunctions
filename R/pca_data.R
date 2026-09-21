@@ -11,7 +11,7 @@
 #' @return Data frame with extracted PCA flowsheet data and joined PCA metadata.
 #'
 #' @export
-extract_pca_data <- function(dataset,
+fetch_pca_data <- function(dataset,
                              flowsheet = Measurements,
                              pca_flowsheet_lookup = dictionary_flowsheet_pca,
                              verbose=TRUE,
@@ -97,15 +97,15 @@ extract_pca_data <- function(dataset,
 #' @param verbose Logical. Print progress messages.
 #' @param diagnostics Logical. Return list for diagnostic dashboard instead of results.
 #'
-#' @return If \code{diagnostics = FALSE}: data frame with median PCA usage by admission and date.
+#' @return If \code{diagnostics = FALSE}: data frame with cumulative PCA usage and binned totals by admission and hour and drug. All values are given in milligram (mg) regardless of drug.
 #'   If \code{diagnostics = TRUE}: list containing processed flowsheet data and results.
 #'
 #' @export
 proccess_pca_data <- function(pca_data,
                               threshold_reset = 0.5, # a drop of x percentage will trigger a reset
-                    threshold_cumulative = 0.9, # What percentage of data points should be positive or neutral to conside the documentation type as cumulative
-                    verbose = TRUE,
-                    diagnostics = FALSE ){
+                              threshold_cumulative = 0.9, # What percentage of data points should be positive or neutral to consider the documentation type as cumulative
+                              verbose = TRUE,
+                              diagnostics = FALSE ){
 
 
   if(verbose){
@@ -331,6 +331,25 @@ proccess_pca_data <- function(pca_data,
         binned_value = cumulative_sum - lag(cumulative_sum, default = 0)
       ) %>%
       ungroup()
+
+
+    if(verbose){
+      cli::cli_progress_done()
+      cli::cli_progress_step(
+        "Appending OME values",
+        msg_done = "OME values converted"
+      )}
+
+
+    result <- result %>%
+      left_join(dictionary_equivelence %>%
+                  filter(route_simple == "Parenteral"),
+                join_by(simple_generic_name == opioid_name)) %>%
+      mutate(
+        cumulative_sum_ome = cumulative_sum *equivelence,
+        binned_value_ome = binned_value * equivelence
+      )
+
 
     if(verbose){cli::cli_progress_done()}
 
