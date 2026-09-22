@@ -7,7 +7,7 @@
 load_synthetic_dataset()
 }
 \value{
-Procedures arrow table
+An \link{impact_dataset} of synthetic tables.
 }
 \description{
 A function to check if there is Procedure tables in the environment, if not then it will read in the synthetic dataset.
@@ -17,8 +17,13 @@ This is used for testing of functions or showcase/planning
 }
 \examples{
 
-## Note that you need to assign the synth_data to the global Env for the functions to work.
 synth_data <- load_synthetic_dataset()
-list2env(synth_data, envir = .GlobalEnv)
+synth_data$Procedures
 
+## Most functions default to bare table names, so attach them to use those defaults.
+attach_dataset(synth_data)
+
+}
+\seealso{
+\code{\link[=attach_dataset]{attach_dataset()}}, \link{impact_dataset}
 }

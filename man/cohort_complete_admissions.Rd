@@ -56,7 +56,7 @@ To investigate exactly which patients are being removed at each step you can run
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
@@ -70,7 +70,7 @@ dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRU
 dataset_df <- collect(dataset)
 }
 \seealso{
-Other cohort: 
-\code{\link{cohort_procedure_codes}()}
+Other cohort:
+\code{\link[=cohort_procedure_codes]{cohort_procedure_codes()}}
 }
 \concept{cohort}

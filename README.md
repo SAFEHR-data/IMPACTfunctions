@@ -87,11 +87,15 @@ library(cli)
 library(dplyr)
 library(IMPACTfunctions)
 
-load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
+impact <- load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
              prefix = "SCB_Periop_",
              suffix ="_20260122.parquet",
              verbose = TRUE)
 
+# Tables are available through the returned object ...
+impact$Demographics %>% glimpse()
+
+# ... and, unless you pass `attach = FALSE`, by name
 Demographics %>% glimpse()
 ```
 

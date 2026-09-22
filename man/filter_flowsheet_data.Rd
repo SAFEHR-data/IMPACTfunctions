@@ -62,7 +62,7 @@ To allow temporal subsetting for each flowsheet entry we need a t0 and t1 time t
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }

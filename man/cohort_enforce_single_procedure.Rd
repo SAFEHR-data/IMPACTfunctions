@@ -25,13 +25,13 @@ A number of functions rely on a single surgical procedure per hospital encounter
 See Data schema for exact details on how the flag is triggered.
 }
 \seealso{
-Other cohort_enforce: 
-\code{\link{cohort_enforce_complete_anaesthetic_chart}()},
-\code{\link{cohort_enforce_dates_complete}()},
-\code{\link{cohort_enforce_dates_ordered}()},
-\code{\link{cohort_enforce_discharged}()},
+Other cohort_enforce:
+\code{\link[=cohort_enforce_complete_anaesthetic_chart]{cohort_enforce_complete_anaesthetic_chart()}},
+\code{\link[=cohort_enforce_dates_complete]{cohort_enforce_dates_complete()}},
+\code{\link[=cohort_enforce_dates_ordered]{cohort_enforce_dates_ordered()}},
+\code{\link[=cohort_enforce_discharged]{cohort_enforce_discharged()}},
 \code{\link{cohort_enforce_family}},
-\code{\link{cohort_enforce_opt_out}()},
-\code{\link{cohort_enforce_procedure_coded}()}
+\code{\link[=cohort_enforce_opt_out]{cohort_enforce_opt_out()}},
+\code{\link[=cohort_enforce_procedure_coded]{cohort_enforce_procedure_coded()}}
 }
 \concept{cohort_enforce}

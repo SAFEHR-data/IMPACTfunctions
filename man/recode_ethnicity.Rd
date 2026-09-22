@@ -30,7 +30,7 @@ Where Ethnicity data was not provided or collected values were marked as missing
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }

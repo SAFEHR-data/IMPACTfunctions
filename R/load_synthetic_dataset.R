@@ -4,15 +4,18 @@
 #'
 #'  This is used for testing of functions or showcase/planning
 #'
-#' @return Procedures arrow table
+#' @return An [impact_dataset] of synthetic tables.
 #' @export
 #' @import dplyr
+#' @seealso [attach_dataset()], [impact_dataset]
 #'
 #' @examples
 #'
-#' ## Note that you need to assign the synth_data to the global Env for the functions to work.
 #' synth_data <- load_synthetic_dataset()
-#' list2env(synth_data, envir = .GlobalEnv)
+#' synth_data$Procedures
+#'
+#' ## Most functions default to bare table names, so attach them to use those defaults.
+#' attach_dataset(synth_data)
 #'
 load_synthetic_dataset <- function() {
 
@@ -50,8 +53,8 @@ load_synthetic_dataset <- function() {
     }
   })
 
-  # 3. Assign names to the list elements so list2env() works later
+  # 3. Assign names to the list elements so the tables can be referred to by name
   names(synthetic_datasets) <- names(file_map)
 
-  return(synthetic_datasets)
+  new_impact_dataset(synthetic_datasets, source = cache_dir)
 }
