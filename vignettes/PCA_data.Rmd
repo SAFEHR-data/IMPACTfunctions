@@ -63,111 +63,49 @@ df <- rbind(c1, c2)
 
 # How to use PCA (Patient Controlled Analgesia) functions. 
 
-PCA data is complicated. It is a medication that is marked as adminisrted on the MAR however the useage is tracked on flowsheets. 
+PCA data is complicated. It is a medication that is marked as administrated on the MAR however the usage is tracked on flowsheets. 
 A PCA can be set up in Bolus mode (gives a dose when button is pressed) or is Infusion (gives a constant rate) or both. 
-There is significant challanges to collate the perscription, MAR and flowsheet data to understand how much PCA a patietn has recived within the IMPACT dataset. 
-
-James Bedford has written an impressed and detailed set of functions to proccess and analyse this data. They are laid out below.
+There is significant challenges to collate the  data to understand how much PCA a patient has recived within the IMPACT dataset. 
 
 
-# Summary
 
-Below is a diagram that helps to explain the flow of data though the various functions.
+### Step 1: Gather PCA data
 
-![](pca_flow_diagram.png)
+This function will gather the key flowsheets from the master flowsheets table. It will also join on some key information about each type of PCA infusion from the `dictionary_flowsheet_pca`. 
 
-The initial phase ingest raw flowsheet inputs and clinical datasets to enforce structural integrity. The `pca_clean_data()` function parses structural metadata, removes duplicate charting artifacts, normalises clinical timestamps, and filters extraneous rows to isolate valid PCA events.
 
-### Step 1: Data cleaning
 
 ```{r}
 # Synthesise a clean operational dataframe from raw PCA registries and EHR datasets
-pca_dataframe_cleaned <- pca_clean_data(
-  PCA_dataframe = PCAs,
-  dataset = df
-)
+
+pca_data <- extract_pca_data(dataset = df)
 
 ```
 
----
 
-## Step 2: Hourly Administration Conversion and Crossover Resolution
+## Step 2: Proccess the data
 
-Once cleaned, longitudinal flowsheet data must be mapped to discrete, continuous hourly intervals to compute precise administration vectors. A major challenge during this step is clinical crossover—instances where concurrent or conflicting medication administration records (MAR) threaten the mathematical validity of hourly dose attributions.
+The next step is to condense the filter the pca data to get a "best estimate" of the mg consumed. The current function uses three flowsheet rows: `mg_given`, `volume_given` and `doses_given` and will unify and smooth the datapoints to produce a best estiamte. 
 
-We present two alternative approaches to handle this conversion depending on whether you choose to use immediate automated heuristics or delayed, fine-grained deterministic parameters.
+The steps are as follows:
 
-### Option A: Default parameters
+1. De-duplicate any flowsheet that were recorded more than once per hour, taking the first value
 
-This approach converts the data and applies standard operational heuristics inline to resolve medication conflicts natively within a single step.
+2. Convert the `volume_given` flowsheet into mg units using the `concentration` given in the dictionary
 
-```{r}
-# Convert flowsheet data directly into hourly intervals with automated crossover correction
-pca_hourly <- pca_hourly_administration(
-  pca_dataframe_cleaned  = pca_dataframe_cleaned,
-  mar_df = HospitalMar,
-  resolve_crossover = TRUE,
-  verbose = TRUE
-)
+3. Calculate the "positivity ratio" (number of values that increase compared to the previous) and find soft and hard resets (when the counts reduce to or near 0)
 
-```
+4. Review each shift (from 7 till 7 twice a day) to establish how the nurses has documented that shift. They can be be classified as either a "incremental documenter" where they record the different from the previous value to the next or a "cumulative documenter" where they add the increment value to the previous and record a cumulative sum. Then review the most common documentation type for the whole flowsheet and declare it. 
 
-### Option B: Providing parameters for resolution
+5. Collate the flowsheets by converting any incremental types into the a cumulative sum. 
 
-User may wish to change the default parameters used in `pca_resolve_crossover()`. To do this, run the `pca_hourly_administration()` with  `resolve_crossover = FALSE`. Then run `pca_resolve_crossover()` and provide the parameters as needed. Refer to the help to understand the action of each. 
+6. Once all three sheets are in the cumulative form attempt to guess the `mg_per_dose` by comparing the `mg_given` and `doses_given` flowsheets
+
+7. Takes a median of the three flowsheets to return the best guess in a cumulative sum
 
 ```{r}
-# 1. Generate the continuous hourly data matrix leaving crossovers unresolved
-pca_hourly_unresolved <- pca_hourly_administration(
-  pca_dataframe_cleaned  = pca_dataframe_cleaned,
-  mar_df = HospitalMar,
-  resolve_crossover = FALSE,
-  verbose = TRUE
-)
 
-# 2. Apply granular domain-specific rules to resolve medication overlaps
-pca_hourly <- pca_resolve_crossover(
-  pca_hourly = pca_hourly_unresolved,
-  allowance_hours = 4L,
-  const_run_hours = 6L,
-  med_priority = c("Oxycodone", "Fentanyl", "Morphine"),
-  bridge_hours = 2L,
-  drop_on_equal_allowance = FALSE,
-  drop_within_allowance = FALSE
-)
-
-```
-
----
-
-## Step 3: Summarisation and Feature Aggregation
-
-The final step aggregates the granular hourly administration matrix into buckets suitable for endpoints. These can be returned as either bins from the end of surgery or bins from post-operative days (where POD 0 is the day of surgery and POD 1 starts at 8am the following day)
-
-### Option A: Post-Operative Binning
-
-This method bins administration data relative to an anchoring post-operative timestamps.
-
-```{r}
-# Summarise cumulative administration into custom-defined physiological/clinical phases
-pca_summary_bined <- pca_summarise_bins(
-  pca_hourly = pca_hourly,
-  phases = Phases
-)
-
-```
-
-### Option B: Daily binning
-
-Alternatively, data can be aggregated into daily surgical intervals calculated from a standardised clinical shift timeframe (e.g., 08:00 onwards).
-
-```{r}
-# Summarise total opioid consumption aggregated by surgical recovery days
-pca_summary_daily <- pca_summarise_days(
-  pca_hourly = pca_hourly,
-  phases = Phases,
-  output = "dose"
-)
+clean_pca_data <- proccess_pca_data(pca_data)
 
 ```
 

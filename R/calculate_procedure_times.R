@@ -40,6 +40,7 @@
 #'   `admission_csn`, `anaesthesia_csn`, along with the resolved consensus start and end timestamps.
 #'
 #' @import patchwork
+#' @importFrom rlang .data
 #' @export
 #'
 #' @examples
@@ -162,7 +163,18 @@ return(phases)
 
 
 
-
+#' Procedure Times Diagnostic Plot
+#'
+#' Generate density and box plots with statistical overlays for a given time variable.
+#'
+#' @param phases Data frame containing procedure phase data.
+#' @param column_string Character. Name of the column to analyze.
+#' @param width_limit Numeric. Optional threshold line to display on the density plot.
+#'
+#' @return A patchwork plot combining density and box plots with quartile and SD annotations.
+#'
+#' @importFrom rlang .data
+#' @export
 calculate_procedure_times_diagnostics_plot <- function(phases = phases,
                                                        column_string,
                                                        width_limit
