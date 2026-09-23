@@ -37,7 +37,7 @@ filter_flowsheet_data <- function(
     dataset,
     flowsheet = Measurements,
     search_string = NA,
-    search_column = flowsheet_question_name,
+    search_column = "flowsheet_question_name",
     check_search = TRUE,
     timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
     timeframe_csn = "admission_csn",
@@ -53,8 +53,8 @@ filter_flowsheet_data <- function(
   }
 
   # Argument checking
-  if(is.null(dataset)){
-    cli::cli_alert("No {.arg dataset} provided. Returning flowsheets for all patietns. Subsetting by time will not work. ")
+  if(is.null(dataset) | missing(dataset)){
+    cli::cli_alert("No {.arg dataset} provided. Returning flowsheets for all patients. Subsetting by time will not work. ")
   }else if (nrow(compute(dataset)) < 1) {
     cli::cli_abort("No rows in {.arg dataset}. Ensure you have not filtered away all patients.")
   }

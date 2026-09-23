@@ -210,7 +210,15 @@ calculate_medication_feature <- function(dataset,
   if(format == "table"){
     return(result)
   }else if (format == "joined"){
+
+    if(feature_name %in% names(dataset)){
+      if(verbose){ cli::cli_alert_warning("Your dataset already has a column called {.val {feature_name}}. Overwriting with the new column data. If this was not intended check the value of {.arg feature_name} and rename as needed.")}
+        dataset <- dataset %>% select(-.data[[feature_name]])
+    }
+
     return(left_join(dataset, result))
+  }else{
+    cli::cli_abort("ERROR: Non-valid value of {.arg format} supplied. You gave {.arg format} = {.val {format}}. Valid options include {.val table} or {.val joined}.")
   }
 
 }

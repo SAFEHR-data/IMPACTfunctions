@@ -25,30 +25,32 @@ fetch_pca_data <- function(dataset,
   )}
 
   if(any(is.na(pca_flowsheet_lookup))){
-    cli::cli_alert_warning(paste0("Caution: there are NA values in the PCA flowsheet lookup. Some medications may not calcaulte the PCA totals correctly. \n \n Review the relevent sheet of the {.href [dictonary](", dict_url,")}. "))
+    cli::cli_alert_warning(paste0("Caution: there are NA values in the {.arg pca_flowsheet_lookup}. Some medications may not calcaulte the PCA totals correctly. \n \n Review the relevent sheet of the {.href [dictonary](", dict_url,")} or the custom table if provided. "))
   }
 
 
   # Pre-filter for involved patients only
   if(!missing(dataset)){
-    flowsheet <- flowsheet %>%
-      filter(admission_csn %in% dataset$admission_csn)
+   # flowsheet <- flowsheet %>%
+    #  filter(admission_csn %in% dataset$admission_csn)
+    dataset_for_function <- dataset
 
   }else{
     cli::cli_alert_warning("You have not provided a study dataset. Will retrive and proccess pca flowsheets for all patients... \n 'This little maneuver's gonna cost you 51 years... - Cooper, Intersteller'")
-  }
+    dataset_for_function <- NULL
+    }
 
   # Gather all of the flowsheet rows for the patients in dataset
 
 
-  flowsheet <- extract_flowsheet_data(flowsheet = flowsheet,
+  flowsheet <- filter_flowsheet_data(dataset = dataset_for_function,
+                                     flowsheet = flowsheet,
                                       search_string = pca_flowsheet_lookup$flowsheet_row_epic_id,
                                       search_column = "flowsheet_row_epic_id",
-                                      dataset = dataset,
                                       check_search = FALSE,
                                       timeframe = "whole_flowsheet",
                                       timeframe_csn = "admission_csn",
-                                      verbose = FALSE)
+                                      verbose = verbose)
 
   flowsheet_df <- flowsheet %>%
     collect() %>%
