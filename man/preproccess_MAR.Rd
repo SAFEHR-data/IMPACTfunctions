@@ -12,7 +12,9 @@ preproccess_MAR(
   route_dict = dictionary_medication_route,
   opioid_dict = dictionary_opioid,
   equivelence_dict = dictionary_equivelence,
-  administered_only = TRUE
+  dose_units_dict = dictionary_dose_units,
+  administered_only = TRUE,
+  standardise_units = TRUE
 )
 }
 \arguments{
@@ -24,7 +26,11 @@ preproccess_MAR(
 
 \item{equivelence_dict}{The equivilence dictonary, defaults to \code{dictionary_equivelence} from the google sheets link below.}
 
+\item{dose_units_dict}{The dose unit conversion dictionary, defaults to \code{dictionary_dose_units} from the google sheets link below. Used to standardise \code{dose} into a common \code{dose_mg} column when \code{standardise_units = TRUE}. See \code{standardise_units} below.}
+
 \item{administered_only}{Filter to only keep the medications administered. Note: this will filter out infusions or any medication that are  \code{"given"} or \code{"Dose Documentation"}. The latter is used to capture to total doses of TIVA medications.}
+
+\item{standardise_units}{Standardise \code{dose} into a common \code{dose_mg} column (in milligrams) so that doses/OME can be safely summed across medications recorded in different units. This is driven by a left join against \code{dose_units_dict}, which maps every known \code{dose_units} string to a \code{multiplication_factor} (\code{dose * multiplication_factor = dose_mg}). Units that cannot be safely standardised have a \code{NA} \code{multiplication_factor} in the dictionary and are intentionally left as \code{NA} in \code{dose_mg}: this includes count/container units (eg \code{"tablet"}, \code{"vial"}), biological-activity units (eg \code{"Units"} of insulin, which has no fixed mass equivalent), rate units (eg \code{"mg/hr"} - a rate is not directly comparable to a one-off dose even though its mass prefix could be converted), and any \code{mL}-based dose (these depend on a variable/unknown concentration and possibly a multi-medication combination, so are not addressed here). If a \code{dose_units} value is not present in \code{dose_units_dict} at all (eg a new or misspelt unit appearing in the source data) it is also left as \code{NA}, and a warning lists the unmatched values so they can be triaged and added to the dictionary. When \code{FALSE}, no \code{dose_mg} column is created and the OME calculation falls back to only covering medications already recorded in \code{"mg"}.}
 }
 \value{
 The origonal MAR arrow table with additional columns and cleaned rows.

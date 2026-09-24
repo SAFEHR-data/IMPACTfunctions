@@ -36,4 +36,3 @@ VignetteBuilder: knitr
 URL: https://impactfunctions.dylanwhitaker.co.uk, https://github.com/SAFEHR-data/IMPACTfunctions
 BugReports: https://github.com/SAFEHR-data/IMPACTfunctions/issues
 Config/roxygen2/version: 8.1.0
-
