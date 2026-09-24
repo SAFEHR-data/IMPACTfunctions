@@ -34,7 +34,7 @@ Cohorting: Select by set of OPCS codes
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
@@ -47,7 +47,7 @@ cohort_1 <- cohort_procedure_codes(Procedures,
 
 }
 \seealso{
-Other cohort: 
-\code{\link{cohort_complete_admissions}()}
+Other cohort:
+\code{\link[=cohort_complete_admissions]{cohort_complete_admissions()}}
 }
 \concept{cohort}

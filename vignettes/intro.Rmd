@@ -37,14 +37,22 @@ You can either load the dataset using a parquet extract from the IMPACT dataset 
 ```{r, eval=FALSE}
 
 # Load real data
-IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
-             prefix = "SCB_Periop_",
-             suffix ="_20260129.parquet",
-             verbose = TRUE,
-             dictionary_check=FALSE)
+impact <- IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260624",
+             prefix = "Periop_",
+             suffix ="",
+             verbose = FALSE,
+             dictionary_check=TRUE)
 
+# The dataset is returned as an object, so you can reach the tables through it
+impact$Procedures
 
 ```
+
+`load_dataset()` also attaches each table to your session by name, so
+`Procedures`, `HospitalMar` and the rest can be used directly - this is what the
+functions in this package expect by default. Pass `attach = FALSE` if you would
+rather keep everything inside the returned object, and use `attach_dataset()` to
+attach it later.
 
 ## Using synthetic data
 
@@ -54,7 +62,7 @@ Note that the synthetic data is a minimum viable dataset to allow all of the fun
 ```{r, message=FALSE}
 #If you do not have a real dataset, load the synthetic dataset
 synth_data <- load_synthetic_dataset()
-list2env(synth_data, envir = .GlobalEnv)
+attach_dataset(synth_data)
 rm(synth_data)
 
 ```

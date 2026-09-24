@@ -27,13 +27,13 @@ The function ensures that of the date columns they are in correct order.
 The order is currently fixed that following datetime occur sequentially:  admission -> operation -> discharge. In a future version of the fuction it would be good to add flexability and specify the columns of intrest.
 }
 \seealso{
-Other cohort_enforce: 
-\code{\link{cohort_enforce_complete_anaesthetic_chart}()},
-\code{\link{cohort_enforce_dates_complete}()},
-\code{\link{cohort_enforce_discharged}()},
+Other cohort_enforce:
+\code{\link[=cohort_enforce_complete_anaesthetic_chart]{cohort_enforce_complete_anaesthetic_chart()}},
+\code{\link[=cohort_enforce_dates_complete]{cohort_enforce_dates_complete()}},
+\code{\link[=cohort_enforce_discharged]{cohort_enforce_discharged()}},
 \code{\link{cohort_enforce_family}},
-\code{\link{cohort_enforce_opt_out}()},
-\code{\link{cohort_enforce_procedure_coded}()},
-\code{\link{cohort_enforce_single_procedure}()}
+\code{\link[=cohort_enforce_opt_out]{cohort_enforce_opt_out()}},
+\code{\link[=cohort_enforce_procedure_coded]{cohort_enforce_procedure_coded()}},
+\code{\link[=cohort_enforce_single_procedure]{cohort_enforce_single_procedure()}}
 }
 \concept{cohort_enforce}
