@@ -1,0 +1,13 @@
+url: https://impactfunctions.dylanwhitaker.co.uk
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [uclh, search, github]
+  components:
+    uclh:
+      text: UCLH network setup
+      href: articles/FAQ.html#installing-the-package-on-rstudio-server-uclh-network
+

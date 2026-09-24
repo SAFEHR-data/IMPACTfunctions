@@ -1,5 +1,7 @@
 # IMPACTfunctions (development version)
 
+
+* Added a pkgdown website for the package, built and deployed automatically via GitHub Actions.
 ## Loading a dataset
 
 * `load_dataset()` now **returns** the dataset as an `impact_dataset` object, in

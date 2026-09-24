@@ -3,14 +3,49 @@
 
 <!-- badges: start -->
 
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R-CMD-check](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SAFEHR-data/IMPACTfunctions/actions/workflows/R-CMD-check.yaml)
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <!-- badges: end -->
 
-The goal of IMPACTfunctions is to help working with the IMPACT
-peri-operative dataset.
+IMPACTfunctions is an R package to work with the IMPACT peri-operative
+dataset. It streamlines the process of building study datasets with
+cohorting, filtering and feature extraction functions. Functions are
+clinically validated with sensible warnings (*eg warn if you try to sum
+doses with different units*). Function defaults and explicitly reference
+and dictionaries ensure analysis is consistent between users and
+datasets.
 
-The dataset was built at UCLH with input from CUH NHS trust and others…
+> **UNDER DEVELOPMENT** This pacakge is under active developement.
+> Features and functions may be updated and changed without warning and
+> there is no promise of backward compatability. Describing issues and
+> bugs is very helpful and part of our collobarative proccess to
+> validate the pacakge and the dataset!
+
+## Installation
+
+You can install the development version of IMPACTfunctions from
+[GitHub](https://github.com/) with:
+
+``` r
+# Install package from github:
+remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
+                        auth_token = gitcreds::gitcreds_get()$password)
+```
+
+> 🔒 **Private repo** The current development version of the package is
+> private. You will require a github PAT to the repo. Follow [this
+> guide](https://uclh.slab.com/posts/git-hub-integration-6s9bw63t) to
+> get one (internal SLAB wiki, UCLH network only).
+
+> 🔒 **On UCLH RStudio Server?** The UCLH network proxy can block the
+> download above. See [Installing packages from GitHub on RStudio
+> Server](https://uclh.slab.com/posts/installing-packages-from-git-hub-on-r-studio-server-b9mpm526)
+> (internal SLAB wiki, UCLH network only) for the extra proxy code
+> needed.
 
 ## Functionality and dependancy
 
@@ -21,7 +56,7 @@ The dataset was built at UCLH with input from CUH NHS trust and others…
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.1.0.9003 \| Package compatible with
+Features in Package version: 0.1.0.9006 \| Package compatible with
 IMPACT dataset up to `20260624`
 
 ### Future features
@@ -38,44 +73,24 @@ The dataset also contains the following datapoints:
   flow/volumes
 - Observations - Similar to measurements but what is observed.
 - The anaesthetic and operating room timepoints
-- Operation notes as freetext
+- Operation notes as free text
 - List of the members of staff involved in each case
 - Patient movements though the hospital with their bedspace at each
   timepoint.
 
-## Installation
-
-You can install the development version of IMPACTfunctions from
-[GitHub](https://github.com/) with:
-
-``` r
-# As it is a private repo within the SAFEHR-data group you will need a PAT. 
-# Follow this guide to get one: https://uclh.slab.com/posts/git-hub-integration-6s9bw63t
-
-# Then set that to your R session:
-gitcreds::gitcreds_set()
-
-#If using a virtual machine:
-Sys.setenv(https_proxy="") 
-Sys.setenv(http_proxy="")
-
-# Install package from github:
-remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
-                        auth_token = gitcreds::gitcreds_get()$password)
-```
-
 ## FAQ and error troubleshooting
 
-See the
-[`FAQ.md`](https://github.com/SAFEHR-data/IMPACTfunctions/blob/main/FAQ.md)
-file or tips on the troubleshooting and explaning common errors. Leve a
-github issue with any more complex issues.
+See the [FAQ
+page](https://impactfunctions.dylanwhitaker.co.uk/articles/FAQ.html) (or
+the [source](https://github.com/SAFEHR-data/IMPACTfunctions)) for tips
+on the troubleshooting and explaining common errors. Leave a github
+issue with any more complex issues.
 
 ## Contributing
 
 We welcome the help to contribute, see the [SLAB
 article](https://uclh.slab.com/posts/how-to-contribute-to-an-r-package-kkfuh997?shr=a5jb3q7t0av7r0z9e22b36l5)
-on how to add fuctions
+on how to add functions.
 
 ## Example
 

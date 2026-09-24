@@ -1,8 +1,25 @@
-# Frequently Asked Questions and Troubleshooting. 
+---
+title: "FAQ"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{FAQ}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Frequently Asked Questions and Troubleshooting.
 
 This is a guide to any issues you may encounter. If you run into an issue and 
 solve it, please add below!
 
+
+## Installing the package on RStudio Server (UCLH network)
+
+> 🔒 The link below goes to the internal UCLH SLAB wiki and is only accessible from the UCLH network.
+
+See [Installing packages from GitHub on RStudio Server](https://uclh.slab.com/posts/installing-packages-from-git-hub-on-r-studio-server-b9mpm526) for the full walkthrough.
+
+The UCLH network sits behind a proxy, so downloading the package from GitHub within the network requires the proxy workaround shown in that guide (also included in the [README installation instructions](https://github.com/SAFEHR-data/IMPACTfunctions#installation)) before calling `remotes::install_github()`.
 
 ## `load_dataset()` function gives error about table names not being in the IMPACT dict
 
@@ -57,5 +74,4 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 ```
 
 3. Await for the issue to be fixed and then install the latest package version.
-
 
