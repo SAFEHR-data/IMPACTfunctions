@@ -37,11 +37,11 @@ You can either load the dataset using a parquet extract from the IMPACT dataset 
 ```{r, eval=FALSE}
 
 # Load real data
-impact <- IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260129",
-             prefix = "SCB_Periop_",
-             suffix ="_20260129.parquet",
-             verbose = TRUE,
-             dictionary_check=FALSE)
+impact <- IMPACTfunctions::load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260624",
+             prefix = "Periop_",
+             suffix ="",
+             verbose = FALSE,
+             dictionary_check=TRUE)
 
 # The dataset is returned as an object, so you can reach the tables through it
 impact$Procedures

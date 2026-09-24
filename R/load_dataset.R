@@ -85,14 +85,14 @@ load_dataset <- function(
   #Suffix and Prefix check - To check if our provided Suffix and Prefix are suitable
   #We test with the first value of the Dictionary that we can produce it.
 
-  approved_tables_names <- na.omit(unique(dictionary_IMPACT_schema$table_name))
+  approved_tables_names <- dictionary_IMPACT_schema[!is.na(dictionary_IMPACT_schema$table_name),"table_name"]
 
   if(any(dictionary_IMPACT_schema$table_name[1] %in% files$name)){
     #We can cleaned to correctly match the first dict name (usually Demographics)
   }else{
     cli::cli_alert_warning("Struggaling to clean the file names using the {.arg prefix} {.val {prefix}} and the {.arg suffix} {.val {suffix}} provided... ")
     demographic_file_name <- files[grepl(dictionary_IMPACT_schema$table_name[1], files$name),"name"]
-    pre_suf_strings <- stringr::str_split(demographic_file_name,pull(dictionary_IMPACT_schema$table_name[1]) )
+    pre_suf_strings <- stringr::str_split(demographic_file_name, dictionary_IMPACT_schema$table_name[1] )
     cli::cli_alert_info("Looks like your {.arg prefix} should be {.val {pre_suf_strings[[1]][1]}} and the {.arg suffix} {.val {pre_suf_strings[[1]][2]}}. \n \n Without this you will either get non-standard table tables (that will fail many of the onward functions, or trigger the missing table errors with the {.arg dictionary_check=TRUE})    ")
     }
 
@@ -103,16 +103,16 @@ load_dataset <- function(
     #Check any missing
 
 
-    if(any(!approved_tables_names %in% files$name)){
-      missing_tables <- setdiff(approved_tables_names, files$name)
+    if(any(!approved_tables_names$table_name %in% files$name)){
+      missing_tables <- setdiff(approved_tables_names$table_name, files$name)
       cli::cli_abort("The table {.val {missing_tables}} is in the IMPACT dictionary but is not found in the dataset you provided.
         \n This may be for a number of reasons:
         \n - You have not set the prefix and suffix correctly (scroll up to see warning message if so)
         \n- The dictonary is out of date. If you think this is the case then you can look at the {.href [online IMPACT Schema](dict_url)} and open a {.href [github issue.](github_url_issues)}\n Alternativly, avoid the check with {.arg dictionary_check = FALSE}")
       }
       #Check for additional tables
-    if(any(!files$name %in% approved_tables_names)){
-     additional_tables <-  files$name[which(!files$name %in% approved_tables_names)]
+    if(any(!files$name %in% approved_tables_names$table_name)){
+     additional_tables <-  files$name[which(!files$name %in% approved_tables_names$table_name)]
     cli::cli_abort("The table {.val {additional_tables}} is not in the IMPACT dictionary but is found in the dataset provided.
         \nThis may be because the dataset has been updated by the dictonary itself has not been updated.
         If you think this is the case then you can avoid the check with {.arg dictionary_check} = {.val FALSE}")
