@@ -64,11 +64,19 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
                         auth_token = gitcreds::gitcreds_get()$password)
 ```
 
+> 🔒 **On UCLH RStudio Server?** The UCLH network proxy can block the
+> download above. See [Installing packages from GitHub on RStudio
+> Server](https://uclh.slab.com/posts/installing-packages-from-git-hub-on-r-studio-server-b9mpm526)
+> (internal SLAB wiki, UCLH network only) for the extra proxy code
+> needed.
+
 ## FAQ and error troubleshooting
 
-See the
-[`FAQ.md`](https://github.com/SAFEHR-data/IMPACTfunctions/blob/main/FAQ.md)
-file or tips on the troubleshooting and explaning common errors. Leve a
+See the [FAQ
+page](https://impactfunctions.dylanwhitaker.co.uk/articles/FAQ.html)
+(or the
+[source](https://github.com/SAFEHR-data/IMPACTfunctions/blob/main/vignettes/FAQ.Rmd))
+for tips on the troubleshooting and explaning common errors. Leve a
 github issue with any more complex issues.
 
 ## Contributing

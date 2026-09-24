@@ -34,3 +34,5 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+URL: https://impactfunctions.dylanwhitaker.co.uk, https://github.com/SAFEHR-data/IMPACTfunctions
+BugReports: https://github.com/SAFEHR-data/IMPACTfunctions/issues
