@@ -9,6 +9,8 @@ load_dataset(
   prefix,
   suffix = ".parquet",
   dictionary_check = TRUE,
+  attach = TRUE,
+  envir = globalenv(),
   verbose = FALSE
 )
 }
@@ -21,22 +23,48 @@ load_dataset(
 
 \item{dictionary_check}{Check the dataset being loaded against the IMPACT dictionary to ensure data completeness}
 
+\item{attach}{Also bind each table as a free-standing object in \code{envir}. See \code{\link[=attach_dataset]{attach_dataset()}}.}
+
+\item{envir}{The environment to attach the tables to, if \code{attach = TRUE}.}
+
 \item{verbose}{Print the output of each step}
 }
 \value{
-A series of tables for the IMPACT dataset in the arrow object binding
+An \link{impact_dataset}: a named list of arrow bindings, one per table.
 }
 \description{
-\code{load_dataset} Takes the folder path of IMPACT dataset and uploaded the tables to the current R session as arrow objects.
+\code{load_dataset} takes the folder path of an IMPACT dataset, reads each parquet file as an arrow object, and returns them together as an \link{impact_dataset}.
 }
 \details{
+The function returns a value, in the same way that \code{read_csv()} does, so assign it:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{impact <- load_dataset("~/data/IMPACT/full_extract", prefix = "SCB_Periop_")
+impact$Procedures
+}\if{html}{\out{</div>}}
+
+By default the tables are \emph{also} attached to your environment as free-standing
+objects, so that \code{Procedures}, \code{HospitalMar} and the rest can be used by name.
+This is what most of the package's functions expect by default. Set
+\code{attach = FALSE} if you would rather work only through the returned object, and
+see \code{\link[=attach_dataset]{attach_dataset()}} to attach it later.
+
 The \code{dictionary_check} argument checks the files within the target folder against a dictionary of known accepted table names to ensure dataset quality. Whilst the dataset is in development this may become out of date. If persistent issue then please leave a github issue.
 }
 \examples{
 \dontrun{
-load_dataset(folder_path = "~/data/IMPACT/full_extract",
+impact <- load_dataset(folder_path = "~/data/IMPACT/full_extract",
             prefix = "SCB_Periop_",
             suffix = "_20260122.parquet",
             dictionary_check = TRUE,
-            verbose = TRUE)}
+            verbose = TRUE)
+
+impact$Procedures
+
+# Without touching the global environment
+impact <- load_dataset(folder_path = "~/data/IMPACT/full_extract",
+            prefix = "SCB_Periop_",
+            attach = FALSE)}
+}
+\seealso{
+\code{\link[=attach_dataset]{attach_dataset()}}, \link{impact_dataset}
 }

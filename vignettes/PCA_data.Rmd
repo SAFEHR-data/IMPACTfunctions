@@ -25,7 +25,7 @@ library(dplyr)
 ```{r eval=TRUE, message=FALSE, echo=FALSE}
 #If you do not have a real dataset, load the synthetic dataset
 synth_data <- load_synthetic_dataset()
-list2env(synth_data, envir = .GlobalEnv)
+attach_dataset(synth_data)
 rm(synth_data)
 ```
 

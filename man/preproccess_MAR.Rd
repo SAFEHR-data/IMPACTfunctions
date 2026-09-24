@@ -39,7 +39,7 @@ If there are medications for which a opioid-equivelence is not being generated t
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
