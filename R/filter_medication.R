@@ -37,7 +37,7 @@
 #' @param filter_route The strings of the routes to be filtered by.
 #' @param route_column The column which to apply the route strings to filter upon. Select from **"route"** or **"simple_route"**.
 #' @param verbose Print the stwps as the function runs? Helpful for setting up and debugging
-#' @param apply_preproccess_MAR Allow the function to do the preprocessing for you. Turn to **FALSE** if you have used `preproccess_MAR()` in your workflow already.
+#' @param apply_preproccess_MAR Allow the function to do the preprocessing for you. Turn to **FALSE** if you have used `preproccess_MAR()` in your workflow already. Even if left as **TRUE**, the function checks `MAR` for the columns `preproccess_MAR()` always adds (`route`, `route_simple`, `opioid_name`, `equivelence`, `ome`); if they are all already present, `MAR` is assumed to be pre-processed already and `preproccess_MAR()` is not re-run (avoiding double-computation), with a warning if `verbose = TRUE`.
 #'
 #' @return A arrow query of the subset of medications of intrest.
 #' @export
@@ -228,8 +228,22 @@ filter_medication <- function(dataset,
     }else{
       cli::cli_abort("The PCA MAR supplied doesn't contain the cleaned infered columns. \n Ensure to use {.fn fetch_pca_data} and then {.fn proccess_pca_data} to produce the PCA MAR.")
     }
-  }else  if(apply_preproccess_MAR){
-    MAR <- preproccess_MAR(MAR)
+  }else{
+
+    # Columns preproccess_MAR() always adds, regardless of standardise_units.
+    # Used to detect a MAR that has already been preproccessed, to avoid
+    # silently re-running (and double-computing) the preprocessing step.
+    preproccess_MAR_cols <- c("route", "route_simple", "opioid_name", "equivelence", "ome")
+    MAR_already_preproccessed <- all(preproccess_MAR_cols %in% names(MAR))
+
+    if(MAR_already_preproccessed){
+      if(apply_preproccess_MAR && verbose){
+        cli::cli_alert_warning("{.arg MAR} already appears to have been preproccessed (columns {.val {preproccess_MAR_cols}} are all present). {.arg apply_preproccess_MAR} has been ignored to avoid re-running {.fn preproccess_MAR} on an already-preproccessed table.")
+      }
+    }else if(apply_preproccess_MAR){
+      MAR <- preproccess_MAR(MAR)
+    }
+
   }
 
 
