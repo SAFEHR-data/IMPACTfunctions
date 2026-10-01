@@ -195,7 +195,7 @@ calculate_medication_feature <- function(dataset,
    if(PCA_DATA){dose_col = "binned_value_ome"}else{dose_col = "ome"}
 
     if(!PCA_DATA && any(is.na(MAR %>% pull(.data[[dose_col]])))){
-      cli::cli_alert_warning("Some rows have a {.val NA} {.val ome} (eg an unmatched medication, or a dose unit that could not be standardised) and will be excluded from the sum by {.arg na.rm = TRUE}, so affected patients' totals may be an underestimate. \n \n Check {.fn preproccess_MAR}'s dose unit dictionary ({.arg dictionary_dose_units}) if these should be standardised.")
+      cli::cli_alert_warning("Some rows have a value of {.val NA} in the column {.val ome} (eg an unmatched medication, or a dose unit that could not be standardised) and will be excluded from the sum by {.arg na.rm = TRUE}, so affected patients' totals may be an underestimate. This effects {.val {sum(is.na(MAR %>% pull(.data[[dose_col]])))}} rows of the medication administrations. This may not be an issue if the {.arg MAR} provided is not a opioid specific subset.  \n \n Check {.fn preproccess_MAR}'s dose unit dictionary ({.arg dictionary_dose_units}) if these should be standardised.")
     }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
