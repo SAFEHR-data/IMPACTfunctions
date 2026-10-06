@@ -11,7 +11,7 @@
 #' @param feature If returning a vector, what type of feature do you want extracted? Choose: **"binary"**, "sum_dose", "sum_ome","count"
 #' @param feature_name if returning a vector, what do you want the feature column called?
 #' @param link_column Which column to use as the primary source of return. Select one option from: `link_column = c(admission_csn, anaesthesia_csn, operation_csn)`
-#' @param override_dose_check The function will check to ensure all the units are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different units.
+#' @param override_dose_check The function checks the dose units before returning a summed feature (`sum_dose`/`sum_ome`). If `MAR` has a standardised `dose_mg` column (see `preproccess_MAR(standardise_units = TRUE)`) the check passes silently. Otherwise: a single `dose_units` value of `"mg"` passes silently, a single non-`"mg"` value passes with a warning that the sum is returned unstandardised, and multiple different `dose_units` values trigger a hard error (this is the case most likely to cause a silent, incorrect summed value). Separately, once summing, if any of the rows being summed have a `NA` `dose_mg`/`ome` (eg an unconvertible unit such as `"Units"` or `mL`) a warning is issued naming the affected units, since the sum may not be representative. Set `override_dose_check = TRUE` to bypass the units check entirely at the risk of returning a summed dose across different units.
 #' @param override_route_check The function will check to ensure all the of the routes are the same before returning the feature. Set to `TRUE` to override this at the risk of returning a summed dose across different routes
 #' @param verbose Print the outputs of the function explicility.
 #' @return Either a table of the vector of interest of the joined dataset left joined.
@@ -110,12 +110,19 @@ calculate_medication_feature <- function(dataset,
 
   ## Error checking: Before pooling ensure, same drug, same route, same units.
 
+  has_dose_mg <- "dose_mg" %in% names(MAR)
+  dose_units_present <- if(!PCA_DATA) unique(MAR %>% pull(dose_units)) else NA_character_
+
   if(override_dose_check){
     cli::cli_alert_success("Dose check overidden.")
-  }else if(length(unique(MAR %>% pull(dose_units))) == 1){
-    if(verbose){cli::cli_alert_success("Dose units are all the same!")}
+  }else if(has_dose_mg){
+    if(verbose){cli::cli_alert_success("Standardised {.val dose_mg} column detected, proceeding using standardised mg doses.")}
+  }else if(length(dose_units_present) == 1 && dose_units_present == "mg"){
+    if(verbose){cli::cli_alert_success("Dose units are all the same (mg)!")}
+  }else if(length(dose_units_present) == 1 && dose_units_present != "mg"){
+    cli::cli_alert_warning("Dose units are all {.val {dose_units_present}}, not {.val mg}. The summed value will be returned in {.val {dose_units_present}}, not standardised. \n \n Run {.fn preproccess_MAR} with {.arg standardise_units = TRUE} first for a standardised dose in mg.")
   }else{
-      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {unique(MAR %>% pull(dose_units))}}).\n\n If this will not impact your feature then change {.arg override_dose_check} to {.val TRUE}. \n Otherwise review your arguments in {.fn extract_medication} ")
+      cli::cli_abort("Not all dose units the same.\n In {.val MAR} there are mutiple units of the dose ({.val {dose_units_present}}).\n\n This will cause a silent failure when summing across incompatible units. Run {.fn preproccess_MAR} with {.arg standardise_units = TRUE} first, or set {.arg override_dose_check} to {.val TRUE} to bypass at your own risk.")
     }
 
   if(override_route_check){
@@ -157,7 +164,12 @@ calculate_medication_feature <- function(dataset,
       cli::cli_alert_danger("DANGER: The MAR supplied more than 1 medication or more than 1 route in it but your are requesting a summed dose. This may return a sum acorss different medications or routes.\n \n Consdier revising the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such if you wanted to sum the total paracetmol doses regardless of route")
     }
 
-    if(PCA_DATA){dose_col = "binned_value"}else{dose_col = "dose"}
+    if(PCA_DATA){dose_col = "binned_value"}else if(has_dose_mg){dose_col = "dose_mg"}else{dose_col = "dose"}
+
+    if(!PCA_DATA && has_dose_mg && any(is.na(MAR %>% pull(.data[[dose_col]])))){
+      na_units <- MAR %>% filter(is.na(.data[[dose_col]])) %>% distinct(dose_units) %>% pull(dose_units)
+      cli::cli_alert_warning("Some rows have a {.val NA} {.val {dose_col}} (dose units: {.val {na_units}}) which could not be standardised. Because {.arg na.rm = FALSE}, any patient with one of these rows will get a {.val NA} result rather than a silently incomplete sum. \n \n Check {.fn preproccess_MAR}'s dose unit dictionary ({.arg dictionary_dose_units}) if these units should be standardised.")
+    }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       collect() %>%
@@ -176,7 +188,15 @@ calculate_medication_feature <- function(dataset,
      cli::cli_alert_danger("DANGER: The MAR supplied only has 1 medication in it but your are requesting and OME.\n \n Consdier remvoing the arguement {.arg medication} in the {.fn extract_medication} function. (There may be situations when you want to proceed, such as if you want to calcualute a OME of IV and Oral morphine. ")
    }
 
-   if(PCA_DATA){dose_col = "binned_value_ome"}else{dose_col = "dose"}
+   if(!PCA_DATA && !("ome" %in% names(MAR))){
+     cli::cli_abort("You have requested {.val sum_ome} but {.arg MAR} has no {.val ome} column. \n \n Run {.fn preproccess_MAR} first (or call {.fn filter_medication} with {.arg apply_preproccess_MAR = TRUE}).")
+   }
+
+   if(PCA_DATA){dose_col = "binned_value_ome"}else{dose_col = "ome"}
+
+    if(!PCA_DATA && any(is.na(MAR %>% pull(.data[[dose_col]])))){
+      cli::cli_alert_warning("Some rows have a value of {.val NA} in the column {.val ome} (eg an unmatched medication, or a dose unit that could not be standardised) and will be excluded from the sum by {.arg na.rm = TRUE}, so affected patients' totals may be an underestimate. This effects {.val {sum(is.na(MAR %>% pull(.data[[dose_col]])))}} rows of the medication administrations. This may not be an issue if the {.arg MAR} provided is not a opioid specific subset.  \n \n Check {.fn preproccess_MAR}'s dose unit dictionary ({.arg dictionary_dose_units}) if these should be standardised.")
+    }
 
     result <- MAR %>% group_by(.data[[csn_vector_name]]) %>%
       collect() %>%

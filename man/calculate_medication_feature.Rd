@@ -29,7 +29,7 @@ calculate_medication_feature(
 
 \item{link_column}{Which column to use as the primary source of return. Select one option from: \code{link_column = c(admission_csn, anaesthesia_csn, operation_csn)}}
 
-\item{override_dose_check}{The function will check to ensure all the units are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different units.}
+\item{override_dose_check}{The function checks the dose units before returning a summed feature (\code{sum_dose}/\code{sum_ome}). If \code{MAR} has a standardised \code{dose_mg} column (see \code{preproccess_MAR(standardise_units = TRUE)}) the check passes silently. Otherwise: a single \code{dose_units} value of \code{"mg"} passes silently, a single non-\code{"mg"} value passes with a warning that the sum is returned unstandardised, and multiple different \code{dose_units} values trigger a hard error (this is the case most likely to cause a silent, incorrect summed value). Separately, once summing, if any of the rows being summed have a \code{NA} \code{dose_mg}/\code{ome} (eg an unconvertible unit such as \code{"Units"} or \code{mL}) a warning is issued naming the affected units, since the sum may not be representative. Set \code{override_dose_check = TRUE} to bypass the units check entirely at the risk of returning a summed dose across different units.}
 
 \item{override_route_check}{The function will check to ensure all the of the routes are the same before returning the feature. Set to \code{TRUE} to override this at the risk of returning a summed dose across different routes}
 

@@ -8,7 +8,7 @@ filter_flowsheet_data(
   dataset,
   flowsheet = Measurements,
   search_string = NA,
-  search_column = flowsheet_question_name,
+  search_column = "flowsheet_question_name",
   check_search = TRUE,
   timeframe = c("whole_flowsheet", "pre_op", "post_op", "custom"),
   timeframe_csn = "admission_csn",

@@ -12,7 +12,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5)
 LazyData: true
 Imports: 
     arrow,
@@ -36,4 +36,3 @@ VignetteBuilder: knitr
 URL: https://impactfunctions.dylanwhitaker.co.uk, https://github.com/SAFEHR-data/IMPACTfunctions
 BugReports: https://github.com/SAFEHR-data/IMPACTfunctions/issues
 Config/roxygen2/version: 8.1.0
-

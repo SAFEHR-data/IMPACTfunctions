@@ -48,7 +48,7 @@ filter_medication(
 
 \item{verbose}{Print the stwps as the function runs? Helpful for setting up and debugging}
 
-\item{apply_preproccess_MAR}{Allow the function to do the preprocessing for you. Turn to \strong{FALSE} if you have used \code{preproccess_MAR()} in your workflow already.}
+\item{apply_preproccess_MAR}{Allow the function to do the preprocessing for you. Turn to \strong{FALSE} if you have used \code{preproccess_MAR()} in your workflow already. Even if left as \strong{TRUE}, the function checks \code{MAR} for the columns \code{preproccess_MAR()} always adds (\code{route}, \code{route_simple}, \code{opioid_name}, \code{equivelence}, \code{ome}); if they are all already present, \code{MAR} is assumed to be pre-processed already and \code{preproccess_MAR()} is not re-run (avoiding double-computation), with a warning if \code{verbose = TRUE}.}
 }
 \value{
 A arrow query of the subset of medications of intrest.

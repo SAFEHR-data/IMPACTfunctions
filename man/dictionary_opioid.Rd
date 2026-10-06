@@ -21,7 +21,7 @@ A dataframe with 3 columns:
 dictionary_opioid
 }
 \description{
-We source 4 dictonaries from the online google sheets.
+We source 5 dictonaries from the online google sheets.
 This table is the schema for which we do opioid summarisation.
 }
 \keyword{datasets}

@@ -22,7 +22,7 @@ A dataframe with 3 columns:
 dictionary_medication_route
 }
 \description{
-We source 4 dictonaries from the online google sheets.
+We source 5 dictonaries from the online google sheets.
 This table is the schema for which we do route conversions against.
 }
 \keyword{datasets}
