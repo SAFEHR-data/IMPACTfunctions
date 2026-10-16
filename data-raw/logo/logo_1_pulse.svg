@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="518" height="600" viewBox="0 0 518 600">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#145A6B"/><stop offset="1" stop-color="#082B36"/></linearGradient>
+<clipPath id="hex"><polygon points="259,0 518,150 518,450 259,600 0,450 0,150"/></clipPath></defs>
+<polygon points="259,0 518,150 518,450 259,600 0,450 0,150" fill="#0B3C49"/>
+<polygon points="259.0,16.2 504.0,158.1 504.0,441.9 259.0,583.8 14.0,441.9 14.0,158.1" fill="url(#bg)" stroke="#7FE3D4" stroke-width="3" stroke-linejoin="round"/>
+<g clip-path="url(#hex)"><g transform="translate(0,28)">
+<path d="M30 225 H118 l14 -34 l22 78 l16 -44 H205 M313 225 H360 l14 -44 l24 88 l14 -44 H488" fill="none" stroke="#7FE3D4" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M259 290 C200 245 195 190 230 180 C247 176 259 188 259 200 C259 188 271 176 288 180 C323 190 318 245 259 290Z" fill="#FF5A6E" transform="translate(259,233) scale(0.95) translate(-259,-233)"/>
+<path d="M252.5 203 h13 v12.5 h12.5 v13 h-12.5 v12.5 h-13 v-12.5 h-12.5 v-13 h12.5Z" fill="#fff"/></g></g>
+<text x="259" y="445" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="800" font-size="68" letter-spacing="1" fill="#fff">IMPACT</text>
+<text x="259" y="493" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="400" font-size="46" letter-spacing="2" fill="#7FE3D4">functions</text>
+</svg>
