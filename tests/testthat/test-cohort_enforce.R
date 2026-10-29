@@ -239,3 +239,76 @@ test_that("cohort_enforce_opt_out() records eligibility criteria correctly", {
   expect_equal(row$n_prior, n_prior)
   expect_equal(row$n_filtered, n_filtered)
 })
+
+# cohort_enforce_single_procedure() ------------------------------------------
+# Regression tests for #60: grouped slice_min() is not supported by Arrow, so
+# these run on Arrow tables (as returned by load_dataset()/load_synthetic_dataset()).
+
+single_procedure_fixture <- function() {
+  arrow::arrow_table(
+    case_id = c("a1", "a2", "a3", "b1", "c1", "c2", "c3"),
+    admission_csn = c("A", "A", "A", "B", "C", "C", "C"),
+    # A: three procedures; B: single procedure; C: two-way tie on earliest date
+    operation_date = as.Date(c("2024-01-03", "2024-01-01", "2024-01-05",
+                               "2024-02-01",
+                               "2024-03-01", "2024-03-01", "2024-03-09"))
+  )
+}
+
+test_that("cohort_enforce_single_procedure() works on an Arrow table without erroring", {
+  expect_no_error(
+    cohort_enforce_single_procedure(single_procedure_fixture(), add_to_eligability_criteria = FALSE) %>% collect()
+  )
+})
+
+test_that("cohort_enforce_single_procedure() keeps only the earliest procedure per admission_csn", {
+  result <- cohort_enforce_single_procedure(single_procedure_fixture(), add_to_eligability_criteria = FALSE) %>%
+    collect()
+
+  # A -> a2 (earliest), B -> b1 (only one), C -> c1 and c2 (tied, as slice_min() keeps ties)
+  expect_setequal(result$case_id, c("a2", "b1", "c1", "c2"))
+  expect_false(any(c("a1", "a3", "c3") %in% result$case_id))
+})
+
+test_that("cohort_enforce_single_procedure() leaves the table unchanged when every admission has one procedure", {
+  single <- arrow::arrow_table(
+    case_id = c("x", "y"),
+    admission_csn = c("X", "Y"),
+    operation_date = as.Date(c("2024-01-01", "2024-01-02"))
+  )
+
+  result <- cohort_enforce_single_procedure(single, add_to_eligability_criteria = FALSE) %>% collect()
+
+  expect_setequal(result$case_id, c("x", "y"))
+})
+
+test_that("cohort_enforce_single_procedure() on the synthetic procedures matches a plain dplyr reference", {
+  expected <- test_procedures %>%
+    collect() %>%
+    group_by(admission_csn) %>%
+    filter(operation_date == min(operation_date)) %>%
+    ungroup()
+
+  result <- cohort_enforce_single_procedure(test_procedures, add_to_eligability_criteria = FALSE) %>% collect()
+
+  expect_setequal(result$case_id, expected$case_id)
+})
+
+test_that("cohort_enforce_single_procedure() records eligibility criteria correctly", {
+  local_reset_eligibility_criteria()
+  fixture <- single_procedure_fixture()
+
+  cohort_enforce_single_procedure(fixture, add_to_eligability_criteria = TRUE)
+
+  row <- tail(eligibility_criteria, 1)
+  expect_equal(row$function_name, "cohort_enforce_single_procedure()")
+  expect_equal(row$n_prior, 7)
+  expect_equal(row$n_filtered, 3)
+})
+
+test_that("cohort_enforce_single_procedure() verbose = TRUE reports what was filtered", {
+  expect_message(
+    cohort_enforce_single_procedure(single_procedure_fixture(), verbose = TRUE, add_to_eligability_criteria = FALSE),
+    regexp = "Filtering out"
+  )
+})
