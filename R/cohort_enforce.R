@@ -305,7 +305,7 @@ cohort_enforce_single_procedure <- function(procedures_table,
                                             verbose = FALSE){
 
   prior <- nrow(procedures_table)
-  procedures_table_filtered <- procedures_table %>% group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup()
+  procedures_table_filtered <- procedures_table %>% inner_join(procedures_table %>% group_by(admission_csn) %>% summarise(operation_date = min(operation_date)), by = c("admission_csn", "operation_date"))
   filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){
@@ -316,7 +316,7 @@ cohort_enforce_single_procedure <- function(procedures_table,
     eligibility_criteria_add(type = "Exclusion",
                              text = "Procedures subsequent to index procedure",
                              function_name = "cohort_enforce_single_procedure()",
-                             function_filter = "group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup()",
+                             function_filter = "inner_join(group_by(admission_csn) %>% summarise(operation_date = min(operation_date)), by = c('admission_csn', 'operation_date'))",
                              n_prior = prior,
                              n_filtered = filtered)
   }
