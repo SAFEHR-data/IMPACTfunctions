@@ -200,5 +200,5 @@ filter_flowsheet_data <- function(
 
 extract_flowsheet_data <- function(...){
   .Deprecated(new = "filter_flowsheet_data")
-  filter_flowsheet_data()
+  filter_flowsheet_data(...)
 }
