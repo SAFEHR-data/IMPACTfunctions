@@ -37,7 +37,9 @@ test_that("calculate_medication_feature() feature = \"count\"/\"sum_dose\"/\"sum
     test_dataset, MAR = fentanyl, format = "table", feature = "sum_dose", feature_name = "dose",
     override_dose_check = TRUE, override_route_check = TRUE, verbose = FALSE
   )
-  dose_expected <- fentanyl_df %>% group_by(admission_csn) %>% summarise(dose = sum(dose, na.rm = FALSE), .groups = "drop")
+  # sum_dose sums the standardised `dose_mg` with na.rm = FALSE: any patient with an
+  # un-standardisable row (e.g. "mg/ml") gets NA rather than a silently incomplete sum.
+  dose_expected <- fentanyl_df %>% group_by(admission_csn) %>% summarise(dose = sum(dose_mg, na.rm = FALSE), .groups = "drop")
   expect_equal(
     dose_result %>% arrange(admission_csn) %>% pull(dose),
     dose_expected %>% arrange(admission_csn) %>% pull(dose)
@@ -76,16 +78,39 @@ test_that("calculate_medication_feature() errors on an unrecognised feature", {
   )
 })
 
-test_that("calculate_medication_feature() errors on mismatched dose_units unless override_dose_check = TRUE", {
+test_that("calculate_medication_feature() sum_dose uses dose_mg and doesn't error on mixed dose_units once standardised", {
+  local_set_global_hospitalmar(test_hospitalmar)
+  mixed <- filter_medication(test_dataset, MAR = test_hospitalmar, medication = NULL, verbose = FALSE)
+  expect_true("dose_mg" %in% names(mixed))
+
+  # dose_mg is present, so the dose-unit check passes even though dose_units are mixed (mg and mg/ml)
+  expect_gt(length(unique(mixed %>% collect() %>% pull(dose_units))), 1)
+  expect_no_error(
+    calculate_medication_feature(test_dataset, MAR = mixed, format = "table", feature = "sum_dose", feature_name = "x", override_route_check = TRUE, verbose = FALSE)
+  )
+})
+
+test_that("calculate_medication_feature() warns that un-standardisable rows give NA in sum_dose", {
   local_set_global_hospitalmar(test_hospitalmar)
   mixed <- filter_medication(test_dataset, MAR = test_hospitalmar, medication = NULL, verbose = FALSE)
 
+  expect_message(
+    calculate_medication_feature(test_dataset, MAR = mixed, format = "table", feature = "sum_dose", feature_name = "x", override_route_check = TRUE, verbose = FALSE),
+    "could not be standardised"
+  )
+})
+
+test_that("calculate_medication_feature() errors on mismatched dose_units when MAR has no dose_mg unless override_dose_check = TRUE", {
+  local_set_global_hospitalmar(test_hospitalmar)
+  unstandardised <- filter_medication(test_dataset, MAR = test_hospitalmar, medication = NULL, apply_preproccess_MAR = FALSE, verbose = FALSE)
+  expect_false("dose_mg" %in% names(unstandardised))
+
   expect_error(
-    calculate_medication_feature(test_dataset, MAR = mixed, format = "table", feature = "sum_dose", feature_name = "x", verbose = FALSE),
+    calculate_medication_feature(test_dataset, MAR = unstandardised, format = "table", feature = "sum_dose", feature_name = "x", override_route_check = TRUE, verbose = FALSE),
     "Not all dose units"
   )
   expect_no_error(
-    calculate_medication_feature(test_dataset, MAR = mixed, format = "table", feature = "count", feature_name = "x", override_dose_check = TRUE, override_route_check = TRUE, verbose = FALSE)
+    calculate_medication_feature(test_dataset, MAR = unstandardised, format = "table", feature = "count", feature_name = "x", override_dose_check = TRUE, override_route_check = TRUE, verbose = FALSE)
   )
 })
 
