@@ -2,7 +2,7 @@
 
 local_fentanyl_mar <- function() {
   local_set_global_hospitalmar(test_hospitalmar, env = parent.frame())
-  extract_medication(test_dataset, MAR = test_hospitalmar, medication = "fentanyl", search_column = "simple_generic_name", verbose = FALSE)
+  filter_medication(test_dataset, MAR = test_hospitalmar, medication = "fentanyl", search_column = "simple_generic_name", verbose = FALSE)
 }
 
 test_that("calculate_medication_feature() feature = \"binary\" flags admission_csns with a matching MAR entry", {
@@ -78,7 +78,7 @@ test_that("calculate_medication_feature() errors on an unrecognised feature", {
 
 test_that("calculate_medication_feature() errors on mismatched dose_units unless override_dose_check = TRUE", {
   local_set_global_hospitalmar(test_hospitalmar)
-  mixed <- extract_medication(test_dataset, MAR = test_hospitalmar, medication = NULL, verbose = FALSE)
+  mixed <- filter_medication(test_dataset, MAR = test_hospitalmar, medication = NULL, verbose = FALSE)
 
   expect_error(
     calculate_medication_feature(test_dataset, MAR = mixed, format = "table", feature = "sum_dose", feature_name = "x", verbose = FALSE),
@@ -140,7 +140,7 @@ test_that("calculate_medication_feature() KNOWN ISSUE: the \"no result\" warning
   # perfectly real, non-zero result. Documenting current behaviour; the
   # condition likely should be `nrow(result) == 0`.
   local_set_global_hospitalmar(test_hospitalmar)
-  fentanyl <- extract_medication(test_dataset, MAR = test_hospitalmar, medication = "fentanyl", search_column = "simple_generic_name", verbose = FALSE)
+  fentanyl <- filter_medication(test_dataset, MAR = test_hospitalmar, medication = "fentanyl", search_column = "simple_generic_name", verbose = FALSE)
   single_csn <- fentanyl %>% filter(admission_csn == (fentanyl %>% collect() %>% pull(admission_csn) %>% head(1)))
 
   args <- list(

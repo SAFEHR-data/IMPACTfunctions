@@ -1,7 +1,7 @@
 # Tests for calculate_flowsheet_feature() in R/calculate_flowsheet_feature.R.
 
 local_pulse_flowsheet <- function() {
-  extract_flowsheet_data(test_dataset, flowsheet = test_measurements, flowsheet_question_name = "Pulse", timeframe = "whole_flowsheet", verbose = FALSE)
+  filter_flowsheet_data(test_dataset, flowsheet = test_measurements, search_string = "Pulse", timeframe = "whole_flowsheet", verbose = FALSE)
 }
 
 test_that("calculate_flowsheet_feature() feature = \"binary\" flags admission_csns with a matching flowsheet entry", {
@@ -95,7 +95,7 @@ test_that("calculate_flowsheet_feature() KNOWN ISSUE: the multiple-flowsheet con
   # flowsheet_row_epic_id values in the combined data below, yet no error is
   # raised. This looks like a real bug worth a GitHub issue given it can
   # silently produce meaningless aggregated results.
-  multi <- extract_flowsheet_data(test_dataset, flowsheet = test_measurements, flowsheet_question_name = c("Pulse", "BP"), timeframe = "whole_flowsheet", verbose = FALSE)
+  multi <- filter_flowsheet_data(test_dataset, flowsheet = test_measurements, search_string = c("Pulse", "BP"), timeframe = "whole_flowsheet", verbose = FALSE)
   distinct_flowsheets <- multi %>% select(flowsheet_row_epic_id) %>% distinct() %>% collect()
   expect_gt(nrow(distinct_flowsheets), 1) # sanity: genuinely more than one flowsheet in the mix
 

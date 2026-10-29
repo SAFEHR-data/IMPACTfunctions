@@ -17,7 +17,7 @@ test_measurements <- test_synthetic$Measurements
 
 # A clean study cohort (no missing/malformed admissions), used by tests for
 # functions that operate on a cohort rather than the raw Procedures table
-# (e.g. extract_medication(), extract_flowsheet_data()).
+# (e.g. filter_medication(), filter_flowsheet_data()).
 test_dataset <- cohort_complete_admissions(test_procedures, add_to_eligability_criteria = FALSE)
 
 #' Ensure a test starts and ends with no `eligibility_criteria` in the global
@@ -42,7 +42,7 @@ local_reset_eligibility_criteria <- function(env = parent.frame()) {
 
 #' Make the global `HospitalMar` binding match `value`, and restore it afterwards.
 #'
-#' `preproccess_MAR()` (and, through it, `extract_medication()` whenever
+#' `preproccess_MAR()` (and, through it, `filter_medication()` whenever
 #' `apply_preproccess_MAR = TRUE`, the default) requires its `MAR` argument to
 #' be `identical()` to a global object named `HospitalMar` - see
 #' `if(identical(MAR, HospitalMar))` in R/preproccess_MAR.R. Call this before
