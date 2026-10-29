@@ -305,7 +305,7 @@ cohort_enforce_single_procedure <- function(procedures_table,
                                             verbose = FALSE){
 
   prior <- nrow(procedures_table)
-  procedures_table_filtered <- procedures_table %>% inner_join(procedures_table %>% group_by(admission_csn) %>% summarise(operation_date = min(operation_date)), by = c("admission_csn", "operation_date"))
+  procedures_table_filtered <- procedures_table %>% inner_join(procedures_table %>% group_by(admission_csn) %>% summarise(operation_date = min(operation_date)), by = c("admission_csn", "operation_date")) %>% dplyr::compute()
   filtered <- prior - nrow(procedures_table_filtered)
 
   if(verbose){

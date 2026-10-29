@@ -8,7 +8,7 @@
 #' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `HospitalMar`
 #' @param medication String of the medication to search. It is case insensitive for the soft search
 #' @param strict_search TO do exact string and column matching. Useful for testing arguments for `extract_medication()` function
-#' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"` to do a hard search only in that column.
+#' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"` to do a hard search only in that column. Note this is *only* enforced when `strict_search = TRUE`; for a soft search `search_column` is informational only and matches from every column are still returned (so a typo in `search_column`, or a term that happens to match a different column, is still surfaced to help you debug your search) - if the term doesn't match within the `search_column` you named, a warning tells you so before showing the broader results.
 #' @param verbose Print output
 #'
 #' @return A dataframe summarising the medications matching the search criteria and their frequency.
@@ -54,6 +54,28 @@ search_drug_names <- function(MAR = HospitalMar,
 
     if(all(search_column %in%  c("medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", "pharmaceutical_subclass"))){
 
+      # Soft search always looks across all 5 columns regardless of search_column
+      # (this is intentional - it helps surface typos/variants a caller might
+      # otherwise miss). If the caller did specify a search_column, let them
+      # know when their term didn't actually match within it, so they're not
+      # misled about which column their result came from.
+      if(!missing(search_column)){
+        matched_in_search_column <- any(vapply(search_column, function(col){
+          any(grepl(medication, summary[[col]], ignore.case = TRUE))
+        }, logical(1)))
+
+        matched_anywhere <- any(
+          grepl(medication, summary$medication_name, ignore.case = TRUE) |
+          grepl(medication, summary$generic_name, ignore.case = TRUE) |
+          grepl(medication, summary$simple_generic_name, ignore.case = TRUE) |
+          grepl(medication, summary$pharmaceutical_class, ignore.case = TRUE) |
+          grepl(medication, summary$pharmaceutical_subclass, ignore.case = TRUE)
+        )
+
+        if(matched_anywhere && !matched_in_search_column){
+          cli::cli_alert_warning("No match for {.val {medication}} found in the specified {.arg search_column} ({.val {search_column}}). Soft search still returns matches from all columns below - set {.arg strict_search = TRUE} to enforce searching only within {.arg search_column}.")
+        }
+      }
 
       summary <- summary %>%
         filter(

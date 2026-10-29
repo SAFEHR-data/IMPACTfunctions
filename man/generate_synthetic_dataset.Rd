@@ -18,4 +18,9 @@ This function generates a minimum viable IMPACT dataset that is used for package
 \details{
 The data produces is purely synthetic and uses uniform distributions (such as picking a OPCS code between A01 and Z99) even when values are not feasiable or clinically meaningful.
 The tables are then saved as parquet format within the R User cache.
+
+Generation is seeded (\code{set.seed()}), so calling this function always produces byte-identical
+tables for a given version of this function. This determinism is relied upon by the package's
+test suite. The cache is stamped with the installed package version by \code{load_synthetic_dataset()},
+which forces regeneration whenever the package version changes.
 }
