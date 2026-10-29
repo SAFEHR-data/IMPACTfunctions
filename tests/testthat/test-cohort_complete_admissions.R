@@ -60,24 +60,19 @@ test_that("cohort_complete_admissions() passes dates_completed_cols through to c
   expect_setequal(result$case_id, expected$case_id)
 })
 
-test_that("cohort_complete_admissions() KNOWN ISSUE: enforce_single_procedure = TRUE errors on the standard arrow-backed input", {
-  # cohort_enforce_single_procedure() (R/cohort_enforce.R) does
-  # group_by(admission_csn) %>% slice_min(operation_date) %>% ungroup(), and
-  # arrow's dplyr backend doesn't support slice_min() on grouped data -
-  # "Slicing grouped data not supported in Arrow". Every other cohort_enforce_*()
-  # function operates lazily on the arrow-backed Procedures table (the normal
-  # case throughout this package, e.g. from load_dataset()/load_synthetic_dataset()),
-  # so this flag currently can't be used on real usage without first collect()-ing
-  # to a plain data frame, which the function doesn't do for you.
-  expect_error(
-    cohort_complete_admissions(test_procedures, enforce_single_procedure = TRUE, add_to_eligability_criteria = FALSE, verbose = FALSE),
-    "Slicing grouped data not supported in Arrow"
-  )
+test_that("cohort_complete_admissions() enforce_single_procedure = TRUE works on the standard arrow-backed input", {
+  # Regression test for #60: this used to error with "Slicing grouped data not
+  # supported in Arrow" because cohort_enforce_single_procedure() used a grouped slice_min().
+  result <- cohort_complete_admissions(test_procedures, enforce_single_procedure = TRUE, add_to_eligability_criteria = FALSE, verbose = FALSE) %>%
+    collect()
+
+  expect_equal(nrow(result), n_distinct(result$admission_csn) + sum(duplicated(result[c("admission_csn", "operation_date")])))
+  expect_false(any(duplicated(result$case_id)))
 })
 
 test_that("cohort_enforce_single_procedure() keeps only the earliest procedure per admission_csn, once collected to a data frame", {
-  # The selection logic itself is correct - it's only arrow-backed lazy
-  # queries that it can't run against (see KNOWN ISSUE test above).
+  # The selection logic itself is correct - it used to fail on arrow-backed lazy
+  # queries that it can't run against (see the #60 regression test above).
   fixture_df <- data.frame(
     case_id = 1:3,
     admission_csn = c(100, 100, 200),
