@@ -174,7 +174,9 @@ generate_synthetic_dataset<- function(clear_cache = FALSE){
       dose_units = sample(c("mg", "mg/ml"), size=1, prob = c(0.99, 1)),
       administration_route = sample(dictionary_medication_route$administration_route, size=1,  replace = TRUE),
       administration_date_time = as.POSIXct(
-        runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date)),
+        # Rows with a deliberately missing admission/discharge date give runif() NA bounds
+        # (and a warning); those rows are dropped by na.omit() below, so the warning is expected.
+        suppressWarnings(runif(1, min = as.numeric(admission_date), max = as.numeric(discharge_date))),
         origin = "1970-01-01", tz="UTC"
       ),
       administration_action = sample(c("Given", "See Alternative", "Held", NA), size = 1, prob = c(0.8, 0.05, 0.05, 0.05)),
