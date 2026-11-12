@@ -57,17 +57,20 @@ test_that("cohort_procedure_codes() enforce_coded = TRUE removes uncoded rows be
   expect_setequal(result$case_id, 6)
 })
 
-test_that("cohort_procedure_codes() KNOWN ISSUE: cohort_name is silently not added to the result", {
-  # R/cohort_procedure_codes.R does `procedures_table$cohort_name <- cohort_name`
-  # at the very end, but by that point `procedures_table` is always an
-  # `arrow_dplyr_query` (since include_OPCS/exclude_OPCS filtering - required by
-  # the function - reassigns it via a %>% filter() chain first). `$<-` on that
-  # query-builder object doesn't attach the column: it's silently a no-op rather
-  # than an error, so a caller relying on cohort_name (as the vignette examples
-  # do) gets a result with no such column at all. Documenting current behaviour.
+test_that("cohort_procedure_codes() attaches cohort_name to the result (#58)", {
   result <- cohort_procedure_codes(
     opcs_fixture,
     cohort_name = "Test cohort", include_OPCS = "F34",
+    add_to_eligability_criteria = FALSE, verbose = FALSE
+  ) %>% collect()
+
+  expect_true("cohort_name" %in% names(result))
+  expect_equal(unique(result$cohort_name), "Test cohort")
+})
+
+test_that("cohort_procedure_codes() adds no cohort_name column when cohort_name is NA", {
+  result <- cohort_procedure_codes(
+    opcs_fixture, include_OPCS = "F34",
     add_to_eligability_criteria = FALSE, verbose = FALSE
   ) %>% collect()
 
@@ -97,16 +100,32 @@ test_that("cohort_procedure_codes() records an Inclusion row in eligibility_crit
   expect_equal(row$type, "Inclusion")
 })
 
-test_that("cohort_procedure_codes() KNOWN ISSUE: the enforce_coded uncoded-removal step ignores add_to_eligability_criteria = FALSE", {
-  # R/cohort_procedure_codes.R calls
-  # `cohort_enforce_procedure_coded(procedures_table, verbose = verbose)`
-  # for the uncoded-removal step, without forwarding add_to_eligability_criteria -
-  # so it falls back to that function's own default of TRUE, even when the
-  # outer cohort_procedure_codes() call explicitly asked for FALSE.
-  # Documenting the current behaviour rather than assuming which is intended.
+test_that("cohort_procedure_codes() add_to_eligability_criteria = FALSE also applies to the uncoded-removal step (#59)", {
   local_reset_eligibility_criteria()
   cohort_procedure_codes(opcs_fixture, include_OPCS = "Z99", enforce_coded = TRUE, add_to_eligability_criteria = FALSE, verbose = FALSE)
 
-  expect_true(exists("eligibility_criteria", envir = .GlobalEnv))
-  expect_equal(tail(eligibility_criteria, 1)$function_name, "cohort_enforce_procedure_coded()")
+  expect_false(exists("eligibility_criteria", envir = .GlobalEnv, inherits = FALSE))
+})
+
+test_that("cohort_procedure_codes() records the uncoded-removal step when add_to_eligability_criteria = TRUE", {
+  local_reset_eligibility_criteria()
+  cohort_procedure_codes(opcs_fixture, include_OPCS = "Z99", enforce_coded = TRUE, add_to_eligability_criteria = TRUE, verbose = FALSE)
+
+  expect_equal(eligibility_criteria$function_name, c("cohort_enforce_procedure_coded()", "cohort_procedure_codes()"))
+  expect_equal(eligibility_criteria$type, c("Exclusion", "Inclusion"))
+})
+
+test_that("cohort_procedure_codes() Exclusion row text lists the exclude_OPCS codes, not include_OPCS", {
+  local_reset_eligibility_criteria()
+  cohort_procedure_codes(
+    opcs_fixture,
+    include_OPCS = c("F34", "A01"), exclude_OPCS = "A01",
+    enforce_coded = FALSE, add_to_eligability_criteria = TRUE, verbose = FALSE
+  )
+
+  inclusion <- eligibility_criteria[eligibility_criteria$type == "Inclusion", ]
+  exclusion <- eligibility_criteria[eligibility_criteria$type == "Exclusion", ]
+  expect_match(inclusion$text, "F34, A01", fixed = TRUE)
+  expect_match(exclusion$text, "codes: A01.", fixed = TRUE)
+  expect_no_match(exclusion$text, "F34", fixed = TRUE)
 })

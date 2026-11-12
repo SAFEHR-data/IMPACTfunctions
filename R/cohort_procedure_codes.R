@@ -41,7 +41,9 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
 
     if(enforce_coded){
       #Uncoded patients presnet but function allowed to remove them
-      procedures_table <- cohort_enforce_procedure_coded(procedures_table, verbose=verbose)
+      procedures_table <- cohort_enforce_procedure_coded(procedures_table,
+                                                         add_to_eligability_criteria = add_to_eligability_criteria,
+                                                         verbose = verbose)
       if(verbose){cli::cli_alert_success("Uncoded procedures removed")}
     }else{
       #Uncoded prcedures and enforce coded to false. Return danger message
@@ -140,7 +142,7 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
 
     if(add_to_eligability_criteria){
       eligibility_criteria_add(type = "Exclusion",
-                               text = paste0("Procedures with OPSC codes: ", paste(include_OPCS, collapse = ", "), ". Inclusive of 4 digit codes where only 3 digit code provided."),
+                               text = paste0("Procedures with OPSC codes: ", paste(exclude_OPCS, collapse = ", "), ". Inclusive of 4 digit codes where only 3 digit code provided."),
                                function_name = "cohort_procedure_codes()",
                                function_filter = "%>% filter(!case_id %in% exclusion_case_ids)",
                                n_prior = n_prior,
@@ -151,7 +153,8 @@ cohort_procedure_codes <- function(procedures_table = Procedures,
   }
 
   if(!is.na(cohort_name)){
-  procedures_table$cohort_name <- cohort_name
+    # `$<-` is a silent no-op on an arrow_dplyr_query, so add the column with mutate()
+    procedures_table <- procedures_table %>% dplyr::mutate(cohort_name = !!cohort_name)
   }
 
   return(procedures_table)
