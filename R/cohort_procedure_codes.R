@@ -1,6 +1,11 @@
 #' Cohorting: Select by set of OPCS codes
 #'
-#' @param cohort_name A string to group the cohort, this is useful if producing multiple cohorts with this function
+#' Joining mutiple cohorts:
+#' Note that if you set `cohort_name` it will add that string to all rows of the cohort, if the value is not set then the column will not be added.
+#'
+#' If you want to join two cohorts together later (for example with an `rbind()`) then ensure that either BOTH cohorts have a value, else you will get differing number of columns.
+#'
+#' @param cohort_name A string to group the cohort, this is useful if producing multiple cohorts with this function.
 #' @param include_OPCS A vector of OPSC codes (either 3 or 4 digit) to include in the dataset
 #' @param exclude_OPCS A vector of OPSC codes (either 3 or 4 digit) to exclude in the dataset
 #' @param enforce_coded Enforce that the surgery had been coded by the clinical coding dept
