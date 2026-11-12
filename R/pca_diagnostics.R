@@ -108,7 +108,7 @@ pca_diagnostics <- function(diagnotic_return) {
           name = "Cumulative Dose / Value",
           sec.axis = sec_axis(~ . / coeff, name = "Hourly Dose")
         ) +
-        scale_fill_manual(values = c("Hourly (binned_dose)" = "#D55E00"))
+        scale_fill_manual(values = c("Hourly (binned_dose)" = "#D55E00")) +
         theme_minimal() +
         labs(
           x = "Recorded Date",

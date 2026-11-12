@@ -17,7 +17,7 @@ cohort_procedure_codes(
 \arguments{
 \item{procedures_table}{A arrow database binding to the procedures table}
 
-\item{cohort_name}{A string to group the cohort, this is useful if producing multiple cohorts with this function}
+\item{cohort_name}{A string to group the cohort, this is useful if producing multiple cohorts with this function.}
 
 \item{include_OPCS}{A vector of OPSC codes (either 3 or 4 digit) to include in the dataset}
 
@@ -30,7 +30,11 @@ cohort_procedure_codes(
 \item{verbose}{Print output and numbers of patients removed at each step}
 }
 \description{
-Cohorting: Select by set of OPCS codes
+Joining mutiple cohorts:
+Note that if you set \code{cohort_name} it will add that string to all rows of the cohort, if the value is not set then the column will not be added.
+}
+\details{
+If you want to join two cohorts together later (for example with an \code{rbind()}) then ensure that either BOTH cohorts have a value, else you will get differing number of columns.
 }
 \examples{
 \dontshow{
