@@ -346,6 +346,16 @@ filter_medication <- function(dataset,
 
 }
 
+#' Deprecated: use [filter_medication()]
+#'
+#' This function was renamed to [filter_medication()]. It still works, but gives a
+#' deprecation warning and passes all arguments on to [filter_medication()].
+#'
+#' @param ... Arguments passed on to [filter_medication()].
+#' @return The result of [filter_medication()].
+#' @seealso [filter_medication()]
+#' @keywords internal
+#' @export
 extract_medication <- function(...) {
   .Deprecated(new = "filter_medication")
   filter_medication(...)

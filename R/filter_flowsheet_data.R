@@ -198,6 +198,16 @@ filter_flowsheet_data <- function(
 }
 
 
+#' Deprecated: use [filter_flowsheet_data()]
+#'
+#' This function was renamed to [filter_flowsheet_data()]. It still works, but gives a
+#' deprecation warning and passes all arguments on to [filter_flowsheet_data()].
+#'
+#' @param ... Arguments passed on to [filter_flowsheet_data()].
+#' @return The result of [filter_flowsheet_data()].
+#' @seealso [filter_flowsheet_data()]
+#' @keywords internal
+#' @export
 extract_flowsheet_data <- function(...){
   .Deprecated(new = "filter_flowsheet_data")
   filter_flowsheet_data(...)
