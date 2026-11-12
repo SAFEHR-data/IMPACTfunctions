@@ -12,6 +12,7 @@ cohort_complete_admissions(
   enforce_date_order = TRUE,
   enforce_coded = TRUE,
   enforce_complete_anaesthetic_chart = TRUE,
+  enforce_single_procedure = FALSE,
   add_to_eligability_criteria = TRUE,
   verbose = FALSE
 )
@@ -31,12 +32,14 @@ cohort_complete_admissions(
 
 \item{enforce_complete_anaesthetic_chart}{Enforce that \code{anaesthesia_csn} is not \code{NA} to ensure there is a corresponding record}
 
+\item{enforce_single_procedure}{Ensure each encounter has only a single surgical procedure by filtering any subsequent procedures.}
+
 \item{add_to_eligability_criteria}{If this filtering should be added to the \code{eligability_criteria} dataframe}
 
 \item{verbose}{Print output and numbers of patients removed at each step}
 }
 \value{
-A arrow object that is a filtered subset of the origional \code{procedures_table}
+A arrow object that is a filtered subset of the original \code{procedures_table}
 }
 \description{
 Middle level contorting function to ensure minimum dataset is present.
@@ -53,7 +56,7 @@ To investigate exactly which patients are being removed at each step you can run
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
@@ -67,7 +70,7 @@ dataset <- cohort_complete_admissions(procedures_table = Procedures, verbose=TRU
 dataset_df <- collect(dataset)
 }
 \seealso{
-Other cohort: 
-\code{\link{cohort_procedure_codes}()}
+Other cohort:
+\code{\link[=cohort_procedure_codes]{cohort_procedure_codes()}}
 }
 \concept{cohort}

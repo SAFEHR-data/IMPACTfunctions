@@ -3,7 +3,7 @@
 \docType{data}
 \name{dictionary_medication_route}
 \alias{dictionary_medication_route}
-\title{Dynamic Dicts - Medications Routes}
+\title{Dynamic Dicts - Medications Route}
 \format{
 \subsection{\code{dictionary_medication_route}}{
 
@@ -22,7 +22,7 @@ A dataframe with 3 columns:
 dictionary_medication_route
 }
 \description{
-We source 4 dictonaries from the online google sheets.
+We source 5 dictonaries from the online google sheets.
 This table is the schema for which we do route conversions against.
 }
 \keyword{datasets}

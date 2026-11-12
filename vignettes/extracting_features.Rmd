@@ -19,6 +19,8 @@ knitr::opts_chunk$set(
 ```{r echo=FALSE, eval=TRUE, message=FALSE}
 # Instead of librarying the package, we actually want to dynamically load_all
 library(IMPACTfunctions)
+#library(devtools)
+#load_all()
 library(arrow)
 library(dplyr)
 ```
@@ -26,7 +28,7 @@ library(dplyr)
 ```{r eval=TRUE, message=FALSE, echo=FALSE}
 #If you do not have a real dataset, load the synthetic dataset
 synth_data <- load_synthetic_dataset()
-list2env(synth_data, envir = .GlobalEnv)
+attach_dataset(synth_data)
 rm(synth_data)
 ```
 
@@ -54,6 +56,7 @@ dataset <- cohort_complete_admissions(Procedures) %>% cohort_procedure_codes( co
 
 df <- dataset %>% collect()
 
+
 ```
 
 # Medications
@@ -78,7 +81,7 @@ search_drug_names(HospitalMar, "morphine")
 ```
 We can now see the range of different names under each of the columns as well as the row counts. The row counts are helpful to see if a formulation is popular. 
 
-When we are happy with our search we can test it using the *`strict_search`* which enforces strict searching the mimic the proccess in the *`extract_medication()`* function. Note that we now need to speiciy which exact column we wish to filter against. 
+When we are happy with our search we can test it using the *`strict_search`* which enforces strict searching the mimic the proccess in the *`filter_medication()`* function. Note that we now need to speiciy which exact column we wish to filter against. 
 
 ```{r}
 
@@ -92,7 +95,7 @@ search_drug_names(MAR,
                   verbose = FALSE)
 
 ```
-We now know that if we run the extract_medications with the following variables we will include the above medication types. 
+We now know that if we run the filter_medications with the following variables we will include the above medication types. 
 
 ## Preproccessing the MARs
 
@@ -111,15 +114,15 @@ We can see the added columns from the common dictonaries and the new OME column 
 
 Given the size of the MAR's we generate features in 2 steps. First is to subset the medication of intrest, for the patietns of intrest. Then to calculate the feature across the subset. 
 
-We note that the extract_medications function uses the preproccess_mar function built in so we can just pass the orgional MAR. If you wanted to use custom dictonaries, you would separate out these functions.  
+We note that the filter_medications function uses the preproccess_mar function built in so we can just pass the orgional MAR. If you wanted to use custom dictonaries, you would separate out these functions.  
 
 
 ```{r}
 
-morphine <- extract_medication(dataset,
-                                       MAR = HospitalMar,
-                                       medication = medication
-                                       )
+morphine <- filter_medication(dataset = df,
+                               MAR = HospitalMar,
+                               medication = medication
+                               )
 
 morphine %>% collect() %>% head()
 ```
@@ -130,38 +133,44 @@ We can use the t_0, t_int and t_1 to provide custom time points to subset betwee
 ```{r}
 
 
-post_op_morphine <- extract_medication(dataset,
+post_op_morphine <- filter_medication(dataset = df,
                                        MAR = HospitalMar,
                                        medication = medication,
+                                       search_column = "simple_generic_name",
                                        timeframe = "custom",
                                        t0 = "operation_date",
                                        t1 = "discharge_date",
                                        verbose = TRUE)
 
-post_op_morphine_3hr <- extract_medication(dataset,
+post_op_morphine_3hr <- filter_medication(dataset,
                                        MAR = HospitalMar,
                                        medication = medication,
+                                       search_column = "simple_generic_name",
                                        timeframe = "custom",
                                        t0 = "operation_date",
                                        t_int = lubridate::hours(3),
                                        verbose = TRUE)
 
-post_op_morphine_3hr %>% collect()
+post_op_morphine_3hr <- post_op_morphine_3hr %>% collect()
 
 
 ```
 
+> Note: use of the `override_...` argument
+>
+> In the code blocks below you will see that all of the `calculate_medication_feature()` use the `override_dose_check = TRUE`, `override_route_check = TRUE`. In the synthetic dataset we use a uniform distibution of route to dose units to medication. This means the routes and units will always be mixed. When running this code on real data we recommend keeping them both to `FALSE` unless you explicitly want this. 
 
 
 ```{r}
 
 
-calculate_medication_feature(dataset = df, 
-                             MAR = post_op_morphine %>% collect(),
+df <- calculate_medication_feature(dataset = df, 
+                             MAR = post_op_morphine,
                              feature = "sum_ome",
-                             feature_name = "Moprhine",
+                             feature_name = "summed_ome",
                              format = "joined",
-                             overide_dose_check  = TRUE)
+                             override_dose_check  = TRUE,
+                             override_route_check = TRUE)
 
 ```
 From the subsetted medications we can then generate feature vectors of intrest. 
@@ -174,7 +183,8 @@ morphine_table <- calculate_medication_feature(dataset,
                              format = "table",
                              feature = "binary",
                              feature_name = "morphine_post_op",
-                             overide_dose_check =TRUE)
+                             override_dose_check =TRUE,
+                             override_route_check = TRUE)
 
 morphine_table %>% collect()
 
@@ -188,7 +198,8 @@ dataset <- calculate_medication_feature(dataset,
                              format = "joined",
                              feature = "sum_dose",
                              feature_name = "morphine_post_op",
-                             overide_dose_check = TRUE)
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE)
 
 morphine_table %>% collect()
 
@@ -202,7 +213,8 @@ calculate_medication_feature(dataset,
                              format = "joined",
                              feature = "sum_ome",
                              feature_name = "morphine_post_op",
-                             overide_dose_check = TRUE)
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE)
 
 ## NOTICE THE DANAGER ERROR
 ```
@@ -211,7 +223,7 @@ But we get a danger error to remined us we are trying to calculate an OME but we
 So we can subset our meds again but this time chain then together in an efficient workflow
 ```{r}
 
-all_recovery_meds <- extract_medication(dataset,
+all_recovery_meds <- filter_medication(dataset,
                                        MAR = HospitalMar,
                                        medication = NULL,
                                        timeframe = "custom",
@@ -224,7 +236,8 @@ calculate_medication_feature(dataset = dataset,
                              format = "joined",
                              feature = "sum_ome",
                              feature_name = "recovery_ome",
-                             overide_dose_check = TRUE) %>% collect()
+                             override_dose_check = TRUE,
+                             override_route_check = TRUE) %>% collect()
 
 ```
 
@@ -238,7 +251,7 @@ calculate_medication_feature(dataset = dataset,
    medication <- "morphine sulfate"
    MAR <- HospitalMar
 
-   post_op_morphine <- extract_medication(dataset,
+   post_op_morphine <- filter_medication(dataset,
    MAR = HospitalMar,
    medication = medication,
    timeframe = "custom",
@@ -251,7 +264,8 @@ calculate_medication_feature(dataset = dataset,
   format = "joined",
   feature = "sum_dose",
   feature_name = "morphine_post_op",
-  overide_dose_check= TRUE
+  override_dose_check= TRUE,
+  override_route_check = TRUE
   )
  
  
@@ -260,24 +274,27 @@ calculate_medication_feature(dataset = dataset,
   format = "table",
   feature = "binary",
   feature_name = "morphine_post_op",
-  overide_dose_check= TRUE)
+  override_dose_check= TRUE,
+  override_route_check = TRUE)
 
 
 ```
 
-There are a range of possible ways to subset the MAR, type `?extract_medication` for more details than whats offered below. 
+There are a range of possible ways to subset the MAR, type `?filter_medication` for more details than whats offered below. 
 
 # Extracting flowsheet data
 
 ```{r}
+#| eval: false
 
 dataset <- cohort_complete_admissions(Procedures) %>%
    cohort_procedure_codes(cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48")) %>% collect()
 
- heart_rate <- extract_flowsheet_data(dataset = Procedures,
-   flowsheet = Measurements,
-    flowsheet_question_name = "Pulse",
-    timeframe = "whole_flowsheet"
+ heart_rate <- extract_flowsheet_data(dataset = dataset,
+                                      flowsheet = Measurements,
+                                      search_column =  "flowsheet_question_name",
+                                      search_string =  "Pulse",
+                                      timeframe = "whole_flowsheet"
    )
  
   dataset <- calculate_flowsheet_feature(dataset,
@@ -290,7 +307,7 @@ dataset <- cohort_complete_admissions(Procedures) %>%
   hr_table <- calculate_flowsheet_feature(dataset,
     flowsheet = heart_rate,
     format = "table",
-    feature = "mean_values",
+    feature = "list_values",
     feature_name = "post_op_hr_values")
 
 

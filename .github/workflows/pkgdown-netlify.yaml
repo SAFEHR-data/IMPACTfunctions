@@ -1,0 +1,86 @@
+# Builds the pkgdown site and deploys it to Netlify.
+#   - push to main      -> production deploy (the live site)
+#   - PR into main      -> draft preview deploy with its own URL (live site unchanged)
+#   - manual run        -> draft preview deploy of the chosen branch
+# Previews are limited to PRs into main (release PRs) to save CI minutes on
+# routine dev PRs. Netlify does not charge credits for draft deploys.
+#
+# Requires two repo secrets (Settings > Secrets and variables > Actions):
+#   NETLIFY_AUTH_TOKEN - a Netlify personal access token
+#   NETLIFY_SITE_ID    - the Site ID of the Netlify site to deploy to
+#
+# Uses only shell/R commands (no third-party actions), because this repository's
+# Actions policy allows local actions only. The deploy is done by
+# .github/scripts/netlify-deploy.sh using Netlify's file-digest API.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+name: pkgdown-netlify.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pkgdown-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pkgdown-netlify:
+    runs-on: ubuntu-latest
+
+    container:
+      image: rocker/r-ver:latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Install system tools
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git ca-certificates curl jq
+          # System libraries needed by the prebuilt binaries of pkgdown's dependencies
+          # (fs -> libuv, xml2 -> libxml2, ragg/systemfonts/textshaping -> font and
+          # image libraries, curl/openssl -> libcurl/libssl). The -dev packages are
+          # used because their names are stable across Ubuntu releases.
+          apt-get install -y --no-install-recommends \
+            libuv1-dev libxml2-dev libcurl4-openssl-dev libssl-dev \
+            libfontconfig1-dev libfreetype-dev libharfbuzz-dev libfribidi-dev \
+            libpng-dev libjpeg-dev libtiff-dev libwebp-dev
+          /rocker_scripts/install_pandoc.sh
+
+      - name: Check out repository
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
+
+      - name: Install package and pkgdown
+        shell: Rscript {0}
+        run: |
+          options(Ncpus = parallel::detectCores())
+          install.packages(c("remotes", "pkgdown"))
+          remotes::install_deps(dependencies = TRUE, upgrade = "never")
+          remotes::install_local(".", upgrade = "never", force = TRUE)
+
+      - name: Build pkgdown site
+        shell: Rscript {0}
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+
+      - name: Deploy to Netlify
+        timeout-minutes: 10
+        shell: bash
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DEPLOY_MODE: ${{ github.event_name == 'push' && 'production' || 'draft' }}
+        run: bash .github/scripts/netlify-deploy.sh docs "$DEPLOY_MODE"

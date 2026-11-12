@@ -20,7 +20,7 @@ Find a list of the possible functions in the \strong{See Also} section below.
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
@@ -42,13 +42,14 @@ list_of_datasets$excluded \%>\% collect() \%>\% head()
 
 }
 \seealso{
-Other cohort_enforce: 
-\code{\link{cohort_enforce_complete_anaesthetic_chart}()},
-\code{\link{cohort_enforce_dates_complete}()},
-\code{\link{cohort_enforce_dates_ordered}()},
-\code{\link{cohort_enforce_discharged}()},
-\code{\link{cohort_enforce_opt_out}()},
-\code{\link{cohort_enforce_procedure_coded}()}
+Other cohort_enforce:
+\code{\link[=cohort_enforce_complete_anaesthetic_chart]{cohort_enforce_complete_anaesthetic_chart()}},
+\code{\link[=cohort_enforce_dates_complete]{cohort_enforce_dates_complete()}},
+\code{\link[=cohort_enforce_dates_ordered]{cohort_enforce_dates_ordered()}},
+\code{\link[=cohort_enforce_discharged]{cohort_enforce_discharged()}},
+\code{\link[=cohort_enforce_opt_out]{cohort_enforce_opt_out()}},
+\code{\link[=cohort_enforce_procedure_coded]{cohort_enforce_procedure_coded()}},
+\code{\link[=cohort_enforce_single_procedure]{cohort_enforce_single_procedure()}}
 }
 \concept{cohort_enforce}
 \keyword{internal}

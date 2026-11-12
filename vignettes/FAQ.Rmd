@@ -1,0 +1,117 @@
+---
+title: "FAQ"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{FAQ}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Frequently Asked Questions and Troubleshooting.
+
+This is a guide to any issues you may encounter. If you run into an issue and 
+solve it, please add below!
+
+
+## Installing the package on RStudio Server (UCLH network)
+
+> 🔒 The link below goes to the internal UCLH SLAB wiki and is only accessible from the UCLH network.
+
+See [Installing packages from GitHub on RStudio Server](https://uclh.slab.com/posts/installing-packages-from-git-hub-on-r-studio-server-b9mpm526) for the full walkthrough.
+
+The UCLH network sits behind a proxy, so downloading the package from GitHub within the network requires the proxy workaround shown in that guide (also included in the [README installation instructions](https://github.com/SAFEHR-data/IMPACTfunctions#installation)) before calling `remotes::install_github()`.
+
+## `load_dataset()` function gives error about table names not being in the IMPACT dict
+
+In an attempt to ensure standardisation we have a set of approved table names. 
+They are housed on a google sheet: https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0
+
+The error is triggered if tables are missing, added or named wrong. This may be becuase your specific IMPACT extract doesn't conform with the agreed table name. This may also be because the dictonary is out of date. 
+
+To resolve the error you should follow the following steps:
+
+1. Establish the agreed name of the table across the IMPACT network
+
+2. Log a github issue to update the dictionary (This is important as other functions may break if table names change).
+
+3. Whilst waiting for the new version to be released, use the `dictionary_check = FALSE` to overule the check. 
+
+4. When the dictionary is updated, install the latest version of the package and then rerun the function.
+
+
+> Developer notes
+>
+> When a github issue request comes, ensure the following:
+> 1. Update the names in the google sheet to match the latest copy
+> 2. Ensure any function use the updated table name. Use github search to help find the correct files. 
+> 3. Run `load_all()` then `generate_synthetic_dataset(clear_cache = TRUE)` to regenerate the synthetic dataset. 
+> 4. Open `data-raw/IMPACT_dicts.R` and run the script (including logging into google) to refresh the data files.
+> 5. Run `check()` to ensure vignetts still build then `use_version()` and open PR against the issue. 
+> 6. Inform users they will need to update the package with the new dictonaries. 
+
+## ERROR MESSAGE: object 'dictionary_IMPACT_schema' not found
+
+This is due to the IMPACT dictionaries not being pulled from the google sheets prior to the build of the version. This means that the package hasnt been build with the dict. 
+
+To resolve the error you should follow the following steps:
+
+1. Log a github urgently - This issue will be effecting everyone who had installed this version of the package
+
+2. Install an older package version as a temporary fix
+
+- Navigate to [the commit history](https://github.com/SAFEHR-data/IMPACTfunctions/commits/main/) for the main branch
+
+- Pick a older committ that will likley work. Look for "Increment version number to ..." and pick one of these
+
+- Copy the full SHA for the commit (the two overlapping boxes to the right)
+
+- Within the `install_github`function add the following and paste the SHA to the `ref` arguement.  
+
+```
+remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE, 
+                        ref = "67a2a6fe3467adc14bd3288e64dc9f5acef40c28"
+                        auth_token = gitcreds::gitcreds_get()$password)
+```
+
+3. Await for the issue to be fixed and then install the latest package version.
+
+## Developer: Running and adding tests
+
+The package uses [`testthat`](https://testthat.r-lib.org/) (3rd edition). Tests live in `tests/testthat/`, generally one file per `R/` source file (e.g. `R/cohort_enforce.R` -> `tests/testthat/test-cohort_enforce.R`).
+
+### Running tests
+
+Run the whole suite from the package root:
+
+```{r, eval=FALSE}
+devtools::test()
+```
+
+Run a single test file while you're working on it:
+
+```{r, eval=FALSE}
+devtools::load_all()
+testthat::test_file("tests/testthat/test-cohort_enforce.R")
+```
+
+`R CMD check` (so also `devtools::check()` and the `R-CMD-check.yaml` GitHub Action) runs the whole suite automatically via `tests/testthat.R` - no separate CI step is needed.
+
+### Adding a new test file
+
+1. Create `tests/testthat/test-<name of the R file you're testing>.R`, e.g. a new `R/foo.R` gets `tests/testthat/test-foo.R`.
+2. Use the shared fixtures from `tests/testthat/helper-synthetic.R` (`test_procedures`, `test_demographics`, `test_hospitalmar`, `test_measurements`) rather than calling `load_synthetic_dataset()` yourself - they're loaded once per test session and reused across all test files.
+3. Prefer **oracle-style assertions** over hardcoded numbers: compute what you expect independently (e.g. with a plain `dplyr::filter()` on the collected fixture) and check the function's output against that, rather than asserting a fixed row count or value. The synthetic dataset generator is seeded and stamped with the package version (see `generate_synthetic_dataset()`), so it's stable for a given version - but not guaranteed to stay byte-identical once the generator or dataset is updated in a future version. A hardcoded expected count would silently rot when that happens; an oracle-style assertion keeps working.
+4. If your test calls a `cohort_enforce_*()`-style function with `add_to_eligability_criteria = TRUE`, call `local_reset_eligibility_criteria()` (from `helper-synthetic.R`) at the top of the `test_that()` block first. This clears the package's global `eligibility_criteria` tracker before the test and again afterwards, so tests don't leak state into each other or trigger its "applied the same criteria twice" warning.
+5. Run `devtools::test()` before opening a PR.
+
+### Testing against a real dataset locally
+
+Tests that need a real (non-synthetic) IMPACT extract go in a `tests/testthat/test-local-*.R` file, gated by `skip_if_no_local_data()` (see `tests/testthat/helper-local-data.R`). These never run in CI and are skipped for anyone who hasn't opted in. To run them yourself, set (e.g. in a project-level `.Renviron`, which is gitignored):
+
+```
+IMPACTFUNCTIONS_LOCAL_DATA_PATH=/path/to/a/real/IMPACT/extract
+```
+
+Never commit real patient data, or a path that reveals where it lives, to the repository.
+
+

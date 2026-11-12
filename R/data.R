@@ -26,7 +26,7 @@
 
 #' Dynamic Dicts - IMPACT Schema
 #'
-#' We source 4 dictonaries from the online google sheets.
+#' We source 5 dictonaries from the online google sheets.
 #' This table is the schema for which we do dictonary cehcks agaisnt.
 #'
 #' @format ## `dictionary_IMPACT_schema`
@@ -40,9 +40,9 @@
 #' @source "https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0"
 "dictionary_IMPACT_schema"
 
-#' Dynamic Dicts - Medications Routes
+#' Dynamic Dicts - Medications Route
 #'
-#' We source 4 dictonaries from the online google sheets.
+#' We source 5 dictonaries from the online google sheets.
 #' This table is the schema for which we do route conversions against.
 #'
 #' @format ## `dictionary_medication_route`
@@ -58,7 +58,7 @@
 
 #' Dynamic Dicts - Opioids conversion
 #'
-#' We source 4 dictonaries from the online google sheets.
+#' We source 5 dictonaries from the online google sheets.
 #' This table is the schema for which we do opioid summarisation.
 #'
 #' @format ## `dictionary_opioid`
@@ -73,7 +73,7 @@
 
 #' Dynamic Dicts - Opioids equivalence
 #'
-#' We source 4 dictonaries from the online google sheets.
+#' We source 5 dictonaries from the online google sheets.
 #' This table is the schema for which we do equivelence joins
 #'
 #' @format ## `dictionary_equivelence`
@@ -86,3 +86,50 @@
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
 "dictionary_equivelence"
+
+#' Dynamic Dicts - Dose unit standardisation
+#'
+#' We source 5 dictonaries from the online google sheets.
+#' This table maps every known `dose_units` string seen in the MAR to a
+#' `multiplication_factor` used to standardise `dose` into a common
+#' `dose_mg` column in \code{\link{preproccess_MAR}}. Units that cannot be
+#' safely standardised (eg count/container units, biological-activity
+#' units, rate units, or volume-based doses) have a `NA`
+#' `multiplication_factor` and are intentionally left unconverted. A
+#' `dose_units` value not present in this dictionary at all is also left
+#' unconverted, and flagged with a warning so it can be triaged and added.
+#'
+#' @format ## `dictionary_dose_units`
+#' A dataframe with 4 columns:
+#' \describe{
+#'  \item{dose_units}{The dose unit string exactly as it appears in the MAR `dose_units` column}
+#'  \item{multiplication_factor}{The factor `dose` is multiplied by to give `dose_mg`. `NA` if the unit cannot be safely standardised}
+#'  \item{unit_category}{A short label describing the kind of unit (eg `mass`, `count`, `volume`, `rate`, `molar`, `biological_activity`), to help maintain the dictionary}
+#'  \item{notes}{Free text rationale, especially for units left unconverted}
+#' }
+#'
+#' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
+"dictionary_dose_units"
+
+#' Dynamic Dicts - PCA flowsheet lookup
+#'
+#' We source 5 dictonaries from the online google sheets.
+#' This table maps the flowsheet rows used to document patient-controlled
+#' analgesia (PCA) and epidural infusions to the medication, route and
+#' concentration they record. It is the default `pca_flowsheet_lookup` in
+#' \code{\link{fetch_pca_data}}, which uses it to select and annotate the
+#' relevant flowsheet rows before \code{\link{proccess_pca_data}} converts them
+#' into cumulative mg given.
+#'
+#' @format ## `dictionary_flowsheet_pca`
+#' A dataframe with 5 columns:
+#' \describe{
+#'  \item{flowsheet_row_epic_id}{The Epic flowsheet row ID, matched against `flowsheet_row_epic_id` in the Measurements table}
+#'  \item{simple_generic_name}{The medication recorded by the flowsheet row}
+#'  \item{administration_route}{The route of administration (eg `Intravenous Infusion`, `Epidural`)}
+#'  \item{concentration}{The concentration of the medication in the PCA or infusion bag (eg `1mg/ml`, `2mcg/ml`)}
+#'  \item{flowsheet_type}{What the flowsheet row records (eg `doses_given`, `doses_attempted`, `mg_given`, `volume_given`, `volume_remaining`)}
+#' }
+#'
+#' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
+"dictionary_flowsheet_pca"

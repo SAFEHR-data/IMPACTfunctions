@@ -14,15 +14,16 @@
 #'
 #' @param procedures_table A arrow database binding to the procedures table
 #' @param enforce_dates_complete Enforce that the date columns provided in `dates_completed_cols` are complete.
+#' @param dates_completed_cols A vector of character column names to ensure completeness for the `enforce_dates_complete`
 #' @param enforce_date_order Enforce that the order of dates is suitable and correct
 #' @param enforce_discharged Enforce that patient have a discharge date (to remove ongoing admissions)
 #' @param enforce_coded Enforce that the surgery had been coded by the clinical codeing dept
 #' @param enforce_complete_anaesthetic_chart Enforce that `anaesthesia_csn` is not `NA` to ensure there is a corresponding record
-#' @param dates_completed_cols A vector of character column names to ensure completeness for the `enforce_dates_complete`
+#' @param enforce_single_procedure Ensure each encounter has only a single surgical procedure by filtering any subsequent procedures.
 #' @param verbose Print output and numbers of patients removed at each step
 #' @param add_to_eligability_criteria If this filtering should be added to the `eligability_criteria` dataframe
 #'
-#' @return A arrow object that is a filtered subset of the origional `procedures_table`
+#' @return A arrow object that is a filtered subset of the original `procedures_table`
 #' @family cohort
 #' @export
 #' @template setup-data
@@ -42,6 +43,7 @@ cohort_complete_admissions <- function(procedures_table=Procedures,
                                          enforce_date_order=TRUE,
                                          enforce_coded=TRUE,
                                          enforce_complete_anaesthetic_chart=TRUE,
+                                         enforce_single_procedure=FALSE,
                                          add_to_eligability_criteria = TRUE,
                                          verbose=FALSE){
 
@@ -72,6 +74,14 @@ cohort_complete_admissions <- function(procedures_table=Procedures,
 
   if(enforce_coded){
     procedures_table <- cohort_enforce_procedure_coded(procedures_table, add_to_eligability_criteria, verbose)
+  }
+
+  if(enforce_single_procedure){
+    procedures_table <- cohort_enforce_single_procedure(
+      procedures_table,
+      add_to_eligability_criteria = add_to_eligability_criteria,
+      verbose = verbose
+    )
   }
 
   if(verbose){cli::cli_alert_success("Returning the filtered procedures table with {.val {nrow(procedures_table)}} procedures, having removed {.val {n_start-nrow(procedures_table)}} procedures.")}

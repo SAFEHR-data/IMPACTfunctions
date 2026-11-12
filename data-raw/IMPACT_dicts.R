@@ -12,13 +12,17 @@ googledrive::drive_has_token()
 ###
 
 dictionary_IMPACT_schema <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_IMPACT_schema")
+dictionary_flowsheet_pca <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_flowsheet_pca")
 dictionary_medication_route <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_medication_route")
 dictionary_opioid <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_opioid")
 dictionary_equivelence <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_equivelence")
+dictionary_dose_units <- googlesheets4::read_sheet(dict_url, sheet = "dictionary_dose_units")
 
 usethis::use_data(dict_url, overwrite = T)
 
 usethis::use_data(dictionary_IMPACT_schema, overwrite = T)
+usethis::use_data(dictionary_flowsheet_pca, overwrite = T)
 usethis::use_data(dictionary_medication_route, overwrite = T)
 usethis::use_data(dictionary_opioid, overwrite = T)
 usethis::use_data(dictionary_equivelence, overwrite = T)
+usethis::use_data(dictionary_dose_units, overwrite = T)

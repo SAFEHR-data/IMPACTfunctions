@@ -2,6 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+.Renviron
 inst/doc
 /doc/
 /Meta/
+docs
+
+# Local Netlify folder
+.netlify

@@ -18,24 +18,29 @@
 #' @examples
 #'
 #' dataset <- cohort_complete_admissions(Procedures) %>%
-#'   cohort_procedure_codes(cohort_name = "Hip Arthroplasty", include_OPCS = c("W46", "W47", "W48"))
+#'    cohort_procedure_codes(cohort_name = "Hip Arthroplasty",
+#'     include_OPCS = c("W46", "W47", "W48")) %>%
+#'      collect()
 #'
-#' heart_rate <- extract_flowsheet_data(dataset,
-#'   flowsheet = Measurements,
-#'   flowsheet_question_name = "Pulse",
-#'   timeframe = "post_op")
+#'  heart_rate <- filter_flowsheet_data(dataset = dataset,
+#'                                       flowsheet = Measurements,
+#'                                       search_column =  "flowsheet_question_name",
+#'                                       search_string =  "Pulse",
+#'                                       timeframe = "whole_flowsheet"
+#'    )
 #'
-#' dataset <- calculate_flowsheet_feature(dataset,
-#'   flowsheet = heart_rate,
-#'   format = "joined",
-#'   feature = "mean_values",
-#'   feature_name = "mean_post_op_hr")
+#'   dataset <- calculate_flowsheet_feature(dataset,
+#'     flowsheet = heart_rate,
+#'     format = "joined",
+#'     feature = "mean_values",
+#'     feature_name = "mean_post_op_hr"
+#'     )
 #'
-#' hr_table <- calculate_flowsheet_feature(dataset,
-#'   flowsheet = heart_rate,
-#'   format = "table",
-#'   feature = "sum_values",
-#'   feature_name = "post_op_hr_values")
+#'   hr_table <- calculate_flowsheet_feature(dataset,
+#'     flowsheet = heart_rate,
+#'     format = "table",
+#'     feature = "list_values",
+#'     feature_name = "post_op_hr_values")
 #'
 calculate_flowsheet_feature <- function(dataset,
                                         flowsheet,

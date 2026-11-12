@@ -19,7 +19,7 @@ search_drug_names(
 
 \item{strict_search}{TO do exact string and column matching. Useful for testing arguments for \code{extract_medication()} function}
 
-\item{search_column}{Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of \verb{"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"} to do a hard search only in that column.}
+\item{search_column}{Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of \verb{"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"} to do a hard search only in that column. Note this is \emph{only} enforced when \code{strict_search = TRUE}; for a soft search \code{search_column} is informational only and matches from every column are still returned (so a typo in \code{search_column}, or a term that happens to match a different column, is still surfaced to help you debug your search) - if the term doesn't match within the \code{search_column} you named, a warning tells you so before showing the broader results.}
 
 \item{verbose}{Print output}
 }
@@ -34,7 +34,7 @@ which medications may be captures for your feature extraction.
 }
 \examples{
 \dontshow{
-list2env(load_synthetic_dataset(), envir = .GlobalEnv)
+attach_dataset(load_synthetic_dataset())
 library(dplyr)
 library(lubridate)
 }
