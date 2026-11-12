@@ -77,7 +77,11 @@ cohort_complete_admissions <- function(procedures_table=Procedures,
   }
 
   if(enforce_single_procedure){
-    procedures_table <- cohort_enforce_single_procedure(procedures_table, add_to_eligability_criteria, verbose)
+    procedures_table <- cohort_enforce_single_procedure(
+      procedures_table,
+      add_to_eligability_criteria = add_to_eligability_criteria,
+      verbose = verbose
+    )
   }
 
   if(verbose){cli::cli_alert_success("Returning the filtered procedures table with {.val {nrow(procedures_table)}} procedures, having removed {.val {n_start-nrow(procedures_table)}} procedures.")}
