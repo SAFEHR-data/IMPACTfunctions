@@ -110,3 +110,26 @@
 #'
 #' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
 "dictionary_dose_units"
+
+#' Dynamic Dicts - PCA flowsheet lookup
+#'
+#' We source 5 dictonaries from the online google sheets.
+#' This table maps the flowsheet rows used to document patient-controlled
+#' analgesia (PCA) and epidural infusions to the medication, route and
+#' concentration they record. It is the default `pca_flowsheet_lookup` in
+#' \code{\link{fetch_pca_data}}, which uses it to select and annotate the
+#' relevant flowsheet rows before \code{\link{proccess_pca_data}} converts them
+#' into cumulative mg given.
+#'
+#' @format ## `dictionary_flowsheet_pca`
+#' A dataframe with 5 columns:
+#' \describe{
+#'  \item{flowsheet_row_epic_id}{The Epic flowsheet row ID, matched against `flowsheet_row_epic_id` in the Measurements table}
+#'  \item{simple_generic_name}{The medication recorded by the flowsheet row}
+#'  \item{administration_route}{The route of administration (eg `Intravenous Infusion`, `Epidural`)}
+#'  \item{concentration}{The concentration of the medication in the PCA or infusion bag (eg `1mg/ml`, `2mcg/ml`)}
+#'  \item{flowsheet_type}{What the flowsheet row records (eg `doses_given`, `doses_attempted`, `mg_given`, `volume_given`, `volume_remaining`)}
+#' }
+#'
+#' @source <https://docs.google.com/spreadsheets/d/1u1p7TlS8tmzGzNCIWHRg2Nn85YzLGfeF1bR5bbnQLbE/edit?gid=0#gid=0>
+"dictionary_flowsheet_pca"

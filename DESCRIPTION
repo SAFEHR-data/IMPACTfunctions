@@ -28,7 +28,8 @@ Imports:
     stats,
     shiny,
     ggplot2,
-    patchwork
+    patchwork,
+    zoo
 Suggests: 
     knitr,
     rmarkdown,

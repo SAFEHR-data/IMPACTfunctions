@@ -71,10 +71,7 @@ jobs:
           rcmdcheck::rcmdcheck(
             args = c("--no-manual", "--as-cran"),
             build_args = c("--no-manual", "--compact-vignettes=gs+qpdf"),
-            # TODO: switch to "warning" once the two existing check WARNINGs
-            # (undeclared zoo / library() calls in pca_diagnostics(), and the
-            # undocumented dictionary_flowsheet_pca dataset) are fixed.
-            error_on = "error",
+            error_on = "warning",
             check_dir = "check"
           )
 

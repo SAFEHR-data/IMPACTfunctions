@@ -102,6 +102,7 @@ fetch_pca_data <- function(dataset,
 #' @return If \code{diagnostics = FALSE}: data frame with cumulative PCA usage and binned totals by admission and hour and drug. All values are given in milligram (mg) regardless of drug.
 #'   If \code{diagnostics = TRUE}: list containing processed flowsheet data and results.
 #'
+#' @importFrom zoo na.approx
 #' @export
 proccess_pca_data <- function(pca_data,
                               threshold_reset = 0.5, # a drop of x percentage will trigger a reset

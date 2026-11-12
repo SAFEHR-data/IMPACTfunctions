@@ -1,4 +1,4 @@
-# IMPACTfunctions (development version)
+# IMPACTfunctions 0.1.0.9006
 
 
 * Added a pkgdown website for the package, built and deployed automatically via GitHub Actions.
