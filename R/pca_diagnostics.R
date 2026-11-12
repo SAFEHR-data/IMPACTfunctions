@@ -18,7 +18,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' results <- process_pca_data(data, diagnostic = TRUE)
+#' results <- proccess_pca_data(data, diagnostics = TRUE)
 #' pca_diagnostics(results)
 #' }
 #'
