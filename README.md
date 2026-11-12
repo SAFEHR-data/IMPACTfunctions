@@ -56,8 +56,7 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.1.0.9006 \| Package compatible with
-IMPACT dataset up to `20260624`
+Features in Package version: 0.2.0 | Package compatible with
 
 ### Future features
 
