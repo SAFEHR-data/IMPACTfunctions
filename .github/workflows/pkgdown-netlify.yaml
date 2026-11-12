@@ -43,6 +43,14 @@ jobs:
         run: |
           apt-get update -qq
           apt-get install -y --no-install-recommends git ca-certificates curl jq
+          # System libraries needed by the prebuilt binaries of pkgdown's dependencies
+          # (fs -> libuv, xml2 -> libxml2, ragg/systemfonts/textshaping -> font and
+          # image libraries, curl/openssl -> libcurl/libssl). The -dev packages are
+          # used because their names are stable across Ubuntu releases.
+          apt-get install -y --no-install-recommends \
+            libuv1-dev libxml2-dev libcurl4-openssl-dev libssl-dev \
+            libfontconfig1-dev libfreetype-dev libharfbuzz-dev libfribidi-dev \
+            libpng-dev libjpeg-dev libtiff-dev libwebp-dev
           /rocker_scripts/install_pandoc.sh
 
       - name: Check out repository
