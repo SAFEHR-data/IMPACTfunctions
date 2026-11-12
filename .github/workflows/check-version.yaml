@@ -1,55 +1,54 @@
+# Fails a PR into main if DESCRIPTION's Version is not higher than main's.
+# Uses only shell commands (no third-party actions), because this repository's
+# Actions policy allows local actions only.
 name: Check Version Increment
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
       - 'DESCRIPTION'
       - '**.R'
       - '**.md'
       - '**.Rmd'
 
+permissions:
+  contents: read
+
 jobs:
   version-check:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout PR Branch
-        uses: ./.github/actions/checkout   # <-- Points locally
-        with:
-          path: pr-branch
-
-      - name: Checkout Base Branch
-        uses: ./.github/actions/checkout   # <-- Points locally
-        with:
-          ref: ${{ github.base_ref }}
-          path: base-branch
-
-      - name: Set up R
-        uses: ./.github/actions/setup-r    # <-- Points locally
-
-      - name: Compare Versions
-        shell: Rscript {0}
+      - name: Compare DESCRIPTION versions
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # Read versions using base R utils
-          desc_pr <- utils::packageDescription("pr-branch", fields = "Version")
-          desc_base <- utils::packageDescription("base-branch", fields = "Version")
+          set -euo pipefail
+          git init -q repo && cd repo
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin "$HEAD_SHA" "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
-          # Fallback if DESCRIPTION doesn't exist in base (e.g., initial setup)
-          if (is.na(desc_base)) {
-            message("No base version found. Assuming first release.")
-            quit(status = 0)
-          }
+          version_of() { git show "$1:DESCRIPTION" 2>/dev/null | sed -n 's/^Version:[[:space:]]*//p' | tr -d '[:space:]'; }
+          ver_pr=$(version_of "$HEAD_SHA")
+          ver_base=$(version_of "origin/${BASE_REF}" || true)
 
-          ver_pr <- numeric_version(desc_pr)
-          ver_base <- numeric_version(desc_base)
+          if [ -z "$ver_pr" ]; then
+            echo "::error::Could not read Version from the PR's DESCRIPTION."
+            exit 1
+          fi
+          if [ -z "$ver_base" ]; then
+            echo "No Version found on ${BASE_REF}; assuming first release."
+            exit 0
+          fi
 
-          message(sprintf("Base branch version: %s", ver_base))
-          message(sprintf("PR branch version:   %s", ver_pr))
+          echo "Base branch (${BASE_REF}) version: $ver_base"
+          echo "PR branch version:               $ver_pr"
 
-          if (ver_pr <= ver_base) {
-            stop("Error: Package version in DESCRIPTION has not been incremented.", call. = FALSE)
-          } else {
-            message("Success: Version has been incremented.")
-          }
+          if dpkg --compare-versions "$ver_pr" gt "$ver_base"; then
+            echo "Version has been incremented."
+          else
+            echo "::error file=DESCRIPTION::Version $ver_pr is not higher than ${BASE_REF}'s $ver_base. Bump Version in DESCRIPTION."
+            exit 1
+          fi

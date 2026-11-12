@@ -2,6 +2,10 @@
 # Requires two repo secrets (Settings > Secrets and variables > Actions):
 #   NETLIFY_AUTH_TOKEN - a Netlify personal access token
 #   NETLIFY_SITE_ID    - the Site ID of the Netlify site to deploy to
+#
+# Uses only shell/R commands (no third-party actions), because this repository's
+# Actions policy allows local actions only. The deploy uses Netlify's zip-upload
+# deploy API directly.
 on:
   push:
     branches: [main, master]
@@ -9,44 +13,66 @@ on:
 
 name: pkgdown-netlify.yaml
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   pkgdown-netlify:
     runs-on: ubuntu-latest
 
+    container:
+      image: rocker/r-ver:latest
+
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Install system tools
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git ca-certificates curl zip
+          /rocker_scripts/install_pandoc.sh
 
-      - uses: r-lib/actions/setup-pandoc@v2
+      - name: Check out repository
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
 
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::pkgdown, local::.
-          needs: website
+      - name: Install package and pkgdown
+        shell: Rscript {0}
+        run: |
+          options(Ncpus = parallel::detectCores())
+          install.packages(c("remotes", "pkgdown"))
+          remotes::install_deps(dependencies = TRUE, upgrade = "never")
+          remotes::install_local(".", upgrade = "never", force = TRUE)
 
       - name: Build pkgdown site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
 
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: "./docs"
-          production-branch: main
-          production-deploy: true
-          deploy-message: "Deploy from GitHub Actions (${{ github.sha }})"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-pull-request-comment: false
-          enable-commit-comment: false
+        timeout-minutes: 5
+        shell: bash
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          if [ -z "${NETLIFY_AUTH_TOKEN}" ] || [ -z "${NETLIFY_SITE_ID}" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID secrets must be set."
+            exit 1
+          fi
+          (cd docs && zip -qr ../site.zip .)
+          curl --fail-with-body -sS \
+            -H "Content-Type: application/zip" \
+            -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
+            --data-binary "@site.zip" \
+            "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys" \
+            -o deploy.json
+          echo "Deployed: $(sed -n 's/.*"deploy_ssl_url":"\([^"]*\)".*/\1/p' deploy.json)"
