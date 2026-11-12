@@ -23,7 +23,7 @@
 #' }
 #'
 #' @export
-#' @import shiny ggplot2
+#' @import shiny ggplot2 dplyr patchwork
 #' @importFrom rlang .data
 pca_diagnostics <- function(diagnotic_return) {
 
@@ -39,11 +39,6 @@ pca_diagnostics <- function(diagnotic_return) {
 
   flowsheet_df <- diagnotic_return[[1]]
   results <- diagnotic_return[[2]]
-
-  library(shiny)
-  library(ggplot2)
-  library(dplyr)
-  library(patchwork)
 
   csn_list <- unique(flowsheet_df$admission_csn)
 

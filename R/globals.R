@@ -4,7 +4,8 @@
 #' @import lubridate
 #' @import purrr
 #' @import tibble
-#' @importFrom stats end na.omit rnorm runif start var
+#' @importFrom stats end na.omit rnorm runif start var density median quantile sd
+#' @importFrom rlang .data :=
 #' @importFrom utils head tail
 NULL
 
@@ -74,4 +75,19 @@ utils::globalVariables(c(
   "units_var", "use_long_anchor", "valid_prescription", "value", "var",
   "vol_admin_incr_ml", "vol_admin_prev", "volume_administered", "with_tz", "ymd_hms",
   "zero_dose_eps"
+))
+
+# Column names used in PCA processing (pca_data.R, pca_diagnostics.R),
+# procedure-time summaries (calculate_procedure_times.R), and lazy-loaded
+# package datasets referenced as argument defaults.
+utils::globalVariables(c(
+  ".sd", "Phases", "binned_value", "concentration", "cumulative_sum",
+  "cumulative_value", "delta_value", "dict_url", "dictionary_flowsheet_pca",
+  "doc_type", "dose_increment", "doses_given", "end_max", "end_min", "end_time",
+  "end_width", "equivelence", "first_documented_date", "flowsheet_doc_type",
+  "flowsheet_type", "mean_val", "mg_given", "mg_increment", "mg_per_dose",
+  "mg_per_dose_candidate", "multiplier", "n_id", "opioid_name", "reset",
+  "reset_offset", "reset_to_zero", "reset_true", "running_offset",
+  "shift_poportion_positive", "shift_start", "sq_error", "start_max",
+  "start_min", "start_time", "start_width", "total_sq_error"
 ))

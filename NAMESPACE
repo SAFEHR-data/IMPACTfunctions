@@ -41,12 +41,19 @@ import(shiny)
 import(stringr)
 import(tibble)
 import(tidyr)
-importFrom(rlang,.data)
+importFrom(rlang,
+  ":=",
+  .data
+)
 importFrom(stats,
+  density,
   end,
+  median,
   na.omit,
+  quantile,
   rnorm,
   runif,
+  sd,
   start,
   var
 )
@@ -55,3 +62,4 @@ importFrom(utils,
   head,
   tail
 )
+importFrom(zoo,na.approx)
