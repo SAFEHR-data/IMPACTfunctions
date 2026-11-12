@@ -27,7 +27,8 @@ jobs:
       matrix:
         config:
           - {r: 'release', image: 'rocker/r-ver:latest'}
-          - {r: 'devel',   image: 'rocker/r-ver:devel'}
+          # R-devel omitted: no prebuilt packages exist for it, so arrow etc. compile
+          # from source and the job takes 40+ minutes.
           - {r: 'oldrel',  image: 'rocker/r-ver:4.4'}
 
     container:
