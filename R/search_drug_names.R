@@ -8,7 +8,7 @@
 #' @param MAR The arrow table of the MAR of interest. Pick either `IntraOpMar` or `HospitalMar`
 #' @param medication String of the medication to search. It is case insensitive for the soft search
 #' @param strict_search TO do exact string and column matching. Useful for testing arguments for `extract_medication()` function
-#' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", pharmaceutical_subclass"` to do a hard search only in that column. Note this is *only* enforced when `strict_search = TRUE`; for a soft search `search_column` is informational only and matches from every column are still returned (so a typo in `search_column`, or a term that happens to match a different column, is still surfaced to help you debug your search) - if the term doesn't match within the `search_column` you named, a warning tells you so before showing the broader results.
+#' @param search_column Defaults to all three columns to do a soft search (return rows where there is a match in any). Specify one of `"medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", "pharmaceutical_subclass"` to do a hard search only in that column. Note this is *only* enforced when `strict_search = TRUE`; for a soft search `search_column` is informational only and matches from every column are still returned (so a typo in `search_column`, or a term that happens to match a different column, is still surfaced to help you debug your search) - if the term doesn't match within the `search_column` you named, a warning tells you so before showing the broader results.
 #' @param verbose Print output
 #'
 #' @return A dataframe summarising the medications matching the search criteria and their frequency.
@@ -38,9 +38,18 @@ search_drug_names <- function(MAR = HospitalMar,
   }
 
 
-  if(strict_search & missing(search_column)){
-    Possible_col = c("medication_name", "generic_name", "simple_generic_name")
-    cli::cli_abort("You gave tried to do a strict search but not included a column to search in. \n \n Provide the argument {.arg search_column} with one of following column names: {.val {Possible_col}} ")
+  possible_col <- c("medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", "pharmaceutical_subclass")
+
+  if(strict_search && missing(search_column)){
+    cli::cli_abort("You tried to do a strict search but did not include a column to search in. \n \n Provide the argument {.arg search_column} with one of the following column names: {.val {possible_col}}")
+  }
+
+  if(!all(search_column %in% possible_col)){
+    cli::cli_abort("{.arg search_column} = {.val {search_column}} is not valid. Use one of: {.val {possible_col}}")
+  }
+
+  if(strict_search && length(search_column) != 1){
+    cli::cli_abort("A strict search requires a single {.arg search_column}. Provide one of: {.val {possible_col}}")
   }
 
   # Generate the summary for all columns
@@ -52,46 +61,28 @@ search_drug_names <- function(MAR = HospitalMar,
       medication <- paste0(medication, collapse = "|")
     }
 
-    if(all(search_column %in%  c("medication_name", "generic_name", "simple_generic_name", "pharmaceutical_class", "pharmaceutical_subclass"))){
+    # Soft search always looks across all 5 columns regardless of search_column
+    # (this is intentional - it helps surface typos/variants a caller might
+    # otherwise miss). If the caller did specify a search_column, let them
+    # know when their term didn't actually match within it, so they're not
+    # misled about which column their result came from.
+    match_any <- grepl(medication, summary$medication_name, ignore.case = TRUE) |
+      grepl(medication, summary$generic_name, ignore.case = TRUE) |
+      grepl(medication, summary$simple_generic_name, ignore.case = TRUE) |
+      grepl(medication, summary$pharmaceutical_class, ignore.case = TRUE) |
+      grepl(medication, summary$pharmaceutical_subclass, ignore.case = TRUE)
 
-      # Soft search always looks across all 5 columns regardless of search_column
-      # (this is intentional - it helps surface typos/variants a caller might
-      # otherwise miss). If the caller did specify a search_column, let them
-      # know when their term didn't actually match within it, so they're not
-      # misled about which column their result came from.
-      if(!missing(search_column)){
-        matched_in_search_column <- any(vapply(search_column, function(col){
-          any(grepl(medication, summary[[col]], ignore.case = TRUE))
-        }, logical(1)))
+    if(!missing(search_column) && any(match_any)){
+      matched_in_search_column <- any(vapply(search_column, function(col){
+        any(grepl(medication, summary[[col]], ignore.case = TRUE))
+      }, logical(1)))
 
-        matched_anywhere <- any(
-          grepl(medication, summary$medication_name, ignore.case = TRUE) |
-          grepl(medication, summary$generic_name, ignore.case = TRUE) |
-          grepl(medication, summary$simple_generic_name, ignore.case = TRUE) |
-          grepl(medication, summary$pharmaceutical_class, ignore.case = TRUE) |
-          grepl(medication, summary$pharmaceutical_subclass, ignore.case = TRUE)
-        )
-
-        if(matched_anywhere && !matched_in_search_column){
-          cli::cli_alert_warning("No match for {.val {medication}} found in the specified {.arg search_column} ({.val {search_column}}). Soft search still returns matches from all columns below - set {.arg strict_search = TRUE} to enforce searching only within {.arg search_column}.")
-        }
+      if(!matched_in_search_column){
+        cli::cli_alert_warning("No match for {.val {medication}} found in the specified {.arg search_column} ({.val {search_column}}). Soft search still returns matches from all columns below - set {.arg strict_search = TRUE} to enforce searching only within {.arg search_column}.")
       }
-
-      summary <- summary %>%
-        filter(
-            grepl(medication, medication_name, ignore.case = TRUE) |
-            grepl(medication, generic_name, ignore.case = TRUE) |
-            grepl(medication, simple_generic_name, ignore.case = TRUE) |
-            grepl(medication, pharmaceutical_class, ignore.case = TRUE) |
-            grepl(medication, pharmaceutical_subclass, ignore.case = TRUE)
-        )
-    } else{
-      # Else doing a single column soft search
-      summary <- summary %>%
-        filter(
-          grepl(medication, .data[[search_column]], ignore.case = TRUE)
-        )
     }
+
+    summary <- summary[match_any, ]
   }else{
     # Strict search
     summary <- summary %>%
