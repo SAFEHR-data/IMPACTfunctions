@@ -92,3 +92,32 @@ test_that("search_drug_names() does not check for a search_column match warning 
     message = "No match for"
   )
 })
+
+test_that("search_drug_names() errors on an invalid search_column", {
+  expect_error(
+    search_drug_names(test_hospitalmar, "fentanyl", search_column = "not_a_column", verbose = FALSE),
+    "is not valid"
+  )
+  expect_error(
+    search_drug_names(test_hospitalmar, "fentanyl", search_column = "not_a_column", strict_search = TRUE, verbose = FALSE),
+    "is not valid"
+  )
+})
+
+test_that("search_drug_names() strict search errors when given more than one search_column", {
+  expect_error(
+    search_drug_names(test_hospitalmar, "fentanyl",
+                      search_column = c("generic_name", "simple_generic_name"),
+                      strict_search = TRUE, verbose = FALSE),
+    "single"
+  )
+})
+
+test_that("search_drug_names() strict search works on the class columns", {
+  cls <- search_drug_names(test_hospitalmar, "fentanyl", search_column = "simple_generic_name",
+                           strict_search = TRUE, verbose = FALSE)$pharmaceutical_class[1]
+  result <- search_drug_names(test_hospitalmar, cls, search_column = "pharmaceutical_class",
+                              strict_search = TRUE, verbose = FALSE)
+  expect_true(nrow(result) > 0)
+  expect_true(all(result$pharmaceutical_class == cls))
+})

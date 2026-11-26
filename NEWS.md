@@ -1,3 +1,7 @@
+# IMPACTfunctions 0.2.0.9000
+
+* Development version.
+
 # IMPACTfunctions 0.2.0
 
 First tagged release. CI runs again, there is a test suite, and the

@@ -13,7 +13,7 @@ output: github_document
 
 IMPACTfunctions is an R package to work with the IMPACT peri-operative dataset. It streamlines the process of building study datasets with cohorting, filtering and feature extraction functions. Functions are clinically validated with sensible warnings (*eg warn if you try to sum doses with different units*). Function defaults and explicitly reference and dictionaries ensure analysis is consistent between users and datasets. 
 
-> **UNDER DEVELOPMENT** This pacakge is under active developement. Features and functions may be updated and changed without warning and there is no promise of backward compatability. Describing issues and bugs is very helpful and part of our collobarative proccess to validate the pacakge and the dataset!
+> **UNDER DEVELOPMENT** This pacakge is under active developement. Features and functions may be updated and changed without warning and there is no promise of backward compatability. Describing issues and bugs is very helpful and part of our collaborative proccess to validate the pacakge and the dataset!
 
 ## Installation
 
@@ -21,13 +21,10 @@ You can install the development version of IMPACTfunctions from [GitHub](https:/
 
 ```{r eval=FALSE}
 
-# Install package from github:
-remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
-                        auth_token = gitcreds::gitcreds_get()$password)
+# Install package from github, we reccomend using the `pak` to manage this:
+pak::pkg_install("SAFEHR-data/IMPACTfunctions", upgrade = TRUE)
 
 ```
-
-> 🔒 **Private repo** The current development version of the package is private. You will require a github PAT to the repo. Follow [this guide](https://uclh.slab.com/posts/git-hub-integration-6s9bw63t) to get one (internal SLAB wiki, UCLH network only).
 
 
 > 🔒 **On UCLH RStudio Server?** The UCLH network proxy can block the download above. See [Installing packages from GitHub on RStudio Server](https://uclh.slab.com/posts/installing-packages-from-git-hub-on-r-studio-server-b9mpm526) (internal SLAB wiki, UCLH network only) for the extra proxy code needed.
@@ -43,7 +40,7 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()`  | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc...) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-: Features in Package version: `r desc::desc_get_version()` | Package compatible with IMPACT dataset up to `20260624`
+: Features in Package version: `r desc::desc_get_version()` | Package compatible with IMPACT dataset up to `2021112`
 
 
 ### Future features
@@ -81,9 +78,9 @@ library(cli)
 library(dplyr)
 library(IMPACTfunctions)
 
-impact <- load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
-             prefix = "SCB_Periop_",
-             suffix ="_20260122.parquet",
+load_dataset(folder_path = "/IMPACT_data/20261112",
+             prefix = "Periop_",
+             suffix ="",
              verbose = TRUE)
 
 # Tables are available through the returned object ...

@@ -22,7 +22,7 @@ datasets.
 > **UNDER DEVELOPMENT** This pacakge is under active developement.
 > Features and functions may be updated and changed without warning and
 > there is no promise of backward compatability. Describing issues and
-> bugs is very helpful and part of our collobarative proccess to
+> bugs is very helpful and part of our collaborative proccess to
 > validate the pacakge and the dataset!
 
 ## Installation
@@ -31,15 +31,9 @@ You can install the development version of IMPACTfunctions from
 [GitHub](https://github.com/) with:
 
 ``` r
-# Install package from github:
-remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
-                        auth_token = gitcreds::gitcreds_get()$password)
+# Install package from github, we reccomend using the `pak` to manage this:
+pak::pkg_install("SAFEHR-data/IMPACTfunctions", upgrade = TRUE)
 ```
-
-> 🔒 **Private repo** The current development version of the package is
-> private. You will require a github PAT to the repo. Follow [this
-> guide](https://uclh.slab.com/posts/git-hub-integration-6s9bw63t) to
-> get one (internal SLAB wiki, UCLH network only).
 
 > 🔒 **On UCLH RStudio Server?** The UCLH network proxy can block the
 > download above. See [Installing packages from GitHub on RStudio
@@ -56,7 +50,8 @@ remotes::install_github("SAFEHR-data/IMPACTfunctions", force=TRUE,
 | PCA data | `pca_clean_data()` and `pca_hourly_administration()` | ✔️ and 🔜 (drafted, need synth data) | ❌ | ❌ |  |
 | Flowsheet data (pain, obs, etc…) | `search_flowsheet_name()`, `extract_flowsheet_data()` and `calculate_flowsheet_feature()` | ✔️ and 🔜 (Drafted in Med admin section) | ✔️ | ❌ |  |
 
-Features in Package version: 0.2.0 | Package compatible with
+Features in Package version: 0.2.0.9000 \| Package compatible with
+IMPACT dataset up to `2021112`
 
 ### Future features
 
@@ -101,9 +96,9 @@ library(cli)
 library(dplyr)
 library(IMPACTfunctions)
 
-impact <- load_dataset(folder_path = "~/data/dwhitake/data/IMPACT/20260122",
-             prefix = "SCB_Periop_",
-             suffix ="_20260122.parquet",
+load_dataset(folder_path = "/IMPACT_data/20261112",
+             prefix = "Periop_",
+             suffix ="",
              verbose = TRUE)
 
 # Tables are available through the returned object ...
