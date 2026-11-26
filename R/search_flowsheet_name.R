@@ -4,7 +4,9 @@
 #' Use this function to understand what your search string captures before passing
 #' arguments to `extract_flowsheet_data()`.
 #'
-#' @param flowsheet The arrow table of the flowsheet of interest. Defaults to `Measurements`.
+#' In dataset version 20261112 on wards the flowsheets are split into `Measurements` (generally flowsheets manually entered) and `DeviceMeasurements` (Flowsheets automatically populated by monitors/anaesthetic machines. )
+#'
+#' @param flowsheet The arrow table of the flowsheet of interest. Defaults to `Measurements` but use `DeviceMeasurements` for machine collected flowsheet values.
 #' @param string String to search for. Case insensitive for soft search.
 #' @param strict_search Do exact string matching. Useful for testing arguments for `extract_flowsheet_data()`.
 #' @param search_column Defaults to all columns for a soft search. Specify one of `"flowsheet_question_name"` or `"display_name"` for a hard search.
@@ -15,17 +17,17 @@
 #' @template setup-data
 #'
 #' @examples
-#' search_flowsheet_name(Measurements, "heart rate")
+#' search_flowsheet_name("heart rate", Measurements)
 #'
-#' search_flowsheet_name(Measurements, "heart rate",
+#' search_flowsheet_name("heart rate", DeviceMeasurements
 #'    search_column = "flowsheet_question_name")
 #'
-#' search_flowsheet_name(Measurements, "heart rate",
+#' search_flowsheet_name("heart rate", Measurements
 #'    search_column = "flowsheet_question_name",
 #'     strict_search = TRUE)
 search_flowsheet_name <- function(
-    flowsheet = Measurements,
     string,
+    flowsheet = Measurements,
     strict_search = FALSE,
     search_column = "flowsheet_question_name",
     verbose = TRUE
@@ -42,7 +44,7 @@ search_flowsheet_name <- function(
   }
 
   summary <- flowsheet %>%
-    group_by(flowsheet_question_name) %>%
+    group_by(flowsheet_question_name, flowsheet_row_epic_id) %>%
     summarise(rows = n(), .groups = "drop") %>%
     collect()
 
