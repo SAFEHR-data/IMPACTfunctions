@@ -129,15 +129,15 @@ filter_flowsheet_data <- function(
 
   if (check_search) {
     if (verbose) cli::cli_h2("Checking search terms")
-    name_check_soft <- search_flowsheet_name(flowsheet, search_string, verbose = FALSE)
+    name_check_soft <- search_flowsheet_name(string = search_string, flowsheet = flowsheet, verbose = FALSE)
     if (sum(name_check_soft$rows) < 1) {
       cli::cli_abort("{.arg search_string} ({.val {search_string}}) not found. Check spelling with {.fun search_flowsheet_name}.")
     } else {
       if (verbose) cli::cli_alert_success("The following flowsheets where found: {.val {search_string}}")
     }
 
-    name_check_strict <- search_flowsheet_name(flowsheet,
-                                               search_string,
+    name_check_strict <- search_flowsheet_name(string = search_string,
+                                               flowsheet = flowsheet,
                                                search_column = search_column,
                                                strict_search = TRUE,
                                                verbose = FALSE
